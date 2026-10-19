@@ -87,6 +87,8 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   let renderedPanel: Panel = null;
   let busy: string | null = null;
   let panelError: string | null = null;
+  let replacementDescription: { path: string; element: string } | null = null;
+  let descriptionHint = false;
 
   root.addEventListener("mousedown", (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -128,6 +130,7 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   function toggle(next: Panel): () => void {
     return () => {
       panel = panel === next ? null : next;
+      descriptionHint = false;
       panelError = null;
       render(true);
     };
@@ -301,7 +304,7 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
     area.value = sel.info.alt ?? "";
     const form = h("form", { class: "ftb-panel" },
       h("label", { class: "field" }, h("span", { class: "label", text: "Describe this image" }), area,
-        h("span", { class: "hint", text: "Helps people who can't see the image, and search engines." })),
+        h("span", { class: "hint", text: descriptionHint ? "Update the description for the new image." : "Helps people who can't see the image, and search engines." })),
       h("div", { class: "ftb-panel-actions" }, h("button", { class: "btn btn-primary btn-sm", text: "Save", attrs: { type: "submit" } })));
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -313,13 +316,19 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
       panel = null;
       render(true);
     });
-    window.setTimeout(() => area.focus(), 0);
+    const preselect = descriptionHint;
+    window.setTimeout(() => {
+      if (!root.contains(area)) return;
+      area.focus();
+      if (preselect) area.select();
+    }, 0);
     return form;
   }
 
   /* Actions */
 
   function replaceImage(sel: Selection): void {
+    const page = store.get().path;
     imageInput.value = "";
     imageInput.onchange = null;
     imageInput.addEventListener("change", () => {
@@ -341,7 +350,16 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
         store.dispatch({ type: "save_settled" });
         const alt = sel.info.alt ?? "";
         return save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt }).then((ok) => {
-          if (ok) canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
+          if (ok && store.get().path === page) {
+            canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
+            replacementDescription = { path: page, element: sel.element };
+            const s = store.get();
+            if (s.focus.kind === "selected" && s.focus.selection.element === sel.element) {
+              openReplacementDescription(s);
+            } else {
+              canvas.reload(sel.element);
+            }
+          }
           return ok;
         });
       }, (error: Error) => {
@@ -353,6 +371,20 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
       });
     }, { once: true });
     imageInput.click();
+  }
+
+  function openReplacementDescription(s: State): void {
+    if (!replacementDescription) return;
+    if (s.path !== replacementDescription.path) {
+      replacementDescription = null;
+      return;
+    }
+    if (s.focus.kind === "selected" && s.focus.selection.element === replacementDescription.element) {
+      replacementDescription = null;
+      descriptionHint = true;
+      panelError = null;
+      panel = "alt";
+    }
   }
 
   async function removeSection(sel: Selection): Promise<void> {
@@ -501,8 +533,10 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
     if (prev && prev.focus.kind === "selected" && (s.focus.kind !== "selected" || s.focus.selection.element !== prev.focus.selection.element)) {
       panel = null;
       panelError = null;
+      descriptionHint = false;
     }
     if (prev && prev.editing.active !== s.editing.active) panel = null;
+    openReplacementDescription(s);
     render();
   });
   window.addEventListener("resize", () => render(true));

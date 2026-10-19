@@ -69,6 +69,8 @@ export function createToolbar({ store, canvas, change }) {
     let renderedPanel = null;
     let busy = null;
     let panelError = null;
+    let replacementDescription = null;
+    let descriptionHint = false;
     root.addEventListener("mousedown", (event) => {
         const target = event.target instanceof Element ? event.target : null;
         if (target && !target.closest("input, textarea, select"))
@@ -108,6 +110,7 @@ export function createToolbar({ store, canvas, change }) {
     function toggle(next) {
         return () => {
             panel = panel === next ? null : next;
+            descriptionHint = false;
             panelError = null;
             render(true);
         };
@@ -251,7 +254,7 @@ export function createToolbar({ store, canvas, change }) {
     function altPanel(sel) {
         const area = h("textarea", { class: "textarea", attrs: { rows: "3", maxlength: "1000", id: "ftb-alt", placeholder: "For example: Fresh sourdough loaves on a wooden table" } });
         area.value = sel.info.alt ?? "";
-        const form = h("form", { class: "ftb-panel" }, h("label", { class: "field" }, h("span", { class: "label", text: "Describe this image" }), area, h("span", { class: "hint", text: "Helps people who can't see the image, and search engines." })), h("div", { class: "ftb-panel-actions" }, h("button", { class: "btn btn-primary btn-sm", text: "Save", attrs: { type: "submit" } })));
+        const form = h("form", { class: "ftb-panel" }, h("label", { class: "field" }, h("span", { class: "label", text: "Describe this image" }), area, h("span", { class: "hint", text: descriptionHint ? "Update the description for the new image." : "Helps people who can't see the image, and search engines." })), h("div", { class: "ftb-panel-actions" }, h("button", { class: "btn btn-primary btn-sm", text: "Save", attrs: { type: "submit" } })));
         form.addEventListener("submit", (event) => {
             event.preventDefault();
             const alt = area.value.trim();
@@ -263,11 +266,19 @@ export function createToolbar({ store, canvas, change }) {
             panel = null;
             render(true);
         });
-        window.setTimeout(() => area.focus(), 0);
+        const preselect = descriptionHint;
+        window.setTimeout(() => {
+            if (!root.contains(area))
+                return;
+            area.focus();
+            if (preselect)
+                area.select();
+        }, 0);
         return form;
     }
     /* Actions */
     function replaceImage(sel) {
+        const page = store.get().path;
         imageInput.value = "";
         imageInput.onchange = null;
         imageInput.addEventListener("change", () => {
@@ -290,8 +301,17 @@ export function createToolbar({ store, canvas, change }) {
                 store.dispatch({ type: "save_settled" });
                 const alt = sel.info.alt ?? "";
                 return save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt }).then((ok) => {
-                    if (ok)
+                    if (ok && store.get().path === page) {
                         canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
+                        replacementDescription = { path: page, element: sel.element };
+                        const s = store.get();
+                        if (s.focus.kind === "selected" && s.focus.selection.element === sel.element) {
+                            openReplacementDescription(s);
+                        }
+                        else {
+                            canvas.reload(sel.element);
+                        }
+                    }
                     return ok;
                 });
             }, (error) => {
@@ -303,6 +323,20 @@ export function createToolbar({ store, canvas, change }) {
             });
         }, { once: true });
         imageInput.click();
+    }
+    function openReplacementDescription(s) {
+        if (!replacementDescription)
+            return;
+        if (s.path !== replacementDescription.path) {
+            replacementDescription = null;
+            return;
+        }
+        if (s.focus.kind === "selected" && s.focus.selection.element === replacementDescription.element) {
+            replacementDescription = null;
+            descriptionHint = true;
+            panelError = null;
+            panel = "alt";
+        }
     }
     async function removeSection(sel) {
         const ok = await confirmDialog({
@@ -456,9 +490,11 @@ export function createToolbar({ store, canvas, change }) {
         if (prev && prev.focus.kind === "selected" && (s.focus.kind !== "selected" || s.focus.selection.element !== prev.focus.selection.element)) {
             panel = null;
             panelError = null;
+            descriptionHint = false;
         }
         if (prev && prev.editing.active !== s.editing.active)
             panel = null;
+        openReplacementDescription(s);
         render();
     });
     window.addEventListener("resize", () => render(true));
