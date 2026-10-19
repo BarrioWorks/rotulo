@@ -28,6 +28,7 @@ const parseBootstrap = obj({
   history: parseHistory,
   draft_changed_since_publish: bool,
   limits: obj({ image_bytes: int() }),
+  features: opt(obj({ custom_domains: bool })),
 });
 export type Bootstrap = Parsed<typeof parseBootstrap>;
 

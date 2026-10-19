@@ -21,6 +21,7 @@ const parseBootstrap = obj({
     history: parseHistory,
     draft_changed_since_publish: bool,
     limits: obj({ image_bytes: int() }),
+    features: opt(obj({ custom_domains: bool })),
 });
 const parseEditResult = obj({ revision: int(), history: parseHistory, draft_changed_since_publish: bool });
 const parseUndoResult = obj({

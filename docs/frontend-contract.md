@@ -56,11 +56,12 @@ Draft changes carry `base_revision`. When it is stale the answer is `409 {"error
   "preview_origin": "http://<token>.preview.localhost:5150",
   "history": {"can_undo": true, "can_redo": false, "undo_label": "Edit text", "redo_label": null},
   "draft_changed_since_publish": true,
-  "limits": {"image_bytes": 8388608}
+  "limits": {"image_bytes": 8388608},
+  "features": {"custom_domains": true}
 }
 ```
 
-`preview_origin` expires after 12 hours. Fetch the bootstrap again to get a new one. Load a page in the canvas at `preview_origin + "/" + path`.
+When `features.custom_domains` is false the editor hides the custom domain section. `preview_origin` expires after 12 hours. Fetch the bootstrap again to get a new one. Load a page in the canvas at `preview_origin + "/" + path`.
 
 `POST /api/projects/{pid}/edits` `{"base_revision", "page": "index.html", "edit": Edit}`
 `200 {"revision", "history", "draft_changed_since_publish"}`. `422 {"error":"not_allowed"|"invalid"|"not_found", "message"}`.
@@ -105,7 +106,7 @@ All three answer like `/edits`, plus `"pages"` (the new page list).
 - `POST /api/projects/{pid}/publish` `{"base_revision"}` gives `201 {"release": Release, "site_url"}`. `422 {"error":"invalid","message"}` when the draft can't be published (for example a missing stylesheet).
 - `GET /api/projects/{pid}/releases` gives `{"releases":[Release], "site_url"}`, newest first.
 - `POST /api/projects/{pid}/releases/{number}/activate` makes that release live (rollback). Gives `{"release": Release}`.
-- `POST /api/projects/{pid}/releases/{number}/restore` `{"base_revision"}` copies that release into the draft as one undoable edit. Answers like `/undo`.
+- `POST /api/projects/{pid}/releases/{number}/restore` `{"base_revision"}` copies that release into the draft as one undoable edit. Answers like `/undo`, plus `"page_list"` (the new page list with titles).
 
 `Release = {"number", "created_at", "live": bool, "file_count", "bytes"}`.
 

@@ -15,6 +15,7 @@ export function createPublishing({ store, change, afterRestore }) {
     const viewLive = must(document, "[data-view-live]");
     const releaseList = must(document, "[data-release-list]");
     const releaseEmpty = must(document, "[data-release-empty]");
+    const domainSection = must(document, "[data-domain-section]");
     const domainList = must(document, "[data-domain-list]");
     const domainForm = must(document, "[data-domain-form]");
     const domainInput = must(document, "[data-domain-input]");
@@ -210,6 +211,8 @@ export function createPublishing({ store, change, afterRestore }) {
             renderStatus(s);
         if (changed(s, prev, "releases", "project"))
             renderReleases(s);
+        if (changed(s, prev, "customDomains"))
+            domainSection.hidden = !s.customDomains;
         if (changed(s, prev, "domains", "dns")) {
             domainList.replaceChildren(...(s.domains ?? []).map((d) => domainCard(d, s.dns)));
         }
@@ -220,5 +223,6 @@ export function createPublishing({ store, change, afterRestore }) {
         renderReleases(s);
     }, 30000);
     void loadReleases();
-    void loadDomains();
+    if (store.get().customDomains)
+        void loadDomains();
 }

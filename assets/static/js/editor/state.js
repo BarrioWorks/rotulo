@@ -6,6 +6,7 @@ export function initialState(data, now) {
         previewOrigin: data.preview_origin,
         bootstrappedAt: now,
         imageBytes: data.limits.image_bytes,
+        customDomains: data.features?.custom_domains ?? true,
         history: data.history,
         draftChanged: data.draft_changed_since_publish,
         mode: "edit",
