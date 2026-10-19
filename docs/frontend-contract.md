@@ -16,7 +16,7 @@ All pages extend `layouts/base.html`. Static files are under `/static/` (`assets
 
 | Template | Route | Context |
 |---|---|---|
-| `home.html` | `GET /` signed out | `{}` |
+| `home.html` | `GET /` signed out | `sites_domain: string` (configured hostname, without the public port) |
 | `auth/register.html` | `GET/POST /register` | `error: string?`, `name`, `email` (refill on error) |
 | `auth/login.html` | `GET/POST /login` | `error: string?`, `email` |
 | `projects/index.html` | `GET /projects` | `user {name, email}`, `projects: [Project]`, `can_create: bool`, `limit: int` |

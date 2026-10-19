@@ -93,3 +93,26 @@ async fn sign_in_attempts_are_limited_per_address_and_never_echo_a_huge_email() 
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn home_shows_the_configured_sites_domain_without_a_port() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let domain = pagehaven::state::Pagehaven::from(&ctx)
+            .settings
+            .sites_domain
+            .clone();
+        let response = get(&server, "/", "").await;
+        response.assert_status_ok();
+        let document = scraper::Html::parse_document(&response.text());
+        let address = document
+            .select(&scraper::Selector::parse(".mock-url").unwrap())
+            .next()
+            .unwrap()
+            .text()
+            .collect::<String>();
+        assert_eq!(address, format!("harbor-bakery.{domain}"));
+        assert!(!address.contains(':'));
+    })
+    .await;
+}
