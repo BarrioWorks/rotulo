@@ -18,7 +18,8 @@ const parseProject = obj({
 });
 export type Project = Parsed<typeof parseProject>;
 
-const parsePage = obj({ path: str(1024), title: str(500) });
+const pageTitle: Parser<string> = (v) => (v === null || v === undefined ? "" : str(500)(v));
+const parsePage = obj({ path: str(1024), title: pageTitle });
 export type Page = Parsed<typeof parsePage>;
 
 const parseBootstrap = obj({
@@ -28,6 +29,7 @@ const parseBootstrap = obj({
   history: parseHistory,
   draft_changed_since_publish: bool,
   limits: obj({ image_bytes: int() }),
+  features: opt(obj({ custom_domains: bool })),
 });
 export type Bootstrap = Parsed<typeof parseBootstrap>;
 

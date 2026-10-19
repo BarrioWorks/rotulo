@@ -25,6 +25,7 @@ export function createPublishing({ store, change, afterRestore }: PublishDeps): 
   const viewLive = must<HTMLAnchorElement>(document, "[data-view-live]");
   const releaseList = must<HTMLUListElement>(document, "[data-release-list]");
   const releaseEmpty = must<HTMLElement>(document, "[data-release-empty]");
+  const domainSection = must<HTMLElement>(document, "[data-domain-section]");
   const domainList = must<HTMLElement>(document, "[data-domain-list]");
   const domainForm = must<HTMLFormElement>(document, "[data-domain-form]");
   const domainInput = must<HTMLInputElement>(document, "[data-domain-input]");
@@ -230,6 +231,7 @@ export function createPublishing({ store, change, afterRestore }: PublishDeps): 
   store.subscribe((s, prev) => {
     if (changed(s, prev, "project", "draftChanged")) renderStatus(s);
     if (changed(s, prev, "releases", "project")) renderReleases(s);
+    if (changed(s, prev, "customDomains")) domainSection.hidden = !s.customDomains;
     if (changed(s, prev, "domains", "dns")) {
       domainList.replaceChildren(...(s.domains ?? []).map((d) => domainCard(d, s.dns)));
     }
@@ -242,5 +244,5 @@ export function createPublishing({ store, change, afterRestore }: PublishDeps): 
   }, 30000);
 
   void loadReleases();
-  void loadDomains();
+  if (store.get().customDomains) void loadDomains();
 }
