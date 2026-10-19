@@ -67,6 +67,7 @@ HTML pages in the draft carry a stable `data-ph-id` on every element of the body
 |---|---|
 | `set_text` | Replaces the content of a text element. Elements that already existed keep their original attributes. New markup is limited to `b strong i em u s br a span`. Links are scheme-checked |
 | `set_image` | Sets `src`, clears `srcset`/`sizes`, sets `alt`. The image must be a draft file |
+| `set_background_image` | Sets an uploaded raster image as a page-relative inline background, or removes the override. Preserves other inline styles |
 | `set_link` | Sets `href` and the new-tab flag on an `a` element |
 | `set_style` | Sets or clears allowed inline properties (colors, size, weight, alignment, spacing) with validated values |
 | `hide_section`, `duplicate_section`, `move_section`, `remove_section` | Structural changes, allowed only on top-level sections in `body`, `main`, or their direct wrapper |

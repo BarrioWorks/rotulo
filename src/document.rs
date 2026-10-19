@@ -164,6 +164,10 @@ pub enum PageEdit {
         src: String,
         alt: String,
     },
+    SetBackgroundImage {
+        element: ElementId,
+        src: Option<String>,
+    },
     SetAlt {
         element: ElementId,
         alt: String,
@@ -202,6 +206,7 @@ impl PageEdit {
         match self {
             Self::SetText { .. } => "set_text",
             Self::SetImage { .. } => "set_image",
+            Self::SetBackgroundImage { .. } => "set_background_image",
             Self::SetAlt { .. } => "set_alt",
             Self::SetLink { .. } => "set_link",
             Self::SetStyle { .. } => "set_style",
@@ -217,6 +222,7 @@ impl PageEdit {
         match self {
             Self::SetText { element, .. }
             | Self::SetImage { element, .. }
+            | Self::SetBackgroundImage { element, .. }
             | Self::SetAlt { element, .. }
             | Self::SetLink { element, .. }
             | Self::SetStyle { element, .. }
@@ -248,6 +254,7 @@ pub struct Capabilities {
     pub image: bool,
     pub link: bool,
     pub style: bool,
+    pub background_image: bool,
     pub section: bool,
     pub move_up: bool,
     pub move_down: bool,
@@ -261,6 +268,7 @@ impl Capabilities {
             (self.image, 'i'),
             (self.link, 'l'),
             (self.style, 's'),
+            (self.background_image, 'b'),
             (self.section, 'x'),
             (self.move_up, 'u'),
             (self.move_down, 'd'),
@@ -270,6 +278,50 @@ impl Capabilities {
         .filter_map(|(on, c)| on.then_some(*c))
         .collect()
     }
+}
+
+fn can_background_image(name: &str) -> bool {
+    !matches!(
+        name,
+        "body"
+            | "svg"
+            | "area"
+            | "base"
+            | "basefont"
+            | "bgsound"
+            | "br"
+            | "col"
+            | "embed"
+            | "frame"
+            | "hr"
+            | "img"
+            | "input"
+            | "keygen"
+            | "link"
+            | "meta"
+            | "param"
+            | "source"
+            | "track"
+            | "wbr"
+    )
+}
+
+/// Only the page-relative form of paths produced by uploaded_image is accepted.
+fn is_uploaded_image_url(mut src: &str) -> bool {
+    while let Some(rest) = src.strip_prefix("../") {
+        src = rest;
+    }
+    let Some(file) = src.strip_prefix("images/uploads/") else {
+        return false;
+    };
+    let Some((hash, extension)) = file.split_once('.') else {
+        return false;
+    };
+    hash.len() == 16
+        && hash
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        && matches!(extension, "png" | "jpg" | "gif" | "webp" | "avif")
 }
 
 /// Phrasing elements that may appear inside an editable text element and keep their attributes.
@@ -615,6 +667,7 @@ impl Document {
                     image: name == "img",
                     link: name == "a",
                     style: !matches!(name, "body" | "br" | "wbr" | "source" | "track" | "svg"),
+                    background_image: can_background_image(name),
                     section,
                     move_up: section && previous.is_some_and(|n| sections[&n]),
                     move_down: section && next.is_some_and(|n| sections[&n]),
@@ -851,6 +904,7 @@ impl Document {
             image: name == "img",
             link: name == "a",
             style: !matches!(name, "body" | "br" | "wbr" | "source" | "track") && name != "svg",
+            background_image: can_background_image(name),
             section,
             move_up: section && self.sibling_section(id, Direction::Up).is_some(),
             move_down: section && self.sibling_section(id, Direction::Down).is_some(),
@@ -981,6 +1035,49 @@ impl Document {
                     return Err(EditError::NotAllowed("Only images can be replaced."));
                 }
                 self.set_image(id, src, alt)
+            }
+            PageEdit::SetBackgroundImage { src, .. } => {
+                if !can.background_image {
+                    return Err(EditError::NotAllowed(
+                        "This part of the page can't have a background photo.",
+                    ));
+                }
+                if src
+                    .as_deref()
+                    .is_some_and(|src| !is_uploaded_image_url(src))
+                {
+                    return Err(EditError::Invalid("Upload the image again."));
+                }
+                self.with_element(id, |element| {
+                    let existing = element.attr("style").unwrap_or("");
+                    let mut changes = BTreeMap::from([(
+                        "background-image",
+                        src.as_ref().map(|src| format!("url(\"{src}\")")),
+                    )]);
+                    if src.is_some() {
+                        for (property, default) in [
+                            ("background-size", "cover"),
+                            ("background-position", "center"),
+                        ] {
+                            let has_value = split_declarations(existing).iter().any(|d| {
+                                d.split_once(':').is_some_and(|(name, value)| {
+                                    name.trim().eq_ignore_ascii_case(property)
+                                        && !value.trim().is_empty()
+                                })
+                            });
+                            if !has_value {
+                                changes.insert(property, Some(default.to_owned()));
+                            }
+                        }
+                    }
+                    let style = merge_declarations(existing, &changes);
+                    if style.is_empty() {
+                        remove_attr(element, "style");
+                    } else {
+                        set_attr(element, "style", &style);
+                    }
+                });
+                Ok(())
             }
             PageEdit::SetAlt { alt, .. } => {
                 if !can.image {
@@ -1491,6 +1588,14 @@ fn split_declarations(style: &str) -> Vec<&str> {
 
 /// Sets or removes only the properties the user changed and keeps every other declaration as written.
 fn merge_style(existing: &str, changes: &BTreeMap<StyleProperty, Option<String>>) -> String {
+    let changes = changes
+        .iter()
+        .map(|(property, value)| (property.css_name(), value.clone()))
+        .collect();
+    merge_declarations(existing, &changes)
+}
+
+fn merge_declarations(existing: &str, changes: &BTreeMap<&str, Option<String>>) -> String {
     let mut declarations: Vec<String> = split_declarations(existing)
         .into_iter()
         .filter(|d| {
@@ -1500,13 +1605,13 @@ fn merge_style(existing: &str, changes: &BTreeMap<StyleProperty, Option<String>>
                 .unwrap_or("")
                 .trim()
                 .to_ascii_lowercase();
-            !changes.keys().any(|p| p.css_name() == name)
+            !changes.contains_key(name.as_str())
         })
         .map(|d| d.trim().to_owned())
         .collect();
     for (property, value) in changes {
         if let Some(value) = value {
-            declarations.push(format!("{}: {value}", property.css_name()));
+            declarations.push(format!("{property}: {value}"));
         }
     }
     declarations.join("; ")
@@ -1562,6 +1667,63 @@ mod tests {
             .unwrap()
             .id();
         ElementId(doc.element(id).unwrap().attr(ID_ATTR).unwrap().to_owned())
+    }
+
+    #[test]
+    fn background_images_merge_styles_and_remove_only_the_override() {
+        let mut doc = Document::parse(
+            r#"<section style='color: red; background-position: top; background-size: contain; background-image: url(old.jpg)'><h1>Hero</h1></section><footer>End</footer>"#,
+        );
+        doc.assign_ids();
+        let element = first_of(&doc, "section");
+        let edit: PageEdit = serde_json::from_value(serde_json::json!({"op":"set_background_image", "element":element, "src":"../images/uploads/0123456789abcdef.png"})).unwrap();
+        doc.apply(&edit).unwrap();
+        let out = doc.serialize();
+        assert!(out.contains("color: red"));
+        assert!(out.contains("background-position: top"));
+        assert!(out.contains("background-size: contain"));
+        assert!(out.contains("../images/uploads/0123456789abcdef.png"));
+        assert!(!out.contains("old.jpg"));
+        let remove = serde_json::from_value(
+            serde_json::json!({"op":"set_background_image", "element":element, "src":null}),
+        )
+        .unwrap();
+        doc.apply(&remove).unwrap();
+        assert!(!doc.serialize().contains("background-image"));
+        let footer = first_of(&doc, "footer");
+        doc.apply(&serde_json::from_value(serde_json::json!({"op":"set_background_image", "element":footer, "src":"images/uploads/0123456789abcdef.jpg"})).unwrap()).unwrap();
+        assert!(doc.serialize().contains("background-size: cover"));
+        assert!(doc.serialize().contains("background-position: center"));
+    }
+
+    #[test]
+    fn background_images_reject_unsafe_paths_and_sealed_or_void_elements() {
+        let mut doc = Document::parse(
+            "<header>Hero</header><img src='x'><keygen><script>x</script><svg><path /></svg>",
+        );
+        doc.assign_ids();
+        for src in [
+            "https://evil/image.png",
+            "images/uploads/x.png",
+            "images/uploads/0123456789abcdef.svg",
+            "images/uploads/0123456789abcdef.png\");color:red",
+            "/images/uploads/0123456789abcdef.png",
+        ] {
+            let edit = serde_json::from_value(serde_json::json!({"op":"set_background_image", "element":first_of(&doc,"header"), "src":src})).unwrap();
+            assert!(doc.apply(&edit).is_err(), "accepted {src}");
+        }
+        doc.annotate_for_editor("/agent.js");
+        assert!(doc
+            .capabilities(&first_of(&doc, "header"))
+            .unwrap()
+            .encode()
+            .contains('b'));
+        for name in ["img", "keygen", "script", "svg", "path"] {
+            let element = first_of(&doc, name);
+            assert!(!doc.capabilities(&element).unwrap().encode().contains('b'));
+            let edit = serde_json::from_value(serde_json::json!({"op":"set_background_image", "element":element, "src":"images/uploads/0123456789abcdef.png"})).unwrap();
+            assert!(doc.apply(&edit).is_err());
+        }
     }
 
     #[test]
@@ -1913,7 +2075,7 @@ mod tests {
             "{html}"
         );
         assert!(
-            html.contains(r#"data-ph-can="ts""#) || html.contains(r#"data-ph-can="t"#),
+            html.contains(r#"data-ph-can="tsb""#) || html.contains(r#"data-ph-can="t"#),
             "{html}"
         );
     }

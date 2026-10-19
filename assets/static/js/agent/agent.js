@@ -119,7 +119,7 @@ function idOf(el) {
 }
 function canOf(el) {
     const can = el.getAttribute("data-ph-can") ?? "";
-    return /^[tilsxudc]{0,8}$/.test(can) ? can : "";
+    return /^[tilsbxudc]{0,9}$/.test(can) ? can : "";
 }
 function asElement(target) {
     if (target instanceof Element)

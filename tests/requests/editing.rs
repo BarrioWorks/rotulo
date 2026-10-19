@@ -311,3 +311,38 @@ async fn page_names_cannot_collide_under_unicode_lowercase() {
         }
     }).await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn background_photo_upload_is_published_and_can_be_removed() {
+    request_with_create_db::<App, _, _>(|server, _ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let mut p = Project::new(&server, &cookie).await;
+        let png = std::fs::read("fixtures/images/replacement-small.png").unwrap();
+        let uploaded = upload(&server, &cookie, &p.api("images"), png.clone(), "photo.png").await.json::<Value>();
+        let html = p.html(&server, "about.html").await;
+        let section = element(&html, "section");
+        assert!(attr(&html, "section", "data-ph-can").contains('b'));
+        for edit in [
+            json!({"op":"set_background_image","element":section,"src":"https://evil/image.png"}),
+            json!({"op":"set_background_image","element":section,"upload":"bad"}),
+            json!({"op":"set_background_image","element":section,"remove":false}),
+            json!({"op":"set_background_image","element":section,"upload":uploaded["upload"],"remove":true}),
+        ] {
+            post(&server, &p.api("edits"), &cookie).json(&json!({"base_revision":p.revision,"page":"about.html","edit":edit})).await.assert_status_unprocessable_entity();
+        }
+        p.edit(&server, &cookie, "about.html", json!({"op":"set_background_image","element":section,"upload":uploaded["upload"]})).await;
+        p.publish(&server, &cookie).await;
+        let published = hosted(&server, &p.site, "/about.html").await.text();
+        let style = attr(&published, "section", "style");
+        let path = uploaded["path"].as_str().unwrap();
+        assert!(style.contains(&format!("background-image: url(\"{path}\")")));
+        assert!(style.contains("background-size: cover"));
+        assert_eq!(hosted(&server, &p.site, &format!("/{path}")).await.as_bytes(), png.as_slice());
+        p.change(&server, &cookie, "undo", json!({})).await;
+        assert!(!p.html(&server, "about.html").await.contains("background-image:"));
+        p.change(&server, &cookie, "redo", json!({})).await;
+        p.edit(&server, &cookie, "about.html", json!({"op":"set_background_image","element":section,"remove":true})).await;
+        assert!(!p.html(&server, "about.html").await.contains("background-image:"));
+    }).await;
+}

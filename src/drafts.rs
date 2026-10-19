@@ -80,6 +80,7 @@ pub fn label(kind: &str) -> &'static str {
     match kind {
         "set_text" => "text change",
         "set_image" => "image change",
+        "set_background_image" => "background photo change",
         "set_alt" => "image description",
         "set_link" => "link change",
         "set_style" => "style change",

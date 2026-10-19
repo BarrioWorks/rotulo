@@ -117,3 +117,7 @@ test("links follow the server's scheme rules", () => {
     assert.ok(!isSafeHref(href), JSON.stringify(href));
   }
 });
+
+test("background image capability survives selection validation", () => {
+  assert.equal(parseAgentMessage({ ...select, can: "tilsbxudc" })?.can, "tilsbxudc");
+});

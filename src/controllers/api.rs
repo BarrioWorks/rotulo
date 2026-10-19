@@ -322,6 +322,16 @@ struct ImageEdit {
     alt: String,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BackgroundImageEdit {
+    #[allow(dead_code)]
+    op: String,
+    element: crate::document::ElementId,
+    upload: Option<String>,
+    remove: Option<bool>,
+}
+
 /// Runs `work` under the project's lock after checking that the client saw the latest revision.
 async fn locked<T, F, Fut>(
     ctx: &AppContext,
@@ -425,6 +435,32 @@ async fn create_edit(
                 edit,
                 json!({"page": body.page, "op": "set_image", "asset": asset}),
             )
+        } else if body.edit.get("op").and_then(Value::as_str) == Some("set_background_image") {
+            let image: BackgroundImageEdit = serde_json::from_value(body.edit.clone())
+                .map_err(|_| ApiError::Invalid("That change isn't supported.".to_owned()))?;
+            let src = match (image.upload, image.remove) {
+                (Some(upload), None) => {
+                    let (asset, blob, bytes) = uploaded_image(&state, &upload)?;
+                    let src = paths::relative_url(&body.page, &asset);
+                    changes.push(Change {
+                        path: asset,
+                        after: Some((blob, bytes)),
+                    });
+                    Some(src)
+                }
+                (None, Some(true)) => None,
+                _ => {
+                    return Err(ApiError::Invalid(
+                        "Choose an uploaded photo or remove the background photo.".to_owned(),
+                    ))
+                }
+            };
+            let edit = PageEdit::SetBackgroundImage {
+                element: image.element,
+                src,
+            };
+            let summary = json!({"page": body.page, "op": edit.kind(), "element": edit.element()});
+            (edit, summary)
         } else {
             let edit: PageEdit = serde_json::from_value(body.edit.clone())
                 .map_err(|_| ApiError::Invalid("That change isn't supported.".to_owned()))?;

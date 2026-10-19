@@ -89,6 +89,8 @@ export type StyleProps = Partial<Record<string, string | null>>;
 export type Edit =
   | { op: "set_text"; element: string; html: string }
   | { op: "set_image"; element: string; upload: string; alt: string }
+  | { op: "set_background_image"; element: string; upload: string }
+  | { op: "set_background_image"; element: string; remove: true }
   | { op: "set_alt"; element: string; alt: string }
   | { op: "set_link"; element: string; href: string; new_tab: boolean }
   | { op: "set_style"; element: string; styles: StyleProps }

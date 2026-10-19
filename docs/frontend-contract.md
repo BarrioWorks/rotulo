@@ -8,7 +8,7 @@ The backend (Rust) and the frontend (Tera templates, CSS, TypeScript) meet here.
 - Preview of a draft: `http://<token>.preview.localhost:5150`. Serves the draft. HTML pages get `<script type="module" src="/__pagehaven/agent/agent.js" data-pagehaven="agent">` as the first child of `<head>`, and every editable element has `data-ph-id` and `data-ph-can`. The preview serves the compiled `assets/static/js/` tree (`.js` files only) under `/__pagehaven/`, so the agent's relative imports work: `import ... from "../protocol.js"` loads `/__pagehaven/protocol.js`.
 - Published site: `http://<slug>.sites.localhost:5150`.
 
-`data-ph-can` lists what the server accepts for that element, one letter each: `t` text, `i` image, `l` link, `s` style, `x` section (hide, remove), `u` can move up, `d` can move down, `c` can duplicate. Elements with no `data-ph-id` (created by the site's JavaScript) are not editable. `data-ph-hidden="true"` marks a hidden section. It is shown dimmed in the editor and left out when publishing.
+`data-ph-can` lists what the server accepts for that element, one letter each: `t` text, `i` image, `l` link, `s` style, `b` background image, `x` section (hide, remove), `u` can move up, `d` can move down, `c` can duplicate. Elements with no `data-ph-id` (created by the site's JavaScript) are not editable. `data-ph-hidden="true"` marks a hidden section. It is shown dimmed in the editor and left out when publishing.
 
 ## Pages (Tera, `assets/views/`)
 
@@ -71,6 +71,8 @@ When `features.custom_domains` is false the editor hides the custom domain secti
 ```
 {"op":"set_text","element","html"}            inner HTML of the element after inline editing
 {"op":"set_image","element","upload","alt"}   upload = "sha256" returned by the image upload
+{"op":"set_background_image","element","upload"}   uses the same upload token as set_image
+{"op":"set_background_image","element","remove":true}   removes only the inline background-image override
 {"op":"set_alt","element","alt"}
 {"op":"set_link","element","href","new_tab"}
 {"op":"set_style","element","styles":{"color":"#112233","font-size":null,...}}   null removes the property
@@ -80,6 +82,8 @@ When `features.custom_domains` is false the editor hides the custom domain secti
 {"op":"remove_section","element"}
 {"op":"set_page_meta","title","description"}
 ```
+
+`set_background_image` accepts an upload token or `remove: true`, never a URL or asset path. The server validates raster content and stores it at `images/uploads/<sha16>.<ext>`. It sets an inline `background-image: url("<page-relative path>")`, preserves other inline declarations, and defaults missing inline `background-size` and `background-position` to `cover` and `center`. Capability `b` is available on non-void, non-sealed elements that accept styles, including headers, sections, divs, footers and links. Script, style and SVG internals never receive it. The existing selection message carries the capability; no message fields are added.
 
 Style keys: `color background-color font-size font-weight text-align padding-top padding-bottom padding-left padding-right margin-top margin-bottom`. Colors are `#rgb`/`#rrggbb`. Sizes are `12px`, `1.5rem`, `2em`, `10%`. Weights are `100`…`900`. Alignment is `left center right justify`.
 

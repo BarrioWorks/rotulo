@@ -6,7 +6,7 @@
 import { bool, lit, num, obj, opt, str } from "./schema.js";
 export const CHANNEL = "pagehaven";
 export const ELEMENT_ID = /^[0-9a-z]{1,10}$/;
-export const CAPABILITIES = /^[tilsxudc]{0,8}$/;
+export const CAPABILITIES = /^[tilsbxudc]{0,9}$/;
 const TAG = /^[a-z][a-z0-9-]{0,31}$/;
 export const STYLE_KEYS = [
     "color",
@@ -103,7 +103,7 @@ const agentMessages = {
     select: obj({
         type: lit("select"),
         element: elementId,
-        can: str(8, CAPABILITIES),
+        can: str(9, CAPABILITIES),
         tag: str(32, TAG),
         hasParent: bool,
         rect: parseRect,

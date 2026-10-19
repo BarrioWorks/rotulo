@@ -155,7 +155,7 @@ function idOf(el: Element): string | null {
 
 function canOf(el: Element): string {
   const can = el.getAttribute("data-ph-can") ?? "";
-  return /^[tilsxudc]{0,8}$/.test(can) ? can : "";
+  return /^[tilsbxudc]{0,9}$/.test(can) ? can : "";
 }
 
 function asElement(target: EventTarget | null): Element | null {
