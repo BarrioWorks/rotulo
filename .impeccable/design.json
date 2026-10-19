@@ -1,55 +1,746 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T18:10:00Z",
+  "generatedAt": "2026-10-19T22:27:37Z",
   "title": "Design System: Pagehaven",
   "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Stock",
+        "canonical": "#F4F3EF",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#43423F",
+          "#62615E",
+          "#83827F",
+          "#A6A5A1",
+          "#CAC9C5",
+          "#EFEEEA"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Sheet White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "surface-hover": {
+        "role": "neutral",
+        "displayName": "Sheet Hover",
+        "canonical": "#F7F6F3",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262523",
+          "#434240",
+          "#62615F",
+          "#838280",
+          "#A6A5A2",
+          "#CAC9C6",
+          "#EFEEEB"
+        ]
+      },
+      "surface-pressed": {
+        "role": "neutral",
+        "displayName": "Sheet Pressed",
+        "canonical": "#EEEDE8",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423E",
+          "#62615D",
+          "#83827E",
+          "#A6A5A0",
+          "#CAC9C4",
+          "#EFEEE9"
+        ]
+      },
+      "sunken": {
+        "role": "neutral",
+        "displayName": "Light Table",
+        "canonical": "#E9E8E3",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423E",
+          "#62615D",
+          "#83827E",
+          "#A6A5A0",
+          "#CAC9C4",
+          "#F0EEE9"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Proof Ink",
+        "canonical": "#16161A",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "#4B4A46",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423E",
+          "#62615D",
+          "#83827E",
+          "#A6A5A0",
+          "#CAC9C4",
+          "#F0EEEA"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "#64635E",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423D",
+          "#62615C",
+          "#83827D",
+          "#A6A5A0",
+          "#CAC9C3",
+          "#F0EFE9"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#DEDDD7",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423D",
+          "#62615C",
+          "#83827D",
+          "#A6A59F",
+          "#CAC9C3",
+          "#F0EFE9"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "#C9C8C1",
+        "tonalRamp": [
+          "#0C0B07",
+          "#262520",
+          "#43423C",
+          "#62615B",
+          "#83837C",
+          "#A6A59E",
+          "#CAC9C2",
+          "#F0EFE7"
+        ]
+      },
+      "control-border": {
+        "role": "neutral",
+        "displayName": "Control Edge",
+        "canonical": "#8C8B85",
+        "tonalRamp": [
+          "#0C0B07",
+          "#262520",
+          "#43423D",
+          "#62615C",
+          "#83827D",
+          "#A6A59F",
+          "#CAC9C3",
+          "#F0EFE8"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Ink Hover",
+        "canonical": "rgba(22, 22, 26, 0.05)",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "pressed": {
+        "role": "neutral",
+        "displayName": "Ink Press",
+        "canonical": "rgba(22, 22, 26, 0.09)",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "neutral-soft": {
+        "role": "neutral",
+        "displayName": "Neutral Note",
+        "canonical": "#ECEBE6",
+        "tonalRamp": [
+          "#0C0B08",
+          "#262521",
+          "#43423E",
+          "#62615D",
+          "#83827E",
+          "#A6A5A0",
+          "#CAC9C4",
+          "#F0EEE9"
+        ]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Proof Ink",
+        "canonical": "#16161A",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "Ink Lift",
+        "canonical": "#2C2C31",
+        "tonalRamp": [
+          "#0B0B0F",
+          "#242429",
+          "#414147",
+          "#606166",
+          "#828288",
+          "#A4A4AB",
+          "#C8C8CF",
+          "#EEEEF4"
+        ]
+      },
+      "primary-pressed": {
+        "role": "primary",
+        "displayName": "Full Black",
+        "canonical": "#000000",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "on-primary": {
+        "role": "primary",
+        "displayName": "Stock White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "link": {
+        "role": "secondary",
+        "displayName": "Press Blue",
+        "canonical": "#005F96",
+        "tonalRamp": [
+          "#000437",
+          "#002558",
+          "#00457A",
+          "#10669E",
+          "#3C89C3",
+          "#60ACE9",
+          "#85D1FF",
+          "#AAF7FF"
+        ]
+      },
+      "link-hover": {
+        "role": "secondary",
+        "displayName": "Deep Press Blue",
+        "canonical": "#004A75",
+        "tonalRamp": [
+          "#00082F",
+          "#00274F",
+          "#004671",
+          "#286693",
+          "#4B88B7",
+          "#6EACDD",
+          "#92D1FF",
+          "#B6F7FF"
+        ]
+      },
+      "select": {
+        "role": "secondary",
+        "displayName": "Proof Cyan",
+        "canonical": "#0A86D6",
+        "tonalRamp": [
+          "#000239",
+          "#00245A",
+          "#00447D",
+          "#1265A1",
+          "#3D88C6",
+          "#61ACEC",
+          "#85D1FF",
+          "#AAF7FF"
+        ]
+      },
+      "select-strong": {
+        "role": "secondary",
+        "displayName": "Slug Cyan",
+        "canonical": "#0070B8",
+        "tonalRamp": [
+          "#00023A",
+          "#00245B",
+          "#00447D",
+          "#1665A1",
+          "#3F87C6",
+          "#63ABEC",
+          "#87D0FF",
+          "#ACF6FF"
+        ]
+      },
+      "select-soft": {
+        "role": "secondary",
+        "displayName": "Cyan Wash",
+        "canonical": "#E3F2FB",
+        "tonalRamp": [
+          "#040D12",
+          "#1B272D",
+          "#38444B",
+          "#56636B",
+          "#77858D",
+          "#99A7B0",
+          "#BDCCD4",
+          "#E2F1FA"
+        ]
+      },
+      "select-text": {
+        "role": "secondary",
+        "displayName": "Cyan Highlight",
+        "canonical": "rgba(10, 134, 214, 0.2)",
+        "tonalRamp": [
+          "#000239",
+          "#00245A",
+          "#00447D",
+          "#1265A1",
+          "#3D88C6",
+          "#61ACEC",
+          "#85D1FF",
+          "#AAF7FF"
+        ]
+      },
+      "success": {
+        "role": "state",
+        "displayName": "Published Green",
+        "canonical": "#1B7343",
+        "tonalRamp": [
+          "#001500",
+          "#003306",
+          "#005224",
+          "#1B7343",
+          "#449663",
+          "#68BA85",
+          "#8DDFA8",
+          "#B2FFCD"
+        ]
+      },
+      "success-soft": {
+        "role": "state",
+        "displayName": "Green Wash",
+        "canonical": "#E6F2EA",
+        "tonalRamp": [
+          "#060D08",
+          "#1F2822",
+          "#3B453E",
+          "#5A645D",
+          "#7B857E",
+          "#9DA8A1",
+          "#C1CDC5",
+          "#E6F2EA"
+        ]
+      },
+      "warning": {
+        "role": "state",
+        "displayName": "Pending Amber",
+        "canonical": "#9A5300",
+        "tonalRamp": [
+          "#290000",
+          "#4B0800",
+          "#6E2C00",
+          "#924D00",
+          "#B66E2E",
+          "#DC9153",
+          "#FFB677",
+          "#FFDB9C"
+        ]
+      },
+      "warning-soft": {
+        "role": "state",
+        "displayName": "Amber Wash",
+        "canonical": "#FBEFD9",
+        "tonalRamp": [
+          "#120A00",
+          "#2D2413",
+          "#4A412F",
+          "#6A604D",
+          "#8C816D",
+          "#AFA48F",
+          "#D3C8B2",
+          "#F9EDD7"
+        ]
+      },
+      "error": {
+        "role": "state",
+        "displayName": "Alert Red",
+        "canonical": "#BA2F25",
+        "tonalRamp": [
+          "#2D0000",
+          "#510000",
+          "#752018",
+          "#9A4238",
+          "#C06458",
+          "#E68779",
+          "#FFAB9C",
+          "#FFD0C0"
+        ]
+      },
+      "error-soft": {
+        "role": "state",
+        "displayName": "Red Wash",
+        "canonical": "#FBE8E6",
+        "tonalRamp": [
+          "#130807",
+          "#2F2120",
+          "#4D3E3C",
+          "#6D5D5B",
+          "#8F7E7C",
+          "#B2A09E",
+          "#D7C4C2",
+          "#FCE9E7"
+        ]
+      },
+      "error-hover": {
+        "role": "state",
+        "displayName": "Alert Red Hover",
+        "canonical": "#9E271F",
+        "tonalRamp": [
+          "#2D0000",
+          "#510000",
+          "#752019",
+          "#9A4238",
+          "#C06458",
+          "#E68779",
+          "#FFAB9C",
+          "#FFD0C1"
+        ]
+      },
+      "toast": {
+        "role": "neutral",
+        "displayName": "Toast Ink",
+        "canonical": "#16161A",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "on-toast": {
+        "role": "neutral",
+        "displayName": "Toast Stock",
+        "canonical": "#F4F3EF",
+        "tonalRamp": [
+          "#0C0B09",
+          "#262522",
+          "#43423F",
+          "#62615E",
+          "#83827F",
+          "#A6A5A1",
+          "#CAC9C5",
+          "#EFEEEA"
+        ]
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "Scrim",
+        "canonical": "rgba(22, 22, 26, 0.38)",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "overlay-accent-soft": {
+        "role": "overlay",
+        "displayName": "Selected Fill",
+        "canonical": "rgba(10, 134, 214, 0.2)",
+        "tonalRamp": [
+          "#000239",
+          "#00245A",
+          "#00447D",
+          "#1265A1",
+          "#3D88C6",
+          "#61ACEC",
+          "#85D1FF",
+          "#AAF7FF"
+        ]
+      },
+      "overlay-hover": {
+        "role": "overlay",
+        "displayName": "Hover Outline",
+        "canonical": "rgba(10, 134, 214, 0.7)",
+        "tonalRamp": [
+          "#000239",
+          "#00245A",
+          "#00447D",
+          "#1265A1",
+          "#3D88C6",
+          "#61ACEC",
+          "#85D1FF",
+          "#AAF7FF"
+        ]
+      },
+      "overlay-halo": {
+        "role": "overlay",
+        "displayName": "Halo",
+        "canonical": "rgba(255, 255, 255, 0.9)",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "overlay-muted": {
+        "role": "overlay",
+        "displayName": "Locked Outline",
+        "canonical": "#8C8B85",
+        "tonalRamp": [
+          "#0C0B07",
+          "#262520",
+          "#43423D",
+          "#62615C",
+          "#83827D",
+          "#A6A59F",
+          "#CAC9C3",
+          "#F0EFE8"
+        ]
+      },
+      "overlay-chip-ink": {
+        "role": "overlay",
+        "displayName": "Slug Ink",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "device-bezel": {
+        "role": "overlay",
+        "displayName": "Phone Bezel",
+        "canonical": "#16161A",
+        "tonalRamp": [
+          "#0B0B0E",
+          "#252529",
+          "#414146",
+          "#616166",
+          "#828287",
+          "#A4A4AA",
+          "#C8C8CE",
+          "#EEEEF4"
+        ]
+      },
+      "device-bezel-edge": {
+        "role": "overlay",
+        "displayName": "Phone Bezel Edge",
+        "canonical": "#3A3A40",
+        "tonalRamp": [
+          "#0B0B0F",
+          "#24242A",
+          "#414147",
+          "#606067",
+          "#818188",
+          "#A4A4AB",
+          "#C8C8D0",
+          "#EEEEF5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The landing headline only."
+      },
+      "title-1": {
+        "displayName": "Title 1",
+        "purpose": "Page titles and auth titles. Shrinks to 1.75rem on 2rem below 760 px."
+      },
+      "title-2": {
+        "displayName": "Title 2",
+        "purpose": "Drop zone title, empty states, import result and error titles, the small-screen editor message, landing step numbers."
+      },
+      "heading": {
+        "displayName": "Heading",
+        "purpose": "Dialog, sheet and card titles, site names on the dashboard, landing step titles."
+      },
+      "title-3": {
+        "displayName": "Title 3",
+        "purpose": "The site name in the editor top bar."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "The sentence under a page title or the landing headline, in ink 2."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Sentences and input text. The reading measure is 66ch (`--measure`)."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, nav rows, menu items, alerts, toasts."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and sidebar group titles."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Timestamps, hints, counts, tooltips, in ink 3 or ink 2."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Pills, keyboard hints, DNS record types, and the selection slug (`--kind-label-size`). Table column heads use micro in uppercase at 0.04em."
+      },
+      "brand": {
+        "displayName": "Brand",
+        "purpose": "The Pagehaven wordmark beside the flat ink logo."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "DNS values and file paths only."
+      }
+    },
     "shadows": [
       {
-        "name": "shadow-xs",
-        "value": "0 1px 2px rgba(28, 24, 16, 0.05)",
-        "purpose": "Secondary buttons."
+        "name": "focus-ring",
+        "value": "0 0 0 2px var(--surface), 0 0 0 4px var(--select)",
+        "purpose": "Keyboard focus on every control: a surface gap and a Proof Cyan band. Pair with outline: 2px solid transparent for forced colors."
       },
       {
-        "name": "shadow-sm",
-        "value": "0 1px 2px rgba(28, 24, 16, 0.05), 0 2px 6px rgba(28, 24, 16, 0.04)",
-        "purpose": "Resting cards, selected segmented control."
+        "name": "shadow-float",
+        "value": "0 1px 0 rgba(22, 22, 26, 0.04), 0 8px 20px -6px rgba(22, 22, 26, 0.28)",
+        "purpose": "Menus, popovers, the floating toolbar and toasts. Always with border-float."
       },
       {
-        "name": "shadow-md",
-        "value": "0 1px 2px rgba(28, 24, 16, 0.05), 0 6px 18px rgba(28, 24, 16, 0.07)",
-        "purpose": "Card hover, editor canvas."
+        "name": "shadow-dialog",
+        "value": "0 2px 0 rgba(22, 22, 26, 0.04), 0 24px 48px -12px rgba(22, 22, 26, 0.35)",
+        "purpose": "Dialogs and sheets, over the scrim. Always with an ink edge."
       },
       {
-        "name": "shadow-lg",
-        "value": "0 2px 4px rgba(28, 24, 16, 0.04), 0 12px 32px rgba(28, 24, 16, 0.1), 0 24px 64px rgba(28, 24, 16, 0.06)",
-        "purpose": "Menus, dialogs, floating toolbar, toasts."
+        "name": "shadow-canvas",
+        "value": "0 0 0 1px rgba(22, 22, 26, 0.14)",
+        "purpose": "Keyline around the editor canvas frame on the sunken backdrop."
       },
       {
-        "name": "ring",
-        "value": "0 0 0 2px #ffffff, 0 0 0 4px #2f5ce0",
-        "purpose": "Focus on every control: white gap plus a solid blue band."
+        "name": "border-float",
+        "value": "1px solid var(--ink)",
+        "purpose": "The ink edge on every floating thing."
       },
       {
-        "name": "ring-soft",
-        "value": "0 0 0 3px rgba(47, 92, 224, 0.2)",
-        "purpose": "Text inputs and the dropzone, paired with a blue border."
+        "name": "device-bezel",
+        "value": "0 0 0 10px var(--device-bezel), 0 0 0 11px var(--device-bezel-edge)",
+        "purpose": "Phone preview frame around the canvas (with a 38px radius)."
       }
     ],
     "motion": [
       {
-        "name": "ease",
-        "value": "cubic-bezier(0.2, 0.7, 0.2, 1)",
-        "purpose": "All state transitions."
+        "name": "dur-fast",
+        "value": "90ms",
+        "purpose": "Hover, press and color changes; the floating toolbar."
       },
       {
-        "name": "fast",
-        "value": "120ms",
-        "purpose": "Hover, press, toolbar."
+        "name": "dur-pop",
+        "value": "140ms",
+        "purpose": "Menus, tooltips, toasts, the selection glide, sidebar chevrons."
       },
       {
-        "name": "mid",
-        "value": "180ms",
-        "purpose": "Menus, dialogs, toasts, chevrons."
+        "name": "dur-panel",
+        "value": "200ms",
+        "purpose": "Dialogs, sheets, panels, progress."
+      },
+      {
+        "name": "dur-device",
+        "value": "280ms",
+        "purpose": "Computer and phone width change of the canvas."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Every state transition and entrance."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Looping motion such as the indeterminate progress bar."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0ms",
+        "purpose": "All durations under prefers-reduced-motion: reduce; state changes stay instant."
       }
     ],
     "breakpoints": [
@@ -67,7 +758,132 @@
       },
       {
         "name": "editor-compact",
-        "value": "1100px"
+        "value": "1000px"
+      }
+    ],
+    "overlay": [
+      {
+        "name": "overlay-accent",
+        "value": "var(--select)",
+        "purpose": "Selection rule and crop marks."
+      },
+      {
+        "name": "overlay-chip-bg",
+        "value": "var(--select-strong)",
+        "purpose": "Fill of the slug that names the part."
+      },
+      {
+        "name": "overlay-veil",
+        "value": "repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.06) 0 6px, rgba(255, 255, 255, 0.06) 6px 12px)",
+        "purpose": "Stripe over parts that cannot be edited."
+      },
+      {
+        "name": "select-stroke",
+        "value": "1.5px",
+        "purpose": "Width of the selection rule."
+      },
+      {
+        "name": "crop-mark",
+        "value": "8px",
+        "purpose": "Arm length of each crop mark."
+      },
+      {
+        "name": "crop-gap",
+        "value": "4px",
+        "purpose": "Crop marks sit this far outside the corner."
+      },
+      {
+        "name": "kind-label-size",
+        "value": "0.75rem",
+        "purpose": "Type size of the slug: Heading, Image."
+      },
+      {
+        "name": "canvas-backdrop",
+        "value": "var(--sunken)",
+        "purpose": "Editor canvas backdrop."
+      }
+    ],
+    "layout": [
+      {
+        "name": "measure",
+        "value": "66ch"
+      },
+      {
+        "name": "control-h-sm",
+        "value": "30px"
+      },
+      {
+        "name": "control-h",
+        "value": "36px"
+      },
+      {
+        "name": "control-h-lg",
+        "value": "44px",
+        "purpose": "Also every target under pointer: coarse."
+      },
+      {
+        "name": "page-max",
+        "value": "1160px"
+      },
+      {
+        "name": "page-narrow",
+        "value": "760px"
+      },
+      {
+        "name": "auth-w",
+        "value": "400px"
+      },
+      {
+        "name": "dialog-w",
+        "value": "440px"
+      },
+      {
+        "name": "sheet-w",
+        "value": "360px"
+      },
+      {
+        "name": "header-h",
+        "value": "60px"
+      },
+      {
+        "name": "topbar-h",
+        "value": "56px"
+      },
+      {
+        "name": "sidebar-w",
+        "value": "248px"
+      },
+      {
+        "name": "panel-w",
+        "value": "320px"
+      },
+      {
+        "name": "gutter",
+        "value": "var(--s6)",
+        "purpose": "var(--s4) under 520px."
+      }
+    ],
+    "layers": [
+      {
+        "name": "z-canvas-ui",
+        "value": "5"
+      },
+      {
+        "name": "z-bar",
+        "value": "20"
+      },
+      {
+        "name": "z-menu",
+        "value": "30"
+      },
+      {
+        "name": "z-toolbar",
+        "value": "40"
+      },
+      {
+        "name": "z-toast",
+        "value": "100",
+        "purpose": "Dialogs use the top layer."
       }
     ]
   },
@@ -76,82 +892,170 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one filled action per view.",
-      "html": "<button class=\"ds-btn-primary\">Publish</button>",
-      "css": ".ds-btn-primary { height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #2f5ce0; color: #fff; font: 550 14px/1 system-ui, sans-serif; box-shadow: 0 1px 2px rgba(32,56,140,.25), inset 0 1px 0 rgba(255,255,255,.12); cursor: pointer; transition: background-color 120ms cubic-bezier(.2,.7,.2,1); } .ds-btn-primary:hover { background: #2650cc; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47,92,224,.28); }"
+      "description": "The one solid ink action per view.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Publish</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: var(--fs-control); font-weight: var(--fw-control); line-height: 1; cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); } .ds-btn:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--focus-ring); } .ds-btn:active { transform: translateY(0.5px); } .ds-btn-primary { background: var(--primary); color: var(--on-primary); } .ds-btn-primary:hover { background: var(--primary-hover); } .ds-btn-primary:active { background: var(--primary-pressed); }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Every other action.",
-      "html": "<button class=\"ds-btn-secondary\">Choose a file</button>",
-      "css": ".ds-btn-secondary { height: 36px; padding: 0 14px; border: 1px solid rgba(40,34,24,.16); border-radius: 10px; background: #fff; color: #1c1b18; font: 550 14px/1 system-ui, sans-serif; box-shadow: 0 1px 2px rgba(28,24,16,.05); cursor: pointer; } .ds-btn-secondary:hover { background: #f6f5f1; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47,92,224,.28); }"
+      "description": "White with the 3:1 control edge, for the second action.",
+      "html": "<button class=\"ds-btn-secondary\">Sign in</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px solid var(--control-border); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); font-family: var(--font-ui); font-size: var(--fs-control); font-weight: var(--fw-control); line-height: 1; cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); } .ds-btn-secondary:hover { background: var(--surface-hover); border-color: var(--ink-2); } .ds-btn-secondary:active { background: var(--surface-pressed); } .ds-btn-secondary:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); }"
     },
     {
-      "name": "Text Input",
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent ink 2 action for headers, rows and toolbars.",
+      "html": "<button class=\"ds-btn-ghost\" aria-pressed=\"false\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 7v6h6\"/><path d=\"M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13\"/></svg>Undo</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius-control); background: transparent; color: var(--ink-2); font-family: var(--font-ui); font-size: var(--fs-control); font-weight: var(--fw-control); line-height: 1; cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); } .ds-btn-ghost:hover { background: var(--hover); color: var(--ink); } .ds-btn-ghost:active, .ds-btn-ghost[aria-pressed=\"true\"] { background: var(--pressed); color: var(--ink); } .ds-btn-ghost:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); } .ds-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Solid alert red to confirm a destructive step.",
+      "html": "<button class=\"ds-btn-danger\">Delete website</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius-control); background: var(--error); color: var(--on-primary); font-family: var(--font-ui); font-size: var(--fs-control); font-weight: var(--fw-control); line-height: 1; cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out); } .ds-btn-danger:hover { background: var(--error-hover); } .ds-btn-danger:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); }"
+    },
+    {
+      "name": "Text Field",
       "kind": "input",
       "refersTo": "input",
-      "description": "Single-line field.",
-      "html": "<input class=\"ds-input\" placeholder=\"www.example.com\">",
-      "css": ".ds-input { height: 38px; padding: 0 12px; border: 1px solid rgba(40,34,24,.16); border-radius: 10px; background: #fff; font: 14px system-ui, sans-serif; color: #1c1b18; } .ds-input:focus { outline: none; border-color: #2f5ce0; box-shadow: 0 0 0 3px rgba(47,92,224,.28); }"
+      "description": "Label above, 36 px field with a control edge, hint below.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-label\">Website name</span><input class=\"ds-input\" placeholder=\"Harbor Bakery\"><span class=\"ds-hint\">Shown in your dashboard.</span></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; font-family: var(--font-ui); } .ds-label { font-size: var(--fs-label); line-height: var(--lh-label); font-weight: var(--fw-label); color: var(--ink); } .ds-hint { font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-3); } .ds-input { height: 36px; padding: 0 12px; border: 1px solid var(--control-border); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-body); transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); } .ds-input::placeholder { color: var(--ink-3); } .ds-input:hover { border-color: var(--ink-2); } .ds-input:focus { border-color: var(--ink); outline: none; } .ds-input:focus-visible { box-shadow: var(--focus-ring); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segment-pressed",
+      "description": "Hairline track; the pressed option is solid ink.",
+      "html": "<div class=\"ds-seg\"><button aria-pressed=\"true\">Edit</button><button aria-pressed=\"false\">Preview</button></div>",
+      "css": ".ds-seg { display: inline-flex; padding: 2px; gap: 2px; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); } .ds-seg button { height: 28px; padding: 0 10px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--ink-2); font-family: var(--font-ui); font-size: var(--fs-control); font-weight: var(--fw-control); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); } .ds-seg button:hover { background: var(--hover); color: var(--ink); } .ds-seg button[aria-pressed=\"true\"] { background: var(--ink); color: var(--on-primary); } .ds-seg button:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); }"
     },
     {
       "name": "Status Pill",
       "kind": "chip",
       "refersTo": "pill-published",
-      "description": "Draft, Published, Pending.",
-      "html": "<span class=\"ds-pill\">Published</span>",
-      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; background: #e6f4ec; color: #1d7f55; font: 600 12px system-ui, sans-serif; } .ds-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }"
+      "description": "A soft wash, matching ink, a dot and a word.",
+      "html": "<span class=\"ds-pill ds-pill-published\">Published</span> <span class=\"ds-pill ds-pill-changes\">Changes not published</span> <span class=\"ds-pill\">Draft</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: var(--radius-chip); font-family: var(--font-ui); font-size: var(--fs-micro); font-weight: var(--fw-micro); letter-spacing: var(--ls-micro); line-height: 1; background: var(--neutral-soft); color: var(--ink-2); } .ds-pill::before { content: \"\"; width: 6px; height: 6px; border-radius: 999px; background: currentColor; } .ds-pill-published { background: var(--success-soft); color: var(--success); } .ds-pill-changes { background: var(--warning-soft); color: var(--warning); }"
     },
     {
-      "name": "Card",
+      "name": "Site Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "White surface on paper.",
-      "html": "<div class=\"ds-card\">Agency</div>",
-      "css": ".ds-card { padding: 24px; border-radius: 14px; background: #fff; border: 1px solid rgba(40,34,24,.09); box-shadow: 0 1px 2px rgba(28,24,16,.05), 0 2px 6px rgba(28,24,16,.04); font: 15px system-ui, sans-serif; color: #1c1b18; }"
+      "description": "A bare proof on a 2 px ink rule inside a hairline card; the edge turns ink on hover.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-thumb\"></div><div class=\"ds-card-body\"><a class=\"ds-card-title\" href=\"#\">Harbor Bakery</a><span class=\"ds-card-meta\">Edited 2 hours ago</span></div></article>",
+      "css": ".ds-card { width: 280px; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-float); overflow: hidden; font-family: var(--font-ui); transition: border-color var(--dur-fast) var(--ease-out); } .ds-card:hover, .ds-card:focus-within { border-color: var(--ink); } .ds-thumb { aspect-ratio: 16 / 10; background: var(--sunken); border-bottom: 2px solid var(--ink); } .ds-card-body { display: flex; flex-direction: column; gap: 6px; padding: 16px 20px 20px; } .ds-card-title { font-size: var(--fs-heading); line-height: var(--lh-heading); font-weight: var(--fw-heading); letter-spacing: var(--ls-heading); color: var(--ink); text-decoration: none; } .ds-card-title:hover { text-decoration: underline; } .ds-card-title:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); } .ds-card-meta { font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-2); }"
+    },
+    {
+      "name": "Menu",
+      "kind": "custom",
+      "refersTo": "menu",
+      "description": "A floating sheet with an ink edge and the float shadow.",
+      "html": "<div class=\"ds-menu\" role=\"menu\"><button class=\"ds-menu-item\" role=\"menuitem\">Rename</button><button class=\"ds-menu-item\" role=\"menuitem\">Duplicate</button><div class=\"ds-menu-sep\"></div><button class=\"ds-menu-item ds-danger\" role=\"menuitem\">Delete</button></div>",
+      "css": ".ds-menu { width: 220px; padding: 4px; background: var(--surface); border: var(--border-float); border-radius: var(--radius-float); box-shadow: var(--shadow-float); font-family: var(--font-ui); } .ds-menu-item { display: flex; align-items: center; width: 100%; height: 34px; padding: 0 10px; border: 0; border-radius: var(--radius-chip); background: none; text-align: left; font: inherit; font-size: var(--fs-control); font-weight: var(--fw-control); color: var(--ink); cursor: pointer; } .ds-menu-item:hover, .ds-menu-item:focus-visible { background: var(--hover); outline: none; } .ds-menu-sep { height: 1px; margin: 4px 0; background: var(--rule); } .ds-danger { color: var(--error); } .ds-danger:hover { background: var(--error-soft); }"
     },
     {
       "name": "Floating Toolbar",
       "kind": "custom",
-      "refersTo": "toolbar-button",
-      "description": "Contextual toolbar next to the selected element.",
-      "html": "<div class=\"ds-ftb\"><span class=\"ds-ftb-label\">Text</span><button class=\"ds-tb\">Edit text</button><button class=\"ds-tb\" aria-pressed=\"true\">Style</button></div>",
-      "css": ".ds-ftb { display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: 12px; background: #fff; border: 1px solid rgba(40,34,24,.09); box-shadow: 0 2px 4px rgba(28,24,16,.04), 0 12px 32px rgba(28,24,16,.1), 0 24px 64px rgba(28,24,16,.06); font: 13px system-ui, sans-serif; } .ds-ftb-label { font-weight: 650; font-size: 12px; color: #57534b; padding: 0 8px 0 6px; } .ds-tb { height: 30px; padding: 0 7px; border: 0; border-radius: 8px; background: transparent; color: #57534b; font-weight: 550; cursor: pointer; } .ds-tb:hover { background: #f6f5f1; color: #1c1b18; } .ds-tb[aria-pressed='true'] { background: #edf1fd; color: #2448b8; }"
+      "refersTo": "toolbar-button-pressed",
+      "description": "The editor's floating tool: ink edge, float shadow, 30 px ghosts; pressed takes the cyan wash.",
+      "html": "<div class=\"ds-ftb\"><span class=\"ds-ftb-label\">Heading</span><button class=\"ds-tb\" aria-pressed=\"true\" aria-label=\"Bold\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8\"/></svg></button><button class=\"ds-tb\" aria-pressed=\"false\" aria-label=\"Link\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg></button></div>",
+      "css": ".ds-ftb { display: inline-flex; align-items: center; gap: 2px; padding: 4px; background: var(--surface); border: var(--border-float); border-radius: var(--radius-float); box-shadow: var(--shadow-float); font-family: var(--font-ui); } .ds-ftb-label { padding: 0 8px 0 6px; font-size: var(--fs-label); font-weight: var(--fw-label); color: var(--ink-3); } .ds-tb { display: inline-flex; align-items: center; justify-content: center; height: 30px; min-width: 30px; padding: 0 7px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--ink-2); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); } .ds-tb:hover { background: var(--hover); color: var(--ink); } .ds-tb[aria-pressed=\"true\"] { background: var(--select-soft); color: var(--link); } .ds-tb:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); } .ds-tb svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; }"
     }
   ],
   "narrative": {
-    "northStar": "The Picture Mat",
+    "northStar": "The Proof Sheet",
+    "overview": "Pagehaven's chrome is the printer's proof an owner checks before their words go out. It is black ink on plain near-white stock, cut with hairline rules, and nothing else. The interface has no hue of its own, so the owner's website is the only color on screen. Confidence comes from contrast and precision, not from color, size or decoration.\n\nOne bright thing exists: Proof Cyan, the color of a press check. It means what you are touching right now, where keyboard focus is, and where a link goes. Selection on the canvas is a cyan rule with crop marks outside the corners and a filled slug that names the part (\"Heading\", \"Image\"). The overlay tokens for that are defined now; the overlay itself lands in a later phase.\n\nDensity is calm and legible. Text starts at 15 px for sentences, controls are 36 px tall and grow to 44 px under touch. Motion is mechanical and short and never bounces. Surfaces are flat. Only things that float above the page lift, and they carry a 1 px ink edge so they read as a sheet laid on top.",
     "keyCharacteristics": [
-      "Warm off-white paper (`paper`) behind white surfaces; never pure gray, never dark mode.",
-      "Soft, low-opacity, warm-tinted shadows with real offset and blur; borders at 9 to 16 percent warm ink.",
-      "Rounded but not bubbly: 8 to 14 px on controls and cards, 20 px on large panels, pills for status.",
-      "One accent, Haven Blue, for the primary action, the current selection and focus.",
-      "Plain-language labels; icons always come from the one stroked icon sprite."
+      "Ink on warm near-white, no brand hue in the chrome.",
+      "Proof Cyan only for selection, focus and links.",
+      "One solid ink primary button per view.",
+      "Hairline rules separate regions; shadows only on floating things.",
+      "Small, sharp radii from 2 px to 8 px.",
+      "Schibsted Grotesk for the interface; Newsreader 450 for display titles outside the editor.",
+      "Lucide line icons at about 1.5 px rendered stroke."
     ],
     "rules": [
       {
-        "name": "The One Blue Rule",
-        "body": "Haven Blue marks the next step, the current thing, or focus. It is never decoration, and a view has one filled blue button.",
+        "name": "The No Hue Rule",
+        "body": "The chrome has no color of its own. Hue appears only in the select tokens, the link tokens and the state colors.",
         "section": "colors"
       },
       {
-        "name": "The Owner's Colors Rule",
-        "body": "Pagehaven never tints, filters or overlays the owner's site beyond the selection outline. The canvas is pure white so the site's own colors read true.",
+        "name": "The One Cyan Rule",
+        "body": "Proof Cyan means selection, focus or link. Never use it for decoration, headings, icons at rest or the primary button.",
         "section": "colors"
       },
       {
-        "name": "The Weight-Not-Font Rule",
-        "body": "Hierarchy is size and weight within one family. Never add a second typeface to Pagehaven's own interface.",
+        "name": "The Word First Rule",
+        "body": "A state color always comes with a word or a shape. \"Saved\", \"Published\" and \"Changes not published\" carry the meaning; the dot only confirms it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Schibsted Grotesk sets every interface role. Newsreader 450 sets only display titles outside the editor: the landing headline, page and auth titles, the drop zone title, empty states, import result and error titles, and the small-screen editor message.",
         "section": "typography"
       },
       {
-        "name": "The Paper-Not-Glass Rule",
-        "body": "Surfaces are opaque paper. The only blur is the sticky app header, so content scrolling under it stays legible.",
+        "name": "The Quiet Editor Rule",
+        "body": "Never use Newsreader in editor chrome. The owner's site supplies the editor's personality.",
+        "section": "typography"
+      },
+      {
+        "name": "The Digit Column Rule",
+        "body": "Tabular numerals only on digit-only columns (`.tnum`, numeric table cells). Schibsted's tabular figures space commas and words oddly, so never set them on running text.",
+        "section": "typography"
+      },
+      {
+        "name": "The System Mono Rule",
+        "body": "There is no mono web font. The system ui-monospace stack shows DNS values and paths, nothing else.",
+        "section": "typography"
+      },
+      {
+        "name": "The Float Only Rule",
+        "body": "No decorative shadows. A shadow means the thing floats, and a floating thing always has a 1 px ink edge.",
         "section": "elevation"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Separate regions with a 1 px rule, not with shadow, tint or space alone.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Small Radius Rule",
+        "body": "Radii stay on the 2, 3, 4, 6 and 8 px steps. Pill shapes are only for dots, the avatar, the switch and progress.",
+        "section": "shapes"
       }
     ],
-    "dos": []
+    "dos": [
+      "Do keep the chrome ink, stock and hairline. Let the owner's site be the only color.",
+      "Do use exactly one ink primary button per view.",
+      "Do save Proof Cyan for selection, focus and links.",
+      "Do pair every state color with a word or a shape.",
+      "Do separate regions with 1 px hairlines and use ink rules only where the rule carries meaning.",
+      "Do give every floating thing a 1 px ink edge and the float or dialog shadow.",
+      "Do set every interface role in Schibsted Grotesk.",
+      "Do use Newsreader 450 only for display titles outside the editor.",
+      "Do use tabular numerals only on digit-only columns.",
+      "Do take icons from the Lucide sprite at 16, 20 or 24 px, and give every icon-only button an aria-label.",
+      "Do keep every target at 44 px under touch."
+    ],
+    "donts": [
+      "Don't add a brand hue, tint or gradient to the chrome.",
+      "Don't use Proof Cyan for decoration, headings or the primary button.",
+      "Don't put a shadow on a card, panel, sidebar or button.",
+      "Don't use Newsreader in editor chrome.",
+      "Don't load a mono web font.",
+      "Don't set tabular numerals on text with commas or words.",
+      "Don't draw an icon by hand or use a text glyph as an icon.",
+      "Don't round past 8 px except for dots, the avatar, the switch and progress.",
+      "Don't let color alone carry a status."
+    ]
   }
 }
