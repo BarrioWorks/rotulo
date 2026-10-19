@@ -47,6 +47,7 @@ required-features = []
 
 [dev-dependencies]
 loco-rs = { workspace = true, features = ["testing"] }
+axum-test = "17.3"
 serial_test = "3.1"
 tower = { version = "0.5", features = ["util"] }
 

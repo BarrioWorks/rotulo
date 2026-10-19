@@ -469,7 +469,11 @@ impl Document {
                 .tree
                 .orphan(new_element(
                     "script",
-                    &[("type", "module"), ("src", agent_src), ("data-pagehaven", "agent")],
+                    &[
+                        ("type", "module"),
+                        ("src", agent_src),
+                        ("data-pagehaven", "agent"),
+                    ],
                 ))
                 .id();
             self.html
@@ -721,25 +725,47 @@ impl Document {
         })
     }
 
-    /// The image that best represents the page: `og:image`, else the first `<img>` in the body.
-    pub fn representative_image(&self) -> Option<String> {
-        let og = self.head().and_then(|head| {
-            self.html.tree.get(head)?.children().find_map(|c| {
+    /// Images that could represent the page, best first: `og:image`, then content images outside
+    /// the header, navigation and footer, photos before drawings, then everything else.
+    pub fn representative_images(&self) -> Vec<String> {
+        let mut out = Vec::new();
+        if let Some(head) = self.head().and_then(|h| self.html.tree.get(h)) {
+            out.extend(head.children().filter_map(|c| {
                 let e = c.value().as_element()?;
                 (e.name() == "meta" && e.attr("property") == Some("og:image"))
                     .then(|| e.attr("content").map(str::to_owned))
                     .flatten()
-            })
-        });
-        og.or_else(|| {
-            let body = self.body()?;
-            self.html.tree.get(body)?.descendants().find_map(|d| {
-                let e = d.value().as_element()?;
-                (e.name() == "img")
-                    .then(|| e.attr("src").map(str::to_owned))
-                    .flatten()
-            })
-        })
+            }));
+        }
+        let Some(body) = self.body().and_then(|b| self.html.tree.get(b)) else {
+            return out;
+        };
+        let mut content = Vec::new();
+        let mut chrome = Vec::new();
+        for node in body.descendants() {
+            let Some(src) = node
+                .value()
+                .as_element()
+                .filter(|e| e.name() == "img")
+                .and_then(|e| e.attr("src"))
+            else {
+                continue;
+            };
+            let in_chrome = node.ancestors().any(|a| {
+                a.value()
+                    .as_element()
+                    .is_some_and(|e| matches!(e.name(), "header" | "nav" | "footer"))
+            });
+            if in_chrome {
+                chrome.push(src.to_owned())
+            } else {
+                content.push(src.to_owned())
+            }
+        }
+        content.sort_by_key(|src| src.to_ascii_lowercase().ends_with(".svg"));
+        out.extend(content);
+        out.extend(chrome);
+        out
     }
 
     /// Rewrites every `href` for which `rewrite` returns a new value. Returns whether anything changed.

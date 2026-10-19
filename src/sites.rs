@@ -25,7 +25,8 @@ async fn live_release(ctx: &AppContext, host: &Host) -> Result<Option<(i64, i64)
         }
         _ => None,
     };
-    row.map(|r| Ok((r.try_get("", "project")?, r.try_get("", "number")?))).transpose()
+    row.map(|r| Ok((r.try_get("", "project")?, r.try_get("", "number")?)))
+        .transpose()
 }
 
 pub async fn serve(ctx: &AppContext, host: &Host, uri_path: &str, head_only: bool) -> Response {
@@ -34,8 +35,14 @@ pub async fn serve(ctx: &AppContext, host: &Host, uri_path: &str, head_only: boo
         Err(error) => crate::error::ApiError::internal(error).into_response(),
     };
     let h = response.headers_mut();
-    h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
-    h.insert(header::REFERRER_POLICY, HeaderValue::from_static("strict-origin-when-cross-origin"));
+    h.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    h.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
     h.remove(header::SET_COOKIE);
     if head_only {
         *response.body_mut() = axum::body::Body::empty();
@@ -43,25 +50,44 @@ pub async fn serve(ctx: &AppContext, host: &Host, uri_path: &str, head_only: boo
     response
 }
 
-async fn serve_inner(ctx: &AppContext, host: &Host, uri_path: &str) -> Result<Response, std::io::Error> {
+async fn serve_inner(
+    ctx: &AppContext,
+    host: &Host,
+    uri_path: &str,
+) -> Result<Response, std::io::Error> {
     let state = Pagehaven::from(ctx);
-    let Some((project, number)) = live_release(ctx, host).await.map_err(std::io::Error::other)? else {
+    let Some((project, number)) = live_release(ctx, host)
+        .await
+        .map_err(std::io::Error::other)?
+    else {
         return Ok(not_found());
     };
     let Some(path) = paths::from_request(uri_path) else {
-        return Ok(respond(StatusCode::BAD_REQUEST, "text/plain", "Bad request"));
+        return Ok(respond(
+            StatusCode::BAD_REQUEST,
+            "text/plain",
+            "Bad request",
+        ));
     };
     let root = state.store.release_dir(project, number);
     let trailing = uri_path.ends_with('/') && !path.is_empty();
     for candidate in paths::candidates(&path, trailing) {
-        let Some(kind) = FileKind::for_path(&candidate) else { continue };
+        let Some(kind) = FileKind::for_path(&candidate) else {
+            continue;
+        };
         let file = root.join(&candidate);
         match tokio::fs::symlink_metadata(&file).await {
             Ok(meta) if meta.is_file() => {
                 let bytes = tokio::fs::read(&file).await?;
                 let mut response = respond(StatusCode::OK, kind.mime(), bytes);
-                let cache = if kind == FileKind::Html { "public, max-age=0, must-revalidate" } else { "public, max-age=300" };
-                response.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static(cache));
+                let cache = if kind == FileKind::Html {
+                    "public, max-age=0, must-revalidate"
+                } else {
+                    "public, max-age=300"
+                };
+                response
+                    .headers_mut()
+                    .insert(header::CACHE_CONTROL, HeaderValue::from_static(cache));
                 return Ok(response);
             }
             _ => {}
@@ -69,12 +95,20 @@ async fn serve_inner(ctx: &AppContext, host: &Host, uri_path: &str) -> Result<Re
     }
     match tokio::fs::read(root.join("404.html")).await {
         Ok(bytes) => Ok(respond(StatusCode::NOT_FOUND, FileKind::Html.mime(), bytes)),
-        Err(_) => Ok(respond(StatusCode::NOT_FOUND, "text/html; charset=utf-8", PAGE_NOT_FOUND)),
+        Err(_) => Ok(respond(
+            StatusCode::NOT_FOUND,
+            "text/html; charset=utf-8",
+            PAGE_NOT_FOUND,
+        )),
     }
 }
 
 pub fn not_found() -> Response {
-    respond(StatusCode::NOT_FOUND, "text/html; charset=utf-8", SITE_NOT_FOUND)
+    respond(
+        StatusCode::NOT_FOUND,
+        "text/html; charset=utf-8",
+        SITE_NOT_FOUND,
+    )
 }
 
 const PAGE_NOT_FOUND: &str = "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Page not found</title><body style=\"font:16px/1.5 system-ui,sans-serif;color:#2b2a27;background:#faf9f6;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"text-align:center\"><h1 style=\"font-size:22px\">Page not found</h1><p><a href=\"/\">Go to the home page</a></p></main>";

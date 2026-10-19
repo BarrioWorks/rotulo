@@ -169,7 +169,10 @@ fn file_count_and_declared_sizes_are_rejected_before_inflating() {
             ..Limits::default()
         },
     ] {
-        assert!(matches!(f.import(&limits, None), Err(ImportError::Limit)));
+        assert!(matches!(
+            f.import(&limits, None),
+            Err(ImportError::Limit(_))
+        ));
         assert_eq!(fs::read_dir(&f.staging).unwrap().count(), 0);
     }
 }
@@ -180,14 +183,14 @@ fn lying_and_honest_deflate_bombs_are_stopped() {
     let f = Fixture::new(&[page(), bomb.clone()]);
     assert!(matches!(
         f.import(&Limits::default(), None),
-        Err(ImportError::Limit)
+        Err(ImportError::Limit(_))
     ));
     assert_eq!(fs::read_dir(&f.staging).unwrap().count(), 0);
     bomb.declared = None;
     let f = Fixture::new(&[page(), bomb]);
     assert!(matches!(
         f.import(&Limits::default(), None),
-        Err(ImportError::Limit)
+        Err(ImportError::Limit(_))
     ));
 }
 #[test]
@@ -648,7 +651,7 @@ fn extract_enforces_running_budgets_before_writing_an_over_limit_chunk() {
         let mut total = 0;
         assert!(matches!(
             archive.extract(1, &limits, &mut total, &mut bytes),
-            Err(ImportError::Limit)
+            Err(ImportError::Limit(_))
         ));
         assert!(bytes.is_empty());
     }

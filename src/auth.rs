@@ -56,16 +56,31 @@ fn hash_token(token: &str) -> String {
 pub fn normalize_email(email: &str) -> Result<String, AuthError> {
     let email = email.trim().to_ascii_lowercase();
     let valid = email.len() <= 254
-        && email.split_once('@').is_some_and(|(local, domain)| !local.is_empty() && domain.contains('.') && !domain.starts_with('.') && !domain.ends_with('.'))
+        && email.split_once('@').is_some_and(|(local, domain)| {
+            !local.is_empty()
+                && domain.contains('.')
+                && !domain.starts_with('.')
+                && !domain.ends_with('.')
+        })
         && !email.chars().any(|c| c.is_whitespace() || c.is_control());
     valid.then_some(email).ok_or(AuthError::Email)
 }
 
 fn user_from(row: &sea_orm::QueryResult) -> Result<User, sea_orm::DbErr> {
-    Ok(User { id: row.try_get("", "id")?, pid: row.try_get("", "pid")?, email: row.try_get("", "email")?, name: row.try_get("", "name")? })
+    Ok(User {
+        id: row.try_get("", "id")?,
+        pid: row.try_get("", "pid")?,
+        email: row.try_get("", "email")?,
+        name: row.try_get("", "name")?,
+    })
 }
 
-pub async fn register(db: &DatabaseConnection, name: &str, email: &str, password: &str) -> Result<User, AuthError> {
+pub async fn register(
+    db: &DatabaseConnection,
+    name: &str,
+    email: &str,
+    password: &str,
+) -> Result<User, AuthError> {
     let name = name.trim();
     if name.is_empty() || name.chars().count() > 80 {
         return Err(AuthError::Name);
@@ -83,7 +98,12 @@ pub async fn register(db: &DatabaseConnection, name: &str, email: &str, password
     )
     .await;
     match inserted {
-        Ok(id) => Ok(User { id, pid, email, name: name.to_owned() }),
+        Ok(id) => Ok(User {
+            id,
+            pid,
+            email,
+            name: name.to_owned(),
+        }),
         Err(sea_orm::DbErr::Custom(_)) => Err(AuthError::Taken),
         Err(error) => Err(error.into()),
     }
@@ -92,12 +112,23 @@ pub async fn register(db: &DatabaseConnection, name: &str, email: &str, password
 /// A hash to verify against when the email is unknown, so both cases take the same time.
 fn decoy_hash() -> &'static str {
     static DECOY: OnceLock<String> = OnceLock::new();
-    DECOY.get_or_init(|| loco_rs::hash::hash_password("pagehaven-decoy-password").unwrap_or_default())
+    DECOY.get_or_init(|| {
+        loco_rs::hash::hash_password("pagehaven-decoy-password").unwrap_or_default()
+    })
 }
 
-pub async fn authenticate(db: &DatabaseConnection, email: &str, password: &str) -> Result<User, AuthError> {
+pub async fn authenticate(
+    db: &DatabaseConnection,
+    email: &str,
+    password: &str,
+) -> Result<User, AuthError> {
     let email = normalize_email(email).map_err(|_| AuthError::Credentials)?;
-    let row = db::one(db, "SELECT id, pid, email, name, password_hash FROM users WHERE email = ?", [email.into()]).await?;
+    let row = db::one(
+        db,
+        "SELECT id, pid, email, name, password_hash FROM users WHERE email = ?",
+        [email.into()],
+    )
+    .await?;
     let Some(row) = row else {
         let _ = loco_rs::hash::verify_password(password, decoy_hash());
         return Err(AuthError::Credentials);
@@ -109,25 +140,46 @@ pub async fn authenticate(db: &DatabaseConnection, email: &str, password: &str) 
     Ok(user_from(&row)?)
 }
 
-pub async fn create_session<C: ConnectionTrait>(db: &C, user_id: i64) -> Result<String, sea_orm::DbErr> {
+pub async fn create_session<C: ConnectionTrait>(
+    db: &C,
+    user_id: i64,
+) -> Result<String, sea_orm::DbErr> {
     let token = random_token(32);
     let now = db::now();
-    db::exec(db, "DELETE FROM sessions WHERE user_id = ? AND expires_at <= ?", [user_id.into(), now.into()]).await?;
+    db::exec(
+        db,
+        "DELETE FROM sessions WHERE user_id = ? AND expires_at <= ?",
+        [user_id.into(), now.into()],
+    )
+    .await?;
     db::exec(
         db,
         "INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
-        [hash_token(&token).into(), user_id.into(), now.into(), (now + SESSION_SECONDS).into()],
+        [
+            hash_token(&token).into(),
+            user_id.into(),
+            now.into(),
+            (now + SESSION_SECONDS).into(),
+        ],
     )
     .await?;
     Ok(token)
 }
 
 pub async fn revoke_session(db: &DatabaseConnection, token: &str) -> Result<(), sea_orm::DbErr> {
-    db::exec(db, "DELETE FROM sessions WHERE token_hash = ?", [hash_token(token).into()]).await?;
+    db::exec(
+        db,
+        "DELETE FROM sessions WHERE token_hash = ?",
+        [hash_token(token).into()],
+    )
+    .await?;
     Ok(())
 }
 
-pub async fn user_for_token(db: &DatabaseConnection, token: &str) -> Result<Option<User>, sea_orm::DbErr> {
+pub async fn user_for_token(
+    db: &DatabaseConnection,
+    token: &str,
+) -> Result<Option<User>, sea_orm::DbErr> {
     if token.len() != 64 {
         return Ok(None);
     }
@@ -152,7 +204,13 @@ pub fn session_cookie(token: String, secure: bool) -> Cookie<'static> {
 }
 
 pub fn removal_cookie(secure: bool) -> Cookie<'static> {
-    Cookie::build((COOKIE, "")).path("/").http_only(true).secure(secure).same_site(SameSite::Lax).max_age(time_duration(0)).build()
+    Cookie::build((COOKIE, ""))
+        .path("/")
+        .http_only(true)
+        .secure(secure)
+        .same_site(SameSite::Lax)
+        .max_age(time_duration(0))
+        .build()
 }
 
 fn time_duration(seconds: i64) -> cookie::time::Duration {
@@ -161,7 +219,9 @@ fn time_duration(seconds: i64) -> cookie::time::Duration {
 
 async fn signed_in(parts: &mut Parts, ctx: &AppContext) -> Result<Option<User>, sea_orm::DbErr> {
     let jar = CookieJar::from_headers(&parts.headers);
-    let Some(cookie) = jar.get(COOKIE) else { return Ok(None) };
+    let Some(cookie) = jar.get(COOKIE) else {
+        return Ok(None);
+    };
     user_for_token(&ctx.db, cookie.value()).await
 }
 
@@ -171,8 +231,14 @@ pub struct ApiUser(pub User);
 impl FromRequestParts<AppContext> for ApiUser {
     type Rejection = ApiError;
 
-    async fn from_request_parts(parts: &mut Parts, ctx: &AppContext) -> Result<Self, Self::Rejection> {
-        signed_in(parts, ctx).await?.map(Self).ok_or(ApiError::Unauthorized)
+    async fn from_request_parts(
+        parts: &mut Parts,
+        ctx: &AppContext,
+    ) -> Result<Self, Self::Rejection> {
+        signed_in(parts, ctx)
+            .await?
+            .map(Self)
+            .ok_or(ApiError::Unauthorized)
     }
 }
 
@@ -182,7 +248,10 @@ pub struct PageUser(pub User);
 impl FromRequestParts<AppContext> for PageUser {
     type Rejection = Response;
 
-    async fn from_request_parts(parts: &mut Parts, ctx: &AppContext) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(
+        parts: &mut Parts,
+        ctx: &AppContext,
+    ) -> Result<Self, Self::Rejection> {
         match signed_in(parts, ctx).await {
             Ok(Some(user)) => Ok(Self(user)),
             Ok(None) => Err(Redirect::to("/login").into_response()),
@@ -197,8 +266,14 @@ pub struct MaybeUser(pub Option<User>);
 impl FromRequestParts<AppContext> for MaybeUser {
     type Rejection = Response;
 
-    async fn from_request_parts(parts: &mut Parts, ctx: &AppContext) -> Result<Self, Self::Rejection> {
-        signed_in(parts, ctx).await.map(Self).map_err(|error| ApiError::internal(error).into_response())
+    async fn from_request_parts(
+        parts: &mut Parts,
+        ctx: &AppContext,
+    ) -> Result<Self, Self::Rejection> {
+        signed_in(parts, ctx)
+            .await
+            .map(Self)
+            .map_err(|error| ApiError::internal(error).into_response())
     }
 }
 

@@ -25,13 +25,20 @@ pub fn is_hostname(host: &str) -> bool {
                 && label.len() <= 63
                 && !label.starts_with('-')
                 && !label.ends_with('-')
-                && label.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+                && label
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
         })
-        && !host.rsplit('.').next().is_some_and(|tld| tld.bytes().all(|b| b.is_ascii_digit()))
+        && !host
+            .rsplit('.')
+            .next()
+            .is_some_and(|tld| tld.bytes().all(|b| b.is_ascii_digit()))
 }
 
 pub fn classify(header: Option<&str>, settings: &Settings) -> Host {
-    let Some(header) = header else { return Host::Invalid };
+    let Some(header) = header else {
+        return Host::Invalid;
+    };
     let authority = header.trim().trim_end_matches('.').to_ascii_lowercase();
     if authority == settings.app_authority() {
         return Host::App;
@@ -40,14 +47,22 @@ pub fn classify(header: Option<&str>, settings: &Settings) -> Host {
         Some((host, port)) if port.bytes().all(|b| b.is_ascii_digit()) => host.to_owned(),
         _ => authority.clone(),
     };
-    let label_of = |domain: &str| host.strip_suffix(domain).and_then(|rest| rest.strip_suffix('.')).filter(|label| !label.is_empty() && !label.contains('.')).map(str::to_owned);
+    let label_of = |domain: &str| {
+        host.strip_suffix(domain)
+            .and_then(|rest| rest.strip_suffix('.'))
+            .filter(|label| !label.is_empty() && !label.contains('.'))
+            .map(str::to_owned)
+    };
     if let Some(label) = label_of(&settings.preview_domain) {
         return Host::Preview(label);
     }
     if let Some(label) = label_of(&settings.sites_domain) {
         return Host::Site(label);
     }
-    if host == settings.app_host() || host == settings.preview_domain || host == settings.sites_domain {
+    if host == settings.app_host()
+        || host == settings.preview_domain
+        || host == settings.sites_domain
+    {
         return Host::Invalid;
     }
     if is_hostname(&host) {
@@ -81,10 +96,22 @@ mod tests {
     fn hosts_route_to_the_app_previews_sites_and_custom_domains() {
         let s = settings();
         assert_eq!(classify(Some("pagehaven.app"), &s), Host::App);
-        assert_eq!(classify(Some("abc-123.preview.pagehaven.site"), &s), Host::Preview("abc-123".to_owned()));
-        assert_eq!(classify(Some("harbor.pagehaven.site"), &s), Host::Site("harbor".to_owned()));
-        assert_eq!(classify(Some("www.harborbakery.com"), &s), Host::Custom("www.harborbakery.com".to_owned()));
-        assert_eq!(classify(Some("a.b.pagehaven.site"), &s), Host::Custom("a.b.pagehaven.site".to_owned()));
+        assert_eq!(
+            classify(Some("abc-123.preview.pagehaven.site"), &s),
+            Host::Preview("abc-123".to_owned())
+        );
+        assert_eq!(
+            classify(Some("harbor.pagehaven.site"), &s),
+            Host::Site("harbor".to_owned())
+        );
+        assert_eq!(
+            classify(Some("www.harborbakery.com"), &s),
+            Host::Custom("www.harborbakery.com".to_owned())
+        );
+        assert_eq!(
+            classify(Some("a.b.pagehaven.site"), &s),
+            Host::Custom("a.b.pagehaven.site".to_owned())
+        );
         assert_eq!(classify(Some("pagehaven.site"), &s), Host::Invalid);
         assert_eq!(classify(Some("10.0.0.1"), &s), Host::Invalid);
         assert_eq!(classify(Some("evil/../x"), &s), Host::Invalid);

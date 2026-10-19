@@ -61,8 +61,8 @@ pub enum ImportError {
     InvalidArchive,
     #[error("This ZIP is empty. Add your finished website files and try again.")]
     Empty,
-    #[error("This website exceeds the import size or file limits.")]
-    Limit,
+    #[error("{0}")]
+    Limit(String),
     #[error("This ZIP contains an unsafe or conflicting file name: {0}")]
     UnsafePath(String),
     #[error("This ZIP is encrypted. Upload a ZIP without a password.")]
@@ -176,7 +176,7 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
                 let html = document.serialize();
                 // Serialization is bounded too: assigning IDs can enlarge the page.
                 if html.len() as u64 > request.limits.file_bytes {
-                    return Err(ImportError::Limit);
+                    return Err(zip::file_too_big(request.limits));
                 }
                 pending.push((path.clone(), references::html_references(&html)));
                 let mut out = OpenOptions::new()
@@ -230,7 +230,7 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
         .try_fold(0u64, |sum, f| sum.checked_add(f.bytes))
         .is_none_or(|sum| sum > request.limits.content_bytes)
     {
-        return Err(ImportError::Limit);
+        return Err(zip::total_too_big(request.limits));
     }
     let paths: BTreeSet<_> = files.iter().map(|f| f.path.as_str()).collect();
     let mut fatal = Vec::new();

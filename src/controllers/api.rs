@@ -41,18 +41,35 @@ fn project_json(state: &Pagehaven, project: &Project, live: Option<&publish::Rel
     })
 }
 
-async fn page_list(ctx: &AppContext, state: &Pagehaven, project: &Project) -> ApiResult<Vec<Value>> {
+async fn page_list(
+    ctx: &AppContext,
+    state: &Pagehaven,
+    project: &Project,
+) -> ApiResult<Vec<Value>> {
     let mut pages = Vec::new();
-    for file in drafts::files(&ctx.db, project.id).await?.into_iter().filter(|f| drafts::is_page(&f.path)) {
+    for file in drafts::files(&ctx.db, project.id)
+        .await?
+        .into_iter()
+        .filter(|f| drafts::is_page(&f.path))
+    {
         let html = String::from_utf8_lossy(&state.store.read(&file.blob)?).into_owned();
         let document = Document::parse(&html);
         pages.push(json!({"path": file.path, "title": document.title(), "description": document.description()}));
     }
-    pages.sort_by_key(|p| (p["path"] != "index.html", p["path"].as_str().unwrap_or("").to_owned()));
+    pages.sort_by_key(|p| {
+        (
+            p["path"] != "index.html",
+            p["path"].as_str().unwrap_or("").to_owned(),
+        )
+    });
     Ok(pages)
 }
 
-async fn change_response(ctx: &AppContext, project_id: i64, applied: &drafts::Applied) -> ApiResult<Value> {
+async fn change_response(
+    ctx: &AppContext,
+    project_id: i64,
+    applied: &drafts::Applied,
+) -> ApiResult<Value> {
     let project = projects::reload(&ctx.db, project_id).await?;
     Ok(json!({
         "revision": applied.revision,
@@ -64,8 +81,23 @@ async fn change_response(ctx: &AppContext, project_id: i64, applied: &drafts::Ap
 
 // ---------- Import ----------
 
-async fn read_field_text(field: axum::extract::multipart::Field<'_>, max: usize) -> ApiResult<String> {
-    let text = field.text().await.map_err(|_| ApiError::Invalid("The upload was interrupted. Please try again.".to_owned()))?;
+/// "Harbor Bakery | Slow bread in Port Ellery" becomes "Harbor Bakery".
+fn short_title(title: &str) -> String {
+    let short = [" | ", " – ", " — ", " - ", " · ", " :: "]
+        .iter()
+        .filter_map(|sep| title.split_once(sep).map(|(head, _)| head))
+        .min_by_key(|head| head.len())
+        .unwrap_or(title);
+    short.trim().chars().take(80).collect()
+}
+
+async fn read_field_text(
+    field: axum::extract::multipart::Field<'_>,
+    max: usize,
+) -> ApiResult<String> {
+    let text = field.text().await.map_err(|_| {
+        ApiError::Invalid("The upload was interrupted. Please try again.".to_owned())
+    })?;
     Ok(text.chars().take(max).collect())
 }
 
@@ -73,11 +105,19 @@ fn import_error(error: ImportError) -> ApiError {
     match error {
         ImportError::ChooseFolder(_) => unreachable!("handled by the caller"),
         ImportError::Io(detail) => ApiError::internal(detail),
-        other => ApiError::Rejected { code: "invalid_archive", status: StatusCode::UNPROCESSABLE_ENTITY, message: other.to_string() },
+        other => ApiError::Rejected {
+            code: "invalid_archive",
+            status: StatusCode::UNPROCESSABLE_ENTITY,
+            message: other.to_string(),
+        },
     }
 }
 
-async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mut multipart: Multipart) -> ApiResult<Response> {
+async fn create_import(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    mut multipart: Multipart,
+) -> ApiResult<Response> {
     let state = Pagehaven::from(&ctx);
     let limits = state.settings.limits.clone();
     state.limit(state::IMPORT, &user.id.to_string())?;
@@ -85,7 +125,10 @@ async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mu
         return Err(ApiError::Rejected {
             code: "project_limit",
             status: StatusCode::FORBIDDEN,
-            message: format!("You can have up to {} websites. Delete one to import another.", limits.projects_per_user),
+            message: format!(
+                "You can have up to {} websites. Delete one to import another.",
+                limits.projects_per_user
+            ),
         });
     }
     let staging = state.store.staging()?;
@@ -93,25 +136,36 @@ async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mu
     let mut name = None;
     let mut root = None;
     let mut received = None;
-    while let Some(mut field) = multipart.next_field().await.map_err(|_| ApiError::Invalid("The upload was interrupted. Please try again.".to_owned()))? {
+    while let Some(mut field) = multipart.next_field().await.map_err(|_| {
+        ApiError::Invalid("The upload was interrupted. Please try again.".to_owned())
+    })? {
         match field.name() {
             Some("name") => name = Some(read_field_text(field, 80).await?),
             Some("root") => root = Some(read_field_text(field, 200).await?),
             Some("file") => {
-                let mut out = std::fs::OpenOptions::new().write(true).create_new(true).open(&archive)?;
+                let mut out = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&archive)?;
                 let mut hasher = Sha256::new();
                 let mut bytes = 0u64;
                 while let Some(chunk) = field.chunk().await.map_err(|_| ApiError::Rejected {
                     code: "too_large",
                     status: StatusCode::PAYLOAD_TOO_LARGE,
-                    message: format!("This ZIP is larger than {} MB.", limits.upload_bytes / 1_048_576),
+                    message: format!(
+                        "This ZIP is larger than {} MB.",
+                        limits.upload_bytes / 1_048_576
+                    ),
                 })? {
                     bytes += chunk.len() as u64;
                     if bytes > limits.upload_bytes {
                         return Err(ApiError::Rejected {
                             code: "too_large",
                             status: StatusCode::PAYLOAD_TOO_LARGE,
-                            message: format!("This ZIP is larger than {} MB.", limits.upload_bytes / 1_048_576),
+                            message: format!(
+                                "This ZIP is larger than {} MB.",
+                                limits.upload_bytes / 1_048_576
+                            ),
                         });
                     }
                     hasher.update(&chunk);
@@ -135,11 +189,20 @@ async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mu
         let limits = limits.clone();
         let started = std::time::Instant::now();
         let result = tokio::task::spawn_blocking(move || {
-            import::import_archive(ImportRequest { archive: &archive, staging: &extract, limits: &limits, root: root.as_deref() })
+            import::import_archive(ImportRequest {
+                archive: &archive,
+                staging: &extract,
+                limits: &limits,
+                root: root.as_deref(),
+            })
         })
         .await
         .map_err(ApiError::internal)?;
-        tracing::info!(elapsed_ms = started.elapsed().as_millis() as u64, ok = result.is_ok(), "import finished");
+        tracing::info!(
+            elapsed_ms = started.elapsed().as_millis() as u64,
+            ok = result.is_ok(),
+            "import finished"
+        );
         match result {
             Ok(site) => site,
             Err(ImportError::ChooseFolder(folders)) => {
@@ -156,7 +219,7 @@ async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mu
     let display_name = name
         .map(|n| n.trim().to_owned())
         .filter(|n| !n.is_empty())
-        .or_else(|| site.title.clone().map(|t| t.chars().take(80).collect()))
+        .or_else(|| site.title.as_deref().map(short_title))
         .unwrap_or_else(|| "My website".to_owned());
     let pid = uuid::Uuid::new_v4().to_string();
     for file in &site.files {
@@ -195,7 +258,12 @@ async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mu
         db::exec(
             &tx,
             "INSERT INTO draft_files (project_id, path, blob, bytes) VALUES (?, ?, ?, ?)",
-            [project_id.into(), file.path.as_str().into(), file.blob.to_string().into(), (file.bytes as i64).into()],
+            [
+                project_id.into(),
+                file.path.as_str().into(),
+                file.blob.to_string().into(),
+                (file.bytes as i64).into(),
+            ],
         )
         .await?;
     }
@@ -216,7 +284,11 @@ async fn create_import(State(ctx): State<AppContext>, ApiUser(user): ApiUser, mu
 
 // ---------- Editor ----------
 
-async fn editor_state(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>) -> ApiResult<Json<Value>> {
+async fn editor_state(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let live = publish::live(&ctx.db, &project).await?;
@@ -248,7 +320,13 @@ struct ImageEdit {
 }
 
 /// Runs `work` under the project's lock after checking that the client saw the latest revision.
-async fn locked<T, F, Fut>(ctx: &AppContext, user: &crate::auth::User, pid: &str, base: i64, work: F) -> ApiResult<T>
+async fn locked<T, F, Fut>(
+    ctx: &AppContext,
+    user: &crate::auth::User,
+    pid: &str,
+    base: i64,
+    work: F,
+) -> ApiResult<T>
 where
     F: FnOnce(Project) -> Fut,
     Fut: std::future::Future<Output = ApiResult<T>>,
@@ -260,35 +338,66 @@ where
     let _guard = lock.lock().await;
     let project = projects::reload(&ctx.db, project.id).await?;
     if project.revision != base {
-        return Err(ApiError::Conflict { revision: project.revision });
+        return Err(ApiError::Conflict {
+            revision: project.revision,
+        });
     }
     work(project).await
 }
 
 /// The page's HTML. Parse it only where no `.await` follows, because a parsed page is not `Send`.
-async fn read_page(ctx: &AppContext, state: &Pagehaven, project: &Project, path: &str) -> ApiResult<String> {
+async fn read_page(
+    ctx: &AppContext,
+    state: &Pagehaven,
+    project: &Project,
+    path: &str,
+) -> ApiResult<String> {
     if !drafts::is_page(path) {
         return Err(ApiError::NotFound);
     }
-    let file = drafts::file(&ctx.db, project.id, path).await?.ok_or(ApiError::NotFound)?;
+    let file = drafts::file(&ctx.db, project.id, path)
+        .await?
+        .ok_or(ApiError::NotFound)?;
     Ok(String::from_utf8_lossy(&state.store.read(&file.blob)?).into_owned())
 }
 
 fn store_page(state: &Pagehaven, path: &str, document: &Document) -> ApiResult<Change> {
     let bytes = document.serialize().into_bytes();
     let len = bytes.len() as i64;
-    Ok(Change { path: path.to_owned(), after: Some((state.store.put_bytes(&bytes)?, len)) })
+    Ok(Change {
+        path: path.to_owned(),
+        after: Some((state.store.put_bytes(&bytes)?, len)),
+    })
 }
 
 /// The site path of an uploaded image, and its blob, after checking it is a raster image.
 fn uploaded_image(state: &Pagehaven, upload: &str) -> ApiResult<(String, Blob, i64)> {
-    let blob = Blob::parse(upload).ok_or_else(|| ApiError::Invalid("Upload the image again.".to_owned()))?;
-    let bytes = state.store.read(&blob).map_err(|_| ApiError::Invalid("Upload the image again.".to_owned()))?;
-    let kind = FileKind::sniff_raster(&bytes).ok_or_else(|| ApiError::Invalid("Only PNG, JPEG, GIF, WebP and AVIF images can be used.".to_owned()))?;
-    Ok((format!("images/uploads/{}.{}", &blob.as_str()[..16], kind.extension()), blob, bytes.len() as i64))
+    let blob = Blob::parse(upload)
+        .ok_or_else(|| ApiError::Invalid("Upload the image again.".to_owned()))?;
+    let bytes = state
+        .store
+        .read(&blob)
+        .map_err(|_| ApiError::Invalid("Upload the image again.".to_owned()))?;
+    let kind = FileKind::sniff_raster(&bytes).ok_or_else(|| {
+        ApiError::Invalid("Only PNG, JPEG, GIF, WebP and AVIF images can be used.".to_owned())
+    })?;
+    Ok((
+        format!(
+            "images/uploads/{}.{}",
+            &blob.as_str()[..16],
+            kind.extension()
+        ),
+        blob,
+        bytes.len() as i64,
+    ))
 }
 
-async fn create_edit(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<EditBody>) -> ApiResult<Json<Value>> {
+async fn create_edit(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<EditBody>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
@@ -296,13 +405,25 @@ async fn create_edit(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path
         let html = read_page(ctx, &state, &project, &body.page).await?;
         let mut changes = Vec::new();
         let (edit, summary) = if body.edit.get("op").and_then(Value::as_str) == Some("set_image") {
-            let image: ImageEdit = serde_json::from_value(body.edit.clone()).map_err(|_| ApiError::Invalid("That change isn't supported.".to_owned()))?;
+            let image: ImageEdit = serde_json::from_value(body.edit.clone())
+                .map_err(|_| ApiError::Invalid("That change isn't supported.".to_owned()))?;
             let (asset, blob, bytes) = uploaded_image(&state, &image.upload)?;
-            changes.push(Change { path: asset.clone(), after: Some((blob, bytes)) });
-            let edit = PageEdit::SetImage { element: image.element, src: paths::relative_url(&body.page, &asset), alt: image.alt };
-            (edit, json!({"page": body.page, "op": "set_image", "asset": asset}))
+            changes.push(Change {
+                path: asset.clone(),
+                after: Some((blob, bytes)),
+            });
+            let edit = PageEdit::SetImage {
+                element: image.element,
+                src: paths::relative_url(&body.page, &asset),
+                alt: image.alt,
+            };
+            (
+                edit,
+                json!({"page": body.page, "op": "set_image", "asset": asset}),
+            )
         } else {
-            let edit: PageEdit = serde_json::from_value(body.edit.clone()).map_err(|_| ApiError::Invalid("That change isn't supported.".to_owned()))?;
+            let edit: PageEdit = serde_json::from_value(body.edit.clone())
+                .map_err(|_| ApiError::Invalid("That change isn't supported.".to_owned()))?;
             let summary = json!({"page": body.page, "op": edit.kind(), "element": edit.element()});
             (edit, summary)
         };
@@ -312,7 +433,16 @@ async fn create_edit(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path
             store_page(&state, &body.page, &document)?
         };
         changes.insert(0, page);
-        let applied = drafts::commit(&ctx.db, &project, user_id, body.base_revision, edit.kind(), summary, changes).await?;
+        let applied = drafts::commit(
+            &ctx.db,
+            &project,
+            user_id,
+            body.base_revision,
+            edit.kind(),
+            summary,
+            changes,
+        )
+        .await?;
         change_response(&ctx, project.id, &applied).await
     })
     .await?;
@@ -324,7 +454,13 @@ struct BaseBody {
     base_revision: i64,
 }
 
-async fn history_step(ctx: AppContext, user: crate::auth::User, pid: String, base: i64, step: Step) -> ApiResult<Json<Value>> {
+async fn history_step(
+    ctx: AppContext,
+    user: crate::auth::User,
+    pid: String,
+    base: i64,
+    step: Step,
+) -> ApiResult<Json<Value>> {
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, base, |project| async move {
         let applied = drafts::step(&ctx.db, &project, base, step).await?;
@@ -334,22 +470,43 @@ async fn history_step(ctx: AppContext, user: crate::auth::User, pid: String, bas
     Ok(Json(value))
 }
 
-async fn undo(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<BaseBody>) -> ApiResult<Json<Value>> {
+async fn undo(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<BaseBody>,
+) -> ApiResult<Json<Value>> {
     history_step(ctx, user, pid, body.base_revision, Step::Undo).await
 }
 
-async fn redo(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<BaseBody>) -> ApiResult<Json<Value>> {
+async fn redo(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<BaseBody>,
+) -> ApiResult<Json<Value>> {
     history_step(ctx, user, pid, body.base_revision, Step::Redo).await
 }
 
-async fn upload_image(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, mut multipart: Multipart) -> ApiResult<Response> {
+async fn upload_image(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    mut multipart: Multipart,
+) -> ApiResult<Response> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     state.limit(state::UPLOAD, &user.id.to_string())?;
     let max = state.settings.limits.image_bytes;
-    let too_large = || ApiError::Rejected { code: "too_large", status: StatusCode::PAYLOAD_TOO_LARGE, message: format!("Images can be up to {} MB.", max / 1_048_576) };
+    let too_large = || ApiError::Rejected {
+        code: "too_large",
+        status: StatusCode::PAYLOAD_TOO_LARGE,
+        message: format!("Images can be up to {} MB.", max / 1_048_576),
+    };
     let mut data = None;
-    while let Some(mut field) = multipart.next_field().await.map_err(|_| ApiError::Invalid("The upload was interrupted. Please try again.".to_owned()))? {
+    while let Some(mut field) = multipart.next_field().await.map_err(|_| {
+        ApiError::Invalid("The upload was interrupted. Please try again.".to_owned())
+    })? {
         if field.name() != Some("file") {
             continue;
         }
@@ -364,7 +521,9 @@ async fn upload_image(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Pat
     }
     let bytes = data.ok_or_else(|| ApiError::Invalid("Choose an image to upload.".to_owned()))?;
     if FileKind::sniff_raster(&bytes).is_none() {
-        return Err(ApiError::Invalid("Only PNG, JPEG, GIF, WebP and AVIF images can be used.".to_owned()));
+        return Err(ApiError::Invalid(
+            "Only PNG, JPEG, GIF, WebP and AVIF images can be used.".to_owned(),
+        ));
     }
     let blob = state.store.put_bytes(&bytes)?;
     let (path, _, _) = uploaded_image(&state, blob.as_str())?;
@@ -381,29 +540,55 @@ struct AddPage {
     title: String,
 }
 
-async fn add_page(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<AddPage>) -> ApiResult<Json<Value>> {
+async fn add_page(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<AddPage>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, body.base_revision, |project| async move {
         let path = body.path.trim().to_ascii_lowercase();
         if !paths::valid_page_path(&path) {
-            return Err(ApiError::Invalid("Page names use lowercase letters, numbers and hyphens, like offers.html.".to_owned()));
+            return Err(ApiError::Invalid(
+                "Page names use lowercase letters, numbers and hyphens, like offers.html."
+                    .to_owned(),
+            ));
         }
         if drafts::file(&ctx.db, project.id, &path).await?.is_some() {
-            return Err(ApiError::Invalid("A page with that name already exists.".to_owned()));
+            return Err(ApiError::Invalid(
+                "A page with that name already exists.".to_owned(),
+            ));
         }
-        if path.contains('/') != body.from.contains('/') || path.rsplit_once('/').map(|p| p.0) != body.from.rsplit_once('/').map(|p| p.0) {
-            return Err(ApiError::Invalid("New pages are created next to the page they copy.".to_owned()));
+        if path.contains('/') != body.from.contains('/')
+            || path.rsplit_once('/').map(|p| p.0) != body.from.rsplit_once('/').map(|p| p.0)
+        {
+            return Err(ApiError::Invalid(
+                "New pages are created next to the page they copy.".to_owned(),
+            ));
         }
         let html = read_page(ctx, &state, &project, &body.from).await?;
         let change = {
             let mut document = Document::parse(&html);
             let description = document.description().unwrap_or_default();
-            document.apply(&PageEdit::SetPageMeta { title: body.title.clone(), description })?;
+            document.apply(&PageEdit::SetPageMeta {
+                title: body.title.clone(),
+                description,
+            })?;
             store_page(&state, &path, &document)?
         };
-        let applied = drafts::commit(&ctx.db, &project, user_id, body.base_revision, "add_page", json!({"page": path, "from": body.from}), vec![change]).await?;
+        let applied = drafts::commit(
+            &ctx.db,
+            &project,
+            user_id,
+            body.base_revision,
+            "add_page",
+            json!({"page": path, "from": body.from}),
+            vec![change],
+        )
+        .await?;
         let mut value = change_response(&ctx, project.id, &applied).await?;
         value["pages"] = json!(page_list(&ctx, &state, &project).await?);
         Ok(value)
@@ -422,16 +607,28 @@ struct RenamePage {
 /// Points links that led to `from` at `to`, keeping any `#section` or `?query`.
 fn relink(page: &str, href: &str, from: &str, to: &str) -> Option<String> {
     let target = import::references::resolve(page, href)?;
-    let hits = target == from || import::references::page_candidates(&target).iter().any(|c| c == from);
+    let hits = target == from
+        || import::references::page_candidates(&target)
+            .iter()
+            .any(|c| c == from);
     if !hits {
         return None;
     }
     let suffix = href.find(['#', '?']).map_or("", |i| &href[i..]);
-    let base = if href.starts_with('/') { format!("/{to}") } else { paths::relative_url(page, to) };
+    let base = if href.starts_with('/') {
+        format!("/{to}")
+    } else {
+        paths::relative_url(page, to)
+    };
     Some(format!("{base}{suffix}"))
 }
 
-async fn rename_page(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<RenamePage>) -> ApiResult<Json<Value>> {
+async fn rename_page(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<RenamePage>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
@@ -472,19 +669,42 @@ struct DeletePage {
     path: String,
 }
 
-async fn delete_page(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<DeletePage>) -> ApiResult<Json<Value>> {
+async fn delete_page(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<DeletePage>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, body.base_revision, |project| async move {
         if body.path == "index.html" {
-            return Err(ApiError::NotAllowed("The home page can't be deleted.".to_owned()));
+            return Err(ApiError::NotAllowed(
+                "The home page can't be deleted.".to_owned(),
+            ));
         }
-        if !drafts::is_page(&body.path) || drafts::file(&ctx.db, project.id, &body.path).await?.is_none() {
+        if !drafts::is_page(&body.path)
+            || drafts::file(&ctx.db, project.id, &body.path)
+                .await?
+                .is_none()
+        {
             return Err(ApiError::NotFound);
         }
-        let changes = vec![Change { path: body.path.clone(), after: None }];
-        let applied = drafts::commit(&ctx.db, &project, user_id, body.base_revision, "delete_page", json!({"page": body.path}), changes).await?;
+        let changes = vec![Change {
+            path: body.path.clone(),
+            after: None,
+        }];
+        let applied = drafts::commit(
+            &ctx.db,
+            &project,
+            user_id,
+            body.base_revision,
+            "delete_page",
+            json!({"page": body.path}),
+            changes,
+        )
+        .await?;
         let mut value = change_response(&ctx, project.id, &applied).await?;
         value["pages"] = json!(page_list(&ctx, &state, &project).await?);
         Ok(value)
@@ -493,7 +713,11 @@ async fn delete_page(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path
     Ok(Json(value))
 }
 
-async fn assets(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>) -> ApiResult<Json<Value>> {
+async fn assets(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let origin = preview::origin(&state, project.id);
@@ -521,48 +745,95 @@ struct SettingsBody {
     slug: String,
 }
 
-async fn update_settings(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<SettingsBody>) -> ApiResult<Json<Value>> {
+async fn update_settings(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<SettingsBody>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let project = projects::update_settings(&ctx.db, &project, &body.name, &body.slug).await?;
     let live = publish::live(&ctx.db, &project).await?;
-    Ok(Json(json!({"project": project_json(&state, &project, live.as_ref())})))
+    Ok(Json(
+        json!({"project": project_json(&state, &project, live.as_ref())}),
+    ))
 }
 
 // ---------- Publishing ----------
 
-async fn publish_draft(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<BaseBody>) -> ApiResult<Response> {
+async fn publish_draft(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<BaseBody>,
+) -> ApiResult<Response> {
     let state = Pagehaven::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let started = std::time::Instant::now();
     let release = publish::publish(&ctx.db, &state, &project, user.id, body.base_revision).await?;
-    tracing::info!(elapsed_ms = started.elapsed().as_millis() as u64, files = release.file_count, "published");
+    tracing::info!(
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        files = release.file_count,
+        "published"
+    );
     let project = projects::reload(&ctx.db, project.id).await?;
-    Ok((StatusCode::CREATED, Json(json!({"release": release, "site_url": state.settings.site_origin(&project.slug)}))).into_response())
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({"release": release, "site_url": state.settings.site_origin(&project.slug)})),
+    )
+        .into_response())
 }
 
-async fn releases(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>) -> ApiResult<Json<Value>> {
+async fn releases(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
-    Ok(Json(json!({"releases": publish::list(&ctx.db, &project).await?, "site_url": state.settings.site_origin(&project.slug)})))
+    Ok(Json(
+        json!({"releases": publish::list(&ctx.db, &project).await?, "site_url": state.settings.site_origin(&project.slug)}),
+    ))
 }
 
-async fn activate_release(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path((pid, number)): Path<(String, i64)>) -> ApiResult<Json<Value>> {
+async fn activate_release(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path((pid, number)): Path<(String, i64)>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
-    Ok(Json(json!({"release": publish::activate(&ctx.db, &state, &project, number).await?})))
+    Ok(Json(
+        json!({"release": publish::activate(&ctx.db, &state, &project, number).await?}),
+    ))
 }
 
-async fn restore_release(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path((pid, number)): Path<(String, i64)>, Json(body): Json<BaseBody>) -> ApiResult<Json<Value>> {
+async fn restore_release(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path((pid, number)): Path<(String, i64)>,
+    Json(body): Json<BaseBody>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let project = projects::reload(&ctx.db, project.id).await?;
     if project.revision != body.base_revision {
-        return Err(ApiError::Conflict { revision: project.revision });
+        return Err(ApiError::Conflict {
+            revision: project.revision,
+        });
     }
-    let applied = publish::restore(&ctx.db, &state, &project, user.id, number, body.base_revision).await?;
+    let applied = publish::restore(
+        &ctx.db,
+        &state,
+        &project,
+        user.id,
+        number,
+        body.base_revision,
+    )
+    .await?;
     let mut value = change_response(&ctx, project.id, &applied).await?;
     value["page_list"] = json!(page_list(&ctx, &state, &project).await?);
     Ok(Json(value))
@@ -570,12 +841,18 @@ async fn restore_release(State(ctx): State<AppContext>, ApiUser(user): ApiUser, 
 
 // ---------- Domains ----------
 
-async fn domains_list(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>) -> ApiResult<Json<Value>> {
+async fn domains_list(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let list = domains::list(&ctx.db, &state.settings, &project).await?;
     let cname = format!("{}.{}", project.slug, state.settings.sites_domain);
-    Ok(Json(json!({"domains": list, "dns": {"cname_target": cname, "a_record": state.settings.server_ipv4}})))
+    Ok(Json(
+        json!({"domains": list, "dns": {"cname_target": cname, "a_record": state.settings.server_ipv4}}),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -583,21 +860,36 @@ struct DomainBody {
     hostname: String,
 }
 
-async fn domains_add(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path(pid): Path<String>, Json(body): Json<DomainBody>) -> ApiResult<Response> {
+async fn domains_add(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<DomainBody>,
+) -> ApiResult<Response> {
     let state = Pagehaven::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let domain = domains::add(&ctx.db, &state.settings, &project, &body.hostname).await?;
     Ok((StatusCode::CREATED, Json(json!({"domain": domain}))).into_response())
 }
 
-async fn domains_check(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path((pid, id)): Path<(String, i64)>) -> ApiResult<Json<Value>> {
+async fn domains_check(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path((pid, id)): Path<(String, i64)>,
+) -> ApiResult<Json<Value>> {
     let state = Pagehaven::from(&ctx);
     state.limit(state::DNS_CHECK, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
-    Ok(Json(json!({"domain": domains::check(&ctx.db, &state.settings, &project, id).await?})))
+    Ok(Json(
+        json!({"domain": domains::check(&ctx.db, &state.settings, &project, id).await?}),
+    ))
 }
 
-async fn domains_delete(State(ctx): State<AppContext>, ApiUser(user): ApiUser, Path((pid, id)): Path<(String, i64)>) -> ApiResult<StatusCode> {
+async fn domains_delete(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path((pid, id)): Path<(String, i64)>,
+) -> ApiResult<StatusCode> {
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     domains::remove(&ctx.db, &project, id).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -607,12 +899,22 @@ pub fn routes(upload_bytes: u64, image_bytes: u64) -> Routes {
     let multipart_slack = 1024 * 1024;
     Routes::new()
         .prefix("/api")
-        .add("/imports", post(create_import).layer(DefaultBodyLimit::max((upload_bytes + multipart_slack) as usize)))
+        .add(
+            "/imports",
+            post(create_import).layer(DefaultBodyLimit::max(
+                (upload_bytes + multipart_slack) as usize,
+            )),
+        )
         .add("/projects/{pid}/editor", get(editor_state))
         .add("/projects/{pid}/edits", post(create_edit))
         .add("/projects/{pid}/undo", post(undo))
         .add("/projects/{pid}/redo", post(redo))
-        .add("/projects/{pid}/images", post(upload_image).layer(DefaultBodyLimit::max((image_bytes + multipart_slack) as usize)))
+        .add(
+            "/projects/{pid}/images",
+            post(upload_image).layer(DefaultBodyLimit::max(
+                (image_bytes + multipart_slack) as usize,
+            )),
+        )
         .add("/projects/{pid}/pages", post(add_page))
         .add("/projects/{pid}/pages/rename", post(rename_page))
         .add("/projects/{pid}/pages/delete", post(delete_page))
@@ -620,9 +922,18 @@ pub fn routes(upload_bytes: u64, image_bytes: u64) -> Routes {
         .add("/projects/{pid}/settings", post(update_settings))
         .add("/projects/{pid}/publish", post(publish_draft))
         .add("/projects/{pid}/releases", get(releases))
-        .add("/projects/{pid}/releases/{number}/activate", post(activate_release))
-        .add("/projects/{pid}/releases/{number}/restore", post(restore_release))
-        .add("/projects/{pid}/domains", get(domains_list).post(domains_add))
+        .add(
+            "/projects/{pid}/releases/{number}/activate",
+            post(activate_release),
+        )
+        .add(
+            "/projects/{pid}/releases/{number}/restore",
+            post(restore_release),
+        )
+        .add(
+            "/projects/{pid}/domains",
+            get(domains_list).post(domains_add),
+        )
         .add("/projects/{pid}/domains/{id}/check", post(domains_check))
         .add("/projects/{pid}/domains/{id}/delete", post(domains_delete))
 }

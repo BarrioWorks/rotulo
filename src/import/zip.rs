@@ -12,6 +12,31 @@ use std::{
 fn bad() -> ImportError {
     ImportError::InvalidArchive
 }
+const MB: u64 = 1024 * 1024;
+pub fn upload_too_big(l: &Limits) -> ImportError {
+    ImportError::Limit(format!(
+        "This ZIP is larger than {} MB.",
+        l.upload_bytes / MB
+    ))
+}
+pub fn too_many_files(l: &Limits) -> ImportError {
+    ImportError::Limit(format!("This ZIP has more than {} files.", l.file_count))
+}
+pub fn file_too_big(l: &Limits) -> ImportError {
+    ImportError::Limit(format!(
+        "A file in this ZIP is larger than {} MB.",
+        l.file_bytes / MB
+    ))
+}
+pub fn total_too_big(l: &Limits) -> ImportError {
+    ImportError::Limit(format!(
+        "This website is larger than {} MB once unpacked.",
+        l.content_bytes / MB
+    ))
+}
+fn bomb() -> ImportError {
+    ImportError::Limit("A file in this ZIP expands far more than normal, which is a sign of a damaged or unsafe archive.".to_owned())
+}
 fn u16_at(b: &[u8], n: usize) -> u16 {
     u16::from_le_bytes([b[n], b[n + 1]])
 }
@@ -72,7 +97,7 @@ impl Archive {
         let mut file = File::open(path)?;
         let len = file.metadata()?.len();
         if len > limits.upload_bytes {
-            return Err(ImportError::Limit);
+            return Err(upload_too_big(limits));
         }
         let tail_len = len.min(65_557) as usize;
         file.seek(SeekFrom::End(-(tail_len as i64)))?;
@@ -114,7 +139,7 @@ impl Archive {
             return Err(bad());
         }
         if usize::from(count) > limits.file_count {
-            return Err(ImportError::Limit);
+            return Err(too_many_files(limits));
         }
         if count == 0 {
             return Err(ImportError::Empty);
@@ -186,14 +211,17 @@ impl Archive {
             file.seek(SeekFrom::Current(i64::from(u16_at(&h, 32))))?;
             total = total
                 .checked_add(u64::from(size))
-                .ok_or(ImportError::Limit)?;
-            if u64::from(size) > limits.file_bytes
-                || total > limits.content_bytes
-                || (size > 1024 * 1024
-                    && u64::from(size)
-                        > u64::from(compressed).saturating_mul(limits.compression_ratio))
+                .ok_or_else(|| total_too_big(limits))?;
+            if u64::from(size) > limits.file_bytes {
+                return Err(file_too_big(limits));
+            }
+            if total > limits.content_bytes {
+                return Err(total_too_big(limits));
+            }
+            if size > 1024 * 1024
+                && u64::from(size) > u64::from(compressed).saturating_mul(limits.compression_ratio)
             {
-                return Err(ImportError::Limit);
+                return Err(bomb());
             }
             if directory && (size != 0 || compressed != 0) {
                 return Err(bad());
@@ -286,9 +314,17 @@ impl Archive {
                     break;
                 }
                 size += n as u64;
-                *total = total.checked_add(n as u64).ok_or(ImportError::Limit)?;
-                if size > e.size || size > limits.file_bytes || *total > limits.content_bytes {
-                    return Err(ImportError::Limit);
+                *total = total
+                    .checked_add(n as u64)
+                    .ok_or_else(|| total_too_big(limits))?;
+                if size > e.size {
+                    return Err(bomb());
+                }
+                if size > limits.file_bytes {
+                    return Err(file_too_big(limits));
+                }
+                if *total > limits.content_bytes {
+                    return Err(total_too_big(limits));
                 }
                 crc.update(&buffer[..n]);
                 out.write_all(&buffer[..n])?;

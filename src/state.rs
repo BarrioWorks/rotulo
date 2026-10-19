@@ -27,13 +27,41 @@ pub struct Rate {
     pub per: Duration,
 }
 
-pub const SIGN_IN: Rate = Rate { name: "sign_in", max: 10, per: Duration::from_secs(15 * 60) };
-pub const REGISTER: Rate = Rate { name: "register", max: 10, per: Duration::from_secs(60 * 60) };
-pub const IMPORT: Rate = Rate { name: "import", max: 20, per: Duration::from_secs(60 * 60) };
-pub const UPLOAD: Rate = Rate { name: "upload", max: 120, per: Duration::from_secs(60 * 60) };
-pub const PUBLISH: Rate = Rate { name: "publish", max: 60, per: Duration::from_secs(60 * 60) };
-pub const EDIT: Rate = Rate { name: "edit", max: 3000, per: Duration::from_secs(60 * 60) };
-pub const DNS_CHECK: Rate = Rate { name: "dns_check", max: 30, per: Duration::from_secs(60 * 60) };
+pub const SIGN_IN: Rate = Rate {
+    name: "sign_in",
+    max: 10,
+    per: Duration::from_secs(15 * 60),
+};
+pub const REGISTER: Rate = Rate {
+    name: "register",
+    max: 10,
+    per: Duration::from_secs(60 * 60),
+};
+pub const IMPORT: Rate = Rate {
+    name: "import",
+    max: 20,
+    per: Duration::from_secs(60 * 60),
+};
+pub const UPLOAD: Rate = Rate {
+    name: "upload",
+    max: 120,
+    per: Duration::from_secs(60 * 60),
+};
+pub const PUBLISH: Rate = Rate {
+    name: "publish",
+    max: 60,
+    per: Duration::from_secs(60 * 60),
+};
+pub const EDIT: Rate = Rate {
+    name: "edit",
+    max: 3000,
+    per: Duration::from_secs(60 * 60),
+};
+pub const DNS_CHECK: Rate = Rate {
+    name: "dns_check",
+    max: 30,
+    per: Duration::from_secs(60 * 60),
+};
 
 impl Pagehaven {
     pub fn new(settings: Settings) -> std::io::Result<Self> {
@@ -48,7 +76,9 @@ impl Pagehaven {
     }
 
     pub fn from(ctx: &AppContext) -> Arc<Self> {
-        ctx.shared_store.get::<Arc<Self>>().expect("Pagehaven state is initialized in after_context")
+        ctx.shared_store
+            .get::<Arc<Self>>()
+            .expect("Pagehaven state is initialized in after_context")
     }
 
     /// Waits briefly for a slot for an import or publish, so a burst cannot exhaust the server.
@@ -66,7 +96,9 @@ impl Pagehaven {
         if limits.len() > 50_000 {
             limits.retain(|(name, _), (start, _)| now.duration_since(*start) < rate_window(name));
         }
-        let entry = limits.entry((rate.name, key.to_owned())).or_insert((now, 0));
+        let entry = limits
+            .entry((rate.name, key.to_owned()))
+            .or_insert((now, 0));
         if now.duration_since(entry.0) >= rate.per {
             *entry = (now, 0);
         }
@@ -79,7 +111,12 @@ impl Pagehaven {
 
     /// Serializes draft changes and publishes of one project within this process.
     pub fn project_lock(&self, project_id: i64) -> Arc<tokio::sync::Mutex<()>> {
-        self.project_locks.lock().expect("project locks lock").entry(project_id).or_default().clone()
+        self.project_locks
+            .lock()
+            .expect("project locks lock")
+            .entry(project_id)
+            .or_default()
+            .clone()
     }
 }
 

@@ -11,8 +11,8 @@ use serde_json::json;
 
 use crate::{
     auth::{self, AuthError, MaybeUser, PageUser},
-    drafts,
     document::Document,
+    drafts,
     error::ApiError,
     import::policy::FileKind,
     preview, projects,
@@ -27,7 +27,10 @@ fn internal(error: impl std::fmt::Display) -> loco_rs::Error {
     loco_rs::Error::string(&error.to_string())
 }
 
-async fn home(ViewEngine(view): ViewEngine<TeraView>, MaybeUser(user): MaybeUser) -> Result<Response> {
+async fn home(
+    ViewEngine(view): ViewEngine<TeraView>,
+    MaybeUser(user): MaybeUser,
+) -> Result<Response> {
     if user.is_some() {
         return Ok(Redirect::to("/projects").into_response());
     }
@@ -41,11 +44,18 @@ struct RegisterForm {
     password: String,
 }
 
-async fn register_page(ViewEngine(view): ViewEngine<TeraView>, MaybeUser(user): MaybeUser) -> Result<Response> {
+async fn register_page(
+    ViewEngine(view): ViewEngine<TeraView>,
+    MaybeUser(user): MaybeUser,
+) -> Result<Response> {
     if user.is_some() {
         return Ok(Redirect::to("/projects").into_response());
     }
-    format::render().view(&view, "auth/register.html", json!({"name": "", "email": ""}))
+    format::render().view(
+        &view,
+        "auth/register.html",
+        json!({"name": "", "email": ""}),
+    )
 }
 
 fn client_key(headers: &axum::http::HeaderMap) -> String {
@@ -65,14 +75,26 @@ async fn register(
     Form(form): Form<RegisterForm>,
 ) -> Result<Response> {
     let state = Pagehaven::from(&ctx);
-    let again = |error: String| format::render().view(&view, "auth/register.html", json!({"error": error, "name": form.name, "email": form.email}));
+    let again = |error: String| {
+        format::render().view(
+            &view,
+            "auth/register.html",
+            json!({"error": error, "name": form.name, "email": form.email}),
+        )
+    };
     if state.limit(state::REGISTER, &client_key(&headers)).is_err() {
         return again(ApiError::RateLimited.to_string());
     }
     match auth::register(&ctx.db, &form.name, &form.email, &form.password).await {
         Ok(user) => {
-            let token = auth::create_session(&ctx.db, user.id).await.map_err(internal)?;
-            Ok((jar.add(auth::session_cookie(token, state.settings.secure_cookies)), Redirect::to("/projects")).into_response())
+            let token = auth::create_session(&ctx.db, user.id)
+                .await
+                .map_err(internal)?;
+            Ok((
+                jar.add(auth::session_cookie(token, state.settings.secure_cookies)),
+                Redirect::to("/projects"),
+            )
+                .into_response())
         }
         Err(AuthError::Db(error)) => Err(internal(error)),
         Err(error) => again(error.to_string()),
@@ -85,7 +107,10 @@ struct LoginForm {
     password: String,
 }
 
-async fn login_page(ViewEngine(view): ViewEngine<TeraView>, MaybeUser(user): MaybeUser) -> Result<Response> {
+async fn login_page(
+    ViewEngine(view): ViewEngine<TeraView>,
+    MaybeUser(user): MaybeUser,
+) -> Result<Response> {
     if user.is_some() {
         return Ok(Redirect::to("/projects").into_response());
     }
@@ -100,18 +125,36 @@ async fn login(
     Form(form): Form<LoginForm>,
 ) -> Result<Response> {
     let state = Pagehaven::from(&ctx);
-    let again = |error: String| format::render().view(&view, "auth/login.html", json!({"error": error, "email": form.email}));
-    let key = format!("{}|{}", client_key(&headers), form.email.trim().to_ascii_lowercase());
+    let again = |error: String| {
+        format::render().view(
+            &view,
+            "auth/login.html",
+            json!({"error": error, "email": form.email}),
+        )
+    };
+    let key = format!(
+        "{}|{}",
+        client_key(&headers),
+        form.email.trim().to_ascii_lowercase()
+    );
     if state.limit(state::SIGN_IN, &key).is_err() {
         return again(ApiError::RateLimited.to_string());
     }
     match auth::authenticate(&ctx.db, &form.email, &form.password).await {
         Ok(user) => {
             if let Some(old) = jar.get(auth::COOKIE) {
-                auth::revoke_session(&ctx.db, old.value()).await.map_err(internal)?;
+                auth::revoke_session(&ctx.db, old.value())
+                    .await
+                    .map_err(internal)?;
             }
-            let token = auth::create_session(&ctx.db, user.id).await.map_err(internal)?;
-            Ok((jar.add(auth::session_cookie(token, state.settings.secure_cookies)), Redirect::to("/projects")).into_response())
+            let token = auth::create_session(&ctx.db, user.id)
+                .await
+                .map_err(internal)?;
+            Ok((
+                jar.add(auth::session_cookie(token, state.settings.secure_cookies)),
+                Redirect::to("/projects"),
+            )
+                .into_response())
         }
         Err(AuthError::Db(error)) => Err(internal(error)),
         Err(error) => again(error.to_string()),
@@ -120,7 +163,9 @@ async fn login(
 
 async fn logout(State(ctx): State<AppContext>, jar: CookieJar) -> Result<Response> {
     if let Some(cookie) = jar.get(auth::COOKIE) {
-        auth::revoke_session(&ctx.db, cookie.value()).await.map_err(internal)?;
+        auth::revoke_session(&ctx.db, cookie.value())
+            .await
+            .map_err(internal)?;
     }
     let secure = Pagehaven::from(&ctx).settings.secure_cookies;
     Ok((jar.add(auth::removal_cookie(secure)), Redirect::to("/")).into_response())
@@ -133,32 +178,54 @@ pub fn ago(ts: i64) -> String {
         60..=3599 => (seconds / 60, "minute"),
         3600..=86_399 => (seconds / 3600, "hour"),
         86_400..=2_591_999 => (seconds / 86_400, "day"),
-        _ => return chrono::DateTime::from_timestamp(ts, 0).map(|t| t.format("%-d %B %Y").to_string()).unwrap_or_default(),
+        _ => {
+            return chrono::DateTime::from_timestamp(ts, 0)
+                .map(|t| t.format("%-d %B %Y").to_string())
+                .unwrap_or_default()
+        }
     };
     format!("{n} {unit}{} ago", if n == 1 { "" } else { "s" })
 }
 
 /// A preview URL for the image that best represents the home page, if it is an image file.
 pub async fn thumbnail(ctx: &AppContext, state: &Pagehaven, project_id: i64) -> Option<String> {
-    let index = drafts::file(&ctx.db, project_id, "index.html").await.ok()??;
+    let index = drafts::file(&ctx.db, project_id, "index.html")
+        .await
+        .ok()??;
     let html = String::from_utf8_lossy(&state.store.read(&index.blob).ok()?).into_owned();
-    let src = Document::parse(&html).representative_image()?;
-    let path = crate::import::references::resolve("index.html", &src)?;
-    let kind = FileKind::for_path(&path)?;
-    if !(kind.is_raster_image() || kind == FileKind::Svg) {
-        return None;
+    let candidates = Document::parse(&html).representative_images();
+    for src in candidates {
+        let Some(path) = crate::import::references::resolve("index.html", &src) else {
+            continue;
+        };
+        if !FileKind::for_path(&path).is_some_and(|k| k.is_raster_image() || k == FileKind::Svg) {
+            continue;
+        }
+        if let Ok(Some(_)) = drafts::file(&ctx.db, project_id, &path).await {
+            return Some(format!("{}/{}", preview::origin(state, project_id), path));
+        }
     }
-    drafts::file(&ctx.db, project_id, &path).await.ok()??;
-    Some(format!("{}/{}", preview::origin(state, project_id), path))
+    None
 }
 
-async fn dashboard(State(ctx): State<AppContext>, ViewEngine(view): ViewEngine<TeraView>, PageUser(user): PageUser) -> Result<Response> {
+async fn dashboard(
+    State(ctx): State<AppContext>,
+    ViewEngine(view): ViewEngine<TeraView>,
+    PageUser(user): PageUser,
+) -> Result<Response> {
     let state = Pagehaven::from(&ctx);
     let list = projects::list(&ctx.db, &user).await.map_err(internal)?;
     let mut cards = Vec::new();
     for project in &list {
-        let domains = crate::domains::list(&ctx.db, &state.settings, project).await.map_err(internal)?;
-        let pages = drafts::files(&ctx.db, project.id).await.map_err(internal)?.iter().filter(|f| drafts::is_page(&f.path)).count();
+        let domains = crate::domains::list(&ctx.db, &state.settings, project)
+            .await
+            .map_err(internal)?;
+        let pages = drafts::files(&ctx.db, project.id)
+            .await
+            .map_err(internal)?
+            .iter()
+            .filter(|f| drafts::is_page(&f.path))
+            .count();
         cards.push(json!({
             "pid": project.pid,
             "name": project.name,
@@ -181,7 +248,11 @@ async fn dashboard(State(ctx): State<AppContext>, ViewEngine(view): ViewEngine<T
     )
 }
 
-async fn new_project(State(ctx): State<AppContext>, ViewEngine(view): ViewEngine<TeraView>, PageUser(user): PageUser) -> Result<Response> {
+async fn new_project(
+    State(ctx): State<AppContext>,
+    ViewEngine(view): ViewEngine<TeraView>,
+    PageUser(user): PageUser,
+) -> Result<Response> {
     let limits = &Pagehaven::from(&ctx).settings.limits;
     format::render().view(
         &view,
@@ -193,13 +264,22 @@ async fn new_project(State(ctx): State<AppContext>, ViewEngine(view): ViewEngine
     )
 }
 
-async fn editor(State(ctx): State<AppContext>, ViewEngine(view): ViewEngine<TeraView>, PageUser(user): PageUser, Path(pid): Path<String>) -> Result<Response> {
+async fn editor(
+    State(ctx): State<AppContext>,
+    ViewEngine(view): ViewEngine<TeraView>,
+    PageUser(user): PageUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
     let project = match projects::owned(&ctx.db, &user, &pid).await {
         Ok(project) => project,
         Err(ApiError::NotFound) => return not_found_page(&view),
         Err(error) => return Err(internal(error)),
     };
-    format::render().view(&view, "projects/editor.html", json!({"user": user_json(&user), "project": {"pid": project.pid, "name": project.name}}))
+    format::render().view(
+        &view,
+        "projects/editor.html",
+        json!({"user": user_json(&user), "project": {"pid": project.pid, "name": project.name}}),
+    )
 }
 
 pub fn not_found_page(view: &TeraView) -> Result<Response> {

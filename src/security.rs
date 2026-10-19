@@ -15,17 +15,26 @@ pub fn unsafe_method(method: &Method) -> bool {
 /// A state-changing request must come from a page on the app origin.
 pub fn same_origin(request: &Request, settings: &Settings) -> bool {
     let headers = request.headers();
-    if headers.get("sec-fetch-site").is_some_and(|v| v != "same-origin" && v != "none") {
+    if headers
+        .get("sec-fetch-site")
+        .is_some_and(|v| v != "same-origin" && v != "none")
+    {
         return false;
     }
     match headers.get(header::ORIGIN).and_then(|v| v.to_str().ok()) {
         Some(origin) => origin.eq_ignore_ascii_case(settings.app_origin.trim_end_matches('/')),
-        None => headers.get("sec-fetch-site").is_some_and(|v| v == "same-origin"),
+        None => headers
+            .get("sec-fetch-site")
+            .is_some_and(|v| v == "same-origin"),
     }
 }
 
 pub fn forbidden() -> Response {
-    (StatusCode::FORBIDDEN, "This request did not come from Pagehaven.").into_response()
+    (
+        StatusCode::FORBIDDEN,
+        "This request did not come from Pagehaven.",
+    )
+        .into_response()
 }
 
 pub fn app_headers(response: &mut Response, settings: &Settings) {
@@ -39,13 +48,27 @@ pub fn app_headers(response: &mut Response, settings: &Settings) {
     if let Ok(value) = HeaderValue::from_str(&policy) {
         headers.insert(header::CONTENT_SECURITY_POLICY, value);
     }
-    headers.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
     headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
-    headers.insert(header::REFERRER_POLICY, HeaderValue::from_static("same-origin"));
-    headers.insert("cross-origin-opener-policy", HeaderValue::from_static("same-origin"));
-    headers.insert("permissions-policy", HeaderValue::from_static("camera=(), microphone=(), geolocation=(), payment=()"));
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("same-origin"),
+    );
+    headers.insert(
+        "cross-origin-opener-policy",
+        HeaderValue::from_static("same-origin"),
+    );
+    headers.insert(
+        "permissions-policy",
+        HeaderValue::from_static("camera=(), microphone=(), geolocation=(), payment=()"),
+    );
     let is_static = response.headers().get(header::CACHE_CONTROL).is_some();
     if !is_static {
-        response.headers_mut().insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        response
+            .headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     }
 }

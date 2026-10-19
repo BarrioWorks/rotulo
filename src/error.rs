@@ -12,14 +12,20 @@ pub enum ApiError {
     Unauthorized,
     #[error("We couldn't find that.")]
     NotFound,
-    #[error("This website was changed in another tab or window. Reload to see the latest version.")]
+    #[error(
+        "This website was changed in another tab or window. Reload to see the latest version."
+    )]
     Conflict { revision: i64 },
     #[error("{0}")]
     Invalid(String),
     #[error("{0}")]
     NotAllowed(String),
     #[error("{message}")]
-    Rejected { code: &'static str, status: StatusCode, message: String },
+    Rejected {
+        code: &'static str,
+        status: StatusCode,
+        message: String,
+    },
     #[error("You're doing that too often. Please wait a minute and try again.")]
     RateLimited,
     #[error("Pagehaven is busy with other websites right now. Please try again in a moment.")]
@@ -64,7 +70,11 @@ impl From<crate::document::EditError> for ApiError {
     fn from(error: crate::document::EditError) -> Self {
         use crate::document::EditError;
         match &error {
-            EditError::NotFound => Self::Rejected { code: "not_found", status: StatusCode::UNPROCESSABLE_ENTITY, message: error.to_string() },
+            EditError::NotFound => Self::Rejected {
+                code: "not_found",
+                status: StatusCode::UNPROCESSABLE_ENTITY,
+                message: error.to_string(),
+            },
             EditError::NotAllowed(_) => Self::NotAllowed(error.to_string()),
             EditError::Invalid(_) => Self::Invalid(error.to_string()),
         }

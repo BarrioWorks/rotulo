@@ -58,7 +58,12 @@ fn radix36(mut n: u64) -> String {
 pub fn token(secret: &str, project_id: i64, now: i64) -> String {
     // Round the expiry so every request within ten minutes reuses the same origin and its cache.
     let expires = (now + LIFETIME_SECONDS) / 600 * 600;
-    format!("{}-{}-{}", radix36(project_id as u64), radix36(expires as u64), mac(secret, project_id, expires))
+    format!(
+        "{}-{}-{}",
+        radix36(project_id as u64),
+        radix36(expires as u64),
+        mac(secret, project_id, expires)
+    )
 }
 
 /// The project a preview token grants, if the token is genuine and not expired.
@@ -71,12 +76,19 @@ pub fn verify(secret: &str, token: &str, now: i64) -> Option<i64> {
     let project_id = i64::try_from(u64::from_str_radix(id, 36).ok()?).ok()?;
     let expires = i64::try_from(u64::from_str_radix(expires, 36).ok()?).ok()?;
     let expected = mac(secret, project_id, expires);
-    let genuine = expected.len() == given.len() && expected.bytes().zip(given.bytes()).fold(0u8, |acc, (a, b)| acc | (a ^ b)) == 0;
+    let genuine = expected.len() == given.len()
+        && expected
+            .bytes()
+            .zip(given.bytes())
+            .fold(0u8, |acc, (a, b)| acc | (a ^ b))
+            == 0;
     (genuine && expires > now).then_some(project_id)
 }
 
 pub fn origin(state: &Pagehaven, project_id: i64) -> String {
-    state.settings.preview_origin(&token(&state.settings.secret, project_id, crate::db::now()))
+    state
+        .settings
+        .preview_origin(&token(&state.settings.secret, project_id, crate::db::now()))
 }
 
 fn headers(response: &mut Response, state: &Pagehaven) {
@@ -89,8 +101,14 @@ fn headers(response: &mut Response, state: &Pagehaven) {
     if let Ok(value) = HeaderValue::from_str(&policy) {
         h.insert(header::CONTENT_SECURITY_POLICY, value);
     }
-    h.insert(header::REFERRER_POLICY, HeaderValue::from_static("no-referrer"));
-    h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    h.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    h.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     h.insert(
         "permissions-policy",
@@ -123,7 +141,8 @@ async fn editor_script(state: &Pagehaven, path: &str) -> Response {
         return respond(StatusCode::NOT_FOUND, "text/plain", "Not found");
     };
     let body = if format!("/__pagehaven/{rest}") == AGENT_PATH {
-        let origin = serde_json::to_string(state.settings.app_origin.trim_end_matches('/')).expect("string");
+        let origin =
+            serde_json::to_string(state.settings.app_origin.trim_end_matches('/')).expect("string");
         format!("const PAGEHAVEN_APP_ORIGIN = {origin};\n{source}")
     } else {
         source
@@ -163,7 +182,13 @@ async fn serve_inner(ctx: &AppContext, state: &Pagehaven, token: &str, uri_path:
         Some(file) => (StatusCode::OK, file),
         None => match drafts::file(&ctx.db, project_id, "404.html").await {
             Ok(Some(file)) => (StatusCode::NOT_FOUND, file),
-            _ => return respond(StatusCode::NOT_FOUND, "text/plain; charset=utf-8", "This page isn't part of the website."),
+            _ => {
+                return respond(
+                    StatusCode::NOT_FOUND,
+                    "text/plain; charset=utf-8",
+                    "This page isn't part of the website.",
+                )
+            }
         },
     };
     let Some(kind) = FileKind::for_path(&file.path) else {
@@ -194,10 +219,15 @@ mod tests {
         let now = 1_800_000_000;
         let token = token(SECRET, 42, now);
         assert!(token.len() <= 63, "fits in one DNS label");
-        assert!(token.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'));
+        assert!(token
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'));
         assert_eq!(verify(SECRET, &token, now), Some(42));
         assert_eq!(verify(SECRET, &token, now + LIFETIME_SECONDS + 1), None);
-        assert_eq!(verify("another-secret-another-secret-xx", &token, now), None);
+        assert_eq!(
+            verify("another-secret-another-secret-xx", &token, now),
+            None
+        );
         let forged = token.replacen(&radix36(42), &radix36(43), 1);
         assert_eq!(verify(SECRET, &forged, now), None);
     }

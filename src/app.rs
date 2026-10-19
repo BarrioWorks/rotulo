@@ -20,7 +20,10 @@ use loco_rs::{
 };
 use migration::Migrator;
 
-use crate::{controllers, domains, hosts, hosts::Host, preview, security, settings::Settings, sites, state::Pagehaven};
+use crate::{
+    controllers, domains, hosts, hosts::Host, preview, security, settings::Settings, sites,
+    state::Pagehaven,
+};
 
 pub struct App;
 
@@ -34,13 +37,18 @@ impl Hooks for App {
         env!("CARGO_PKG_VERSION").to_owned()
     }
 
-    async fn boot(mode: StartMode, environment: &Environment, config: Config) -> Result<BootResult> {
+    async fn boot(
+        mode: StartMode,
+        environment: &Environment,
+        config: Config,
+    ) -> Result<BootResult> {
         create_app::<Self, Migrator>(mode, environment, config).await
     }
 
     async fn after_context(ctx: AppContext) -> Result<AppContext> {
         let settings = Settings::from_context(&ctx)?;
-        let state = Pagehaven::new(settings).map_err(|e| loco_rs::Error::string(&format!("data directory: {e}")))?;
+        let state = Pagehaven::new(settings)
+            .map_err(|e| loco_rs::Error::string(&format!("data directory: {e}")))?;
         ctx.shared_store.insert(Arc::new(state));
         Ok(ctx)
     }
@@ -50,14 +58,22 @@ impl Hooks for App {
     }
 
     fn routes(ctx: &AppContext) -> AppRoutes {
-        let limits = Settings::from_context(ctx).map(|s| s.limits).unwrap_or_default();
+        let limits = Settings::from_context(ctx)
+            .map(|s| s.limits)
+            .unwrap_or_default();
         AppRoutes::with_default_routes()
             .add_route(controllers::pages::routes())
-            .add_route(controllers::api::routes(limits.upload_bytes, limits.image_bytes))
+            .add_route(controllers::api::routes(
+                limits.upload_bytes,
+                limits.image_bytes,
+            ))
     }
 
     async fn after_routes(router: Router, ctx: &AppContext) -> Result<Router> {
-        Ok(router.layer(axum::middleware::from_fn_with_state(ctx.clone(), route_by_host)))
+        Ok(router.layer(axum::middleware::from_fn_with_state(
+            ctx.clone(),
+            route_by_host,
+        )))
     }
 
     async fn connect_workers(_ctx: &AppContext, _queue: &Queue) -> Result<()> {
@@ -96,27 +112,44 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
     if path == "/internal/tls/allowed" {
         return tls_allowed(&ctx, &state, request.uri().query().unwrap_or("")).await;
     }
-    let host = hosts::classify(request.headers().get(header::HOST).and_then(|v| v.to_str().ok()), &state.settings);
+    let host = hosts::classify(
+        request
+            .headers()
+            .get(header::HOST)
+            .and_then(|v| v.to_str().ok()),
+        &state.settings,
+    );
     let read_only = matches!(*request.method(), Method::GET | Method::HEAD);
     match host {
         Host::App => {
-            if security::unsafe_method(request.method()) && !security::same_origin(&request, &state.settings) {
+            if security::unsafe_method(request.method())
+                && !security::same_origin(&request, &state.settings)
+            {
                 return security::forbidden();
             }
             let mut response = next.run(request).await;
             security::app_headers(&mut response, &state.settings);
             response
         }
-        _ if !read_only => (StatusCode::METHOD_NOT_ALLOWED, "Websites on Pagehaven are read-only.").into_response(),
+        _ if !read_only => (
+            StatusCode::METHOD_NOT_ALLOWED,
+            "Websites on Pagehaven are read-only.",
+        )
+            .into_response(),
         Host::Preview(token) => preview::serve(&ctx, &token, &path).await,
-        Host::Site(_) | Host::Custom(_) => sites::serve(&ctx, &host, &path, request.method() == Method::HEAD).await,
+        Host::Site(_) | Host::Custom(_) => {
+            sites::serve(&ctx, &host, &path, request.method() == Method::HEAD).await
+        }
         Host::Invalid => sites::not_found(),
     }
 }
 
 /// Asked by the reverse proxy before it obtains a certificate (Caddy `on_demand_tls ask`).
 async fn tls_allowed(ctx: &AppContext, state: &Pagehaven, query: &str) -> Response {
-    let domain = query.split('&').find_map(|pair| pair.strip_prefix("domain=")).unwrap_or("");
+    let domain = query
+        .split('&')
+        .find_map(|pair| pair.strip_prefix("domain="))
+        .unwrap_or("");
     let domain = percent_encoding::percent_decode_str(domain).decode_utf8_lossy();
     match domains::certificate_allowed(&ctx.db, &state.settings, &domain).await {
         Ok(true) => StatusCode::OK.into_response(),
