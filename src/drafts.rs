@@ -246,6 +246,7 @@ pub enum Step {
 /// Undoes the latest applied edit or redoes the earliest undone one.
 pub async fn step(
     db: &DatabaseConnection,
+    store: &crate::store::Store,
     project: &Project,
     base: i64,
     step: Step,
@@ -280,6 +281,19 @@ pub async fn step(
             return Err(ApiError::NotAllowed(
                 "This change can't be undone because the page changed since.".to_owned(),
             ));
+        }
+        if is_page(&path) {
+            if let Some((blob, _)) = target {
+                let blob = crate::store::Blob::parse(blob)
+                    .ok_or_else(|| ApiError::internal("bad blob"))?;
+                let bytes = store.read(&blob)?;
+                tokio::task::spawn_blocking(move || {
+                    crate::document::Document::parse_checked(&String::from_utf8_lossy(&bytes))
+                        .map(|_| ())
+                })
+                .await
+                .map_err(ApiError::internal)??;
+            }
         }
         set_file(&tx, project.id, &path, target).await?;
         if is_page(&path) {

@@ -199,9 +199,17 @@ async fn serve_inner(ctx: &AppContext, state: &Pagehaven, token: &str, uri_path:
         Err(error) => return crate::error::ApiError::internal(error).into_response(),
     };
     if kind == FileKind::Html {
-        let mut document = Document::parse(&String::from_utf8_lossy(&bytes));
-        document.annotate_for_editor(AGENT_PATH);
-        return respond(status, kind.mime(), document.serialize());
+        let rendered = tokio::task::spawn_blocking(move || {
+            let mut document = Document::parse_checked(&String::from_utf8_lossy(&bytes))?;
+            document.annotate_for_editor(AGENT_PATH);
+            Ok::<_, crate::error::ApiError>(document.serialize())
+        })
+        .await;
+        return match rendered {
+            Ok(Ok(html)) => respond(status, kind.mime(), html),
+            Ok(Err(error)) => error.into_response(),
+            Err(error) => crate::error::ApiError::internal(error).into_response(),
+        };
     }
     respond(status, kind.mime(), bytes)
 }

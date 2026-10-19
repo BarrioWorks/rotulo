@@ -8,7 +8,7 @@ Actors: an anonymous visitor, a signed-in user attacking another user, a user up
 |---|---|---|
 | Path traversal, absolute paths, drive letters | The importer builds paths from validated segments only. `..`, `.`, empty segments, `\`, `:`, control characters rejected | `src/import/tests.rs`, `tests/requests/imports.rs` |
 | Symlinks, devices, FIFOs | Unix mode in the central directory must be a regular file or directory | `src/import/tests.rs` |
-| Duplicate or case-colliding paths | Case-folded set of normalized paths | `src/import/tests.rs` |
+| Duplicate or case-colliding paths | Unicode lowercase comparison at archive import and page add/rename. Unicode NFC normalization is not performed, so canonically equivalent spellings can still differ | `src/import/tests.rs` |
 | ZIP bombs, lying sizes, overlapping entries | Declared and actual byte counters per entry and in total, compression-ratio cap, overlap check between entries, CRC-32 | `src/import/tests.rs` |
 | Malformed, encrypted, ZIP64, multi-disk, prefixed archives | Strict EOCD and central-directory parsing, rejected with a message | `src/import/tests.rs` |
 | Nested archives | Never extracted. Skipped with a warning | `src/import/tests.rs` |
@@ -18,7 +18,7 @@ Actors: an anonymous visitor, a signed-in user attacking another user, a user up
 | Disk exhaustion | Upload, content and file-count limits, per-user project limit, upload and import rate limits, staging removed on failure | `tests/requests/imports.rs` |
 | CPU or memory exhaustion | Global semaphore on imports and publishes, blocking work off the async runtime, streamed inflate | `scripts/perf.sh`, `docs/verification.md` |
 | Imported JavaScript reading app cookies or storage | Draft previews and published sites live on a different site from the app. No cookies are ever set on those hosts | `tests/requests/preview.rs` |
-| Imported JavaScript driving the editor | The toolbar is in the app page. Messages are checked for origin, window and schema. Message-driven edits go through the same server validation and only reach this project's draft. Publishing cannot be triggered by a message | `frontend/tests/protocol.test.mjs`, `tests/requests/editing.rs` |
+| Imported JavaScript driving the editor | Site JS shares the preview origin and window with the agent and can forge messages. Origin, source and schema checks remain required. Parent-side gating limits text saves and shortcuts to the text session the owner started in the app, and text saves to its element and parent-chosen page. Ready messages must match the parent-chosen page. The server still validates every edit; messages cannot publish | `frontend/tests/protocol.test.mjs`, `frontend/tests/canvas-policy.test.mjs`, `tests/requests/editing.rs` |
 | Preview token reused for a newer project | Project and release ids are `AUTOINCREMENT`, so an id is never reused after a deletion | `migration/src/m20261019_000001_initial.rs` |
 | Preview URL leak | HMAC token in the hostname, expires after 12 hours, `Referrer-Policy: no-referrer` on preview responses | `tests/requests/preview.rs` |
 | Preview framed by another site | `frame-ancestors` names only the app origin | `tests/requests/preview.rs` |

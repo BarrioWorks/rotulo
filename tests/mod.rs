@@ -10,6 +10,8 @@ mod editing;
 mod imports;
 #[path = "requests/preview.rs"]
 mod preview;
+#[path = "requests/projects.rs"]
+mod projects;
 #[path = "requests/publishing.rs"]
 mod publishing;
 #[path = "requests/support.rs"]

@@ -151,7 +151,7 @@ async fn login(
     }
     match auth::authenticate(&ctx.db, &form.email, &form.password).await {
         Ok(user) => {
-            if let Some(old) = jar.get(auth::COOKIE) {
+            if let Some(old) = jar.get(auth::cookie_name(auth::secure_cookies(&ctx))) {
                 auth::revoke_session(&ctx.db, old.value())
                     .await
                     .map_err(internal)?;
@@ -171,7 +171,7 @@ async fn login(
 }
 
 async fn logout(State(ctx): State<AppContext>, jar: CookieJar) -> Result<Response> {
-    if let Some(cookie) = jar.get(auth::COOKIE) {
+    if let Some(cookie) = jar.get(auth::cookie_name(auth::secure_cookies(&ctx))) {
         auth::revoke_session(&ctx.db, cookie.value())
             .await
             .map_err(internal)?;
@@ -202,7 +202,7 @@ pub async fn thumbnail(ctx: &AppContext, state: &Pagehaven, project_id: i64) -> 
         .await
         .ok()??;
     let html = String::from_utf8_lossy(&state.store.read(&index.blob).ok()?).into_owned();
-    let candidates = Document::parse(&html).representative_images();
+    let candidates = Document::parse_checked(&html).ok()?.representative_images();
     for src in candidates {
         let Some(path) = crate::import::references::resolve("index.html", &src) else {
             continue;

@@ -78,6 +78,7 @@ pub fn validate(store: &Store, files: &[DraftFile]) -> Result<(), ApiError> {
     let present: std::collections::HashSet<&str> = files.iter().map(|f| f.path.as_str()).collect();
     for file in files.iter().filter(|f| drafts::is_page(&f.path)) {
         let html = String::from_utf8_lossy(&store.read(&file.blob)?).into_owned();
+        Document::parse_checked(&html)?;
         for reference in crate::import::references::html_references(&html) {
             use crate::import::references::RefKind;
             if !matches!(reference.kind, RefKind::Script | RefKind::Stylesheet) {
@@ -104,7 +105,7 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
         for file in files {
             let published = if drafts::is_page(&file.path) {
                 let mut document =
-                    Document::parse(&String::from_utf8_lossy(&store.read(&file.blob)?));
+                    Document::parse_checked(&String::from_utf8_lossy(&store.read(&file.blob)?))?;
                 document.strip_editor_markup();
                 let bytes = document.serialize().into_bytes();
                 let len = bytes.len() as i64;
@@ -126,9 +127,7 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
             }
             store::create_dir_all(destination.parent().expect("file has a parent"), 0o750)?;
             let source = store.blob_path(&published.0);
-            if fs::hard_link(&source, &destination).is_err() {
-                fs::copy(&source, &destination)?;
-            }
+            link_blob(&source, &destination)?;
             built.push(Built {
                 path: file.path.clone(),
                 published,
@@ -153,6 +152,40 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
     result
 }
 
+fn link_blob(source: &Path, destination: &Path) -> std::io::Result<()> {
+    use std::io::{self, ErrorKind};
+    use std::os::unix::fs::OpenOptionsExt;
+
+    match fs::hard_link(source, destination) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == ErrorKind::CrossesDevices => {
+            let mut source = fs::File::open(source)?;
+            let mut destination = fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .mode(0o440)
+                .open(destination)?;
+            io::copy(&mut source, &mut destination)?;
+            Ok(())
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn suspended() -> ApiError {
+    ApiError::NotAllowed(
+        "This website was taken offline after a report. Contact Pagehaven support.".to_owned(),
+    )
+}
+
+/// Refuses publication until an operator lifts the suspension.
+pub fn ensure_publishable(project: &Project) -> Result<(), ApiError> {
+    if project.suspended_at.is_some() {
+        return Err(suspended());
+    }
+    Ok(())
+}
+
 /// Publishes the draft at revision `base` as the next release and makes it live.
 pub async fn publish(
     db: &DatabaseConnection,
@@ -165,6 +198,7 @@ pub async fn publish(
     let lock = state.project_lock(project.id);
     let _guard = lock.lock().await;
     let project = crate::projects::reload(db, project.id).await?;
+    ensure_publishable(&project)?;
     if project.revision != base {
         return Err(ApiError::Conflict {
             revision: project.revision,
@@ -218,7 +252,10 @@ pub async fn publish(
             )
             .await?;
         }
-        db::exec(&tx, "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ?", [release_id.into(), db::now().into(), project.id.into()]).await?;
+        let changed = db::exec(&tx, "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ? AND suspended_at IS NULL", [release_id.into(), db::now().into(), project.id.into()]).await?;
+        if changed == 0 {
+            return Err(suspended());
+        }
         tx.commit().await?;
         Ok::<i64, ApiError>(release_id)
     }
@@ -259,15 +296,17 @@ pub async fn activate(
 ) -> Result<Release, ApiError> {
     let lock = state.project_lock(project.id);
     let _guard = lock.lock().await;
-    let release_id = find(db, project, number).await?;
+    let project = crate::projects::reload(db, project.id).await?;
+    ensure_publishable(&project)?;
+    let release_id = find(db, &project, number).await?;
     if !state.store.release_dir(project.id, number).is_dir() {
         return Err(ApiError::internal(format!(
             "release directory {number} is missing"
         )));
     }
-    db::exec(
+    let changed = db::exec(
         db,
-        "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+        "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ? AND user_id = ? AND suspended_at IS NULL",
         [
             release_id.into(),
             db::now().into(),
@@ -276,6 +315,9 @@ pub async fn activate(
         ],
     )
     .await?;
+    if changed == 0 {
+        return Err(suspended());
+    }
     let project = crate::projects::reload(db, project.id).await?;
     list(db, &project)
         .await?
@@ -313,6 +355,20 @@ pub async fn restore(
             ),
         );
     }
+    let store = state.store.clone();
+    let pages: Vec<_> = wanted
+        .iter()
+        .filter(|(path, _)| drafts::is_page(path))
+        .map(|(_, (blob, _))| blob.clone())
+        .collect();
+    tokio::task::spawn_blocking(move || -> Result<(), ApiError> {
+        for blob in pages {
+            Document::parse_checked(&String::from_utf8_lossy(&store.read(&blob)?))?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(ApiError::internal)??;
     let mut changes: Vec<Change> = drafts::files(db, project.id)
         .await?
         .into_iter()
@@ -336,4 +392,75 @@ pub async fn restore(
         changes,
     )
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+    fn test_root() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("target/publish-tests")
+            .join(store::random_token(12))
+    }
+
+    #[test]
+    fn release_path_collisions_never_overwrite_shared_blobs() {
+        let root = test_root();
+        let store = Store::open(&root).unwrap();
+        let first = store.put_bytes(b"first").unwrap();
+        let second = store.put_bytes(b"other").unwrap();
+        // Reproduce a privileged writer's access without running the test as root.
+        fs::set_permissions(store.blob_path(&first), fs::Permissions::from_mode(0o640)).unwrap();
+        let files = vec![
+            DraftFile {
+                path: "asset.png".to_owned(),
+                blob: first.clone(),
+                bytes: 5,
+            },
+            DraftFile {
+                path: "asset.png".to_owned(),
+                blob: second,
+                bytes: 5,
+            },
+        ];
+        let target = store.release_dir(1, 1);
+        let result = build(&store, &files, &target);
+        let original = store.read(&first).unwrap();
+        let target_exists = target.exists();
+        fs::remove_dir_all(root).unwrap();
+        assert_eq!(original, b"first", "a collision changed the shared blob");
+        assert!(result.is_err());
+        assert!(!target_exists);
+    }
+
+    #[test]
+    fn cross_device_copies_create_new_files_and_refuse_existing_destinations() {
+        let root = test_root();
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("source");
+        fs::write(&source, b"original").unwrap();
+        let destination_dir =
+            Path::new("/dev/shm").join(format!("ph-publish-{}", store::random_token(12)));
+        fs::create_dir(&destination_dir).unwrap();
+        assert_ne!(
+            fs::metadata(&root).unwrap().dev(),
+            fs::metadata(&destination_dir).unwrap().dev(),
+            "test needs two filesystems"
+        );
+        let destination = destination_dir.join("asset");
+        link_blob(&source, &destination).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"original");
+        fs::write(&source, b"changed!").unwrap();
+        let result = link_blob(&source, &destination);
+        let preserved = fs::read(&destination).unwrap();
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_dir_all(destination_dir).unwrap();
+        assert!(
+            result.is_err(),
+            "an existing cross-device destination was overwritten"
+        );
+        assert_eq!(preserved, b"original");
+    }
 }

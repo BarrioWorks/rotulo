@@ -27,7 +27,7 @@ scripts/perf.sh 7 fixtures/zips/harbor-bakery.zip   # import and publish timings
 
 ## Operate it
 
-- `pagehaven-cli task unpublish slug:<address>` takes a website offline after an abuse report.
+- `pagehaven-cli task unpublish slug:<address>` suspends a website after an abuse report. `pagehaven-cli task reinstate slug:<address>` lets its owner publish again without putting it back online.
 - `docs/deployment.md` lists what the VPS needs and what still needs the owner's approval.
 
 ## Documents

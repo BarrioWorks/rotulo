@@ -86,6 +86,7 @@ mod tests {
             data_dir: "data".into(),
             secret: "x".repeat(32),
             secure_cookies: true,
+            user_content_on_public_suffix: false,
             client_ip_header: None,
             custom_domains: true,
             abuse_email: None,

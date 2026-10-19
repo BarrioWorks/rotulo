@@ -82,6 +82,7 @@ impl Hooks for App {
 
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(crate::tasks::Unpublish);
+        tasks.register(crate::tasks::Reinstate);
     }
 
     async fn truncate(_ctx: &AppContext) -> Result<()> {
@@ -125,6 +126,10 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
             .and_then(|v| v.to_str().ok()),
         &state.settings,
     );
+    let host = match host {
+        Host::Custom(_) if !state.settings.custom_domains => Host::Invalid,
+        host => host,
+    };
     let read_only = matches!(*request.method(), Method::GET | Method::HEAD);
     match host {
         Host::App => {

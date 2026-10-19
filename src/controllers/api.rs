@@ -53,7 +53,7 @@ async fn page_list(
         .filter(|f| drafts::is_page(&f.path))
     {
         let html = String::from_utf8_lossy(&state.store.read(&file.blob)?).into_owned();
-        let document = Document::parse(&html);
+        let document = Document::parse_checked(&html)?;
         pages.push(json!({"path": file.path, "title": document.title(), "description": document.description()}));
     }
     pages.sort_by_key(|p| {
@@ -227,15 +227,16 @@ async fn create_import(
     }
     let kept = state.store.keep_archive(&archive, &pid, &archive_sha)?;
     let now = db::now();
+    let slug = projects::unique_slug(&ctx.db, user.id, &display_name).await?;
     let tx = ctx.db.begin().await?;
-    let slug = projects::unique_slug(&tx, user.id, &display_name).await?;
     projects::claim_slug(&tx, user.id, &slug).await?;
     let project_id = db::insert(
         &tx,
         "INSERT INTO projects (pid, user_id, name, slug, revision, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
         [pid.as_str().into(), user.id.into(), display_name.as_str().into(), slug.as_str().into(), now.into(), now.into()],
     )
-    .await?;
+    .await
+    .map_err(projects::slug_write_error)?;
     let content_bytes: u64 = site.files.iter().map(|f| f.bytes).sum();
     db::exec(
         &tx,
@@ -363,6 +364,7 @@ async fn read_page(
 }
 
 fn store_page(state: &Pagehaven, path: &str, document: &Document) -> ApiResult<Change> {
+    document.validate_depth()?;
     let bytes = document.serialize().into_bytes();
     let len = bytes.len() as i64;
     Ok(Change {
@@ -429,7 +431,7 @@ async fn create_edit(
             (edit, summary)
         };
         let page = {
-            let mut document = Document::parse(&html);
+            let mut document = Document::parse_checked(&html)?;
             document.apply(&edit)?;
             store_page(&state, &body.page, &document)?
         };
@@ -464,7 +466,8 @@ async fn history_step(
 ) -> ApiResult<Json<Value>> {
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, base, |project| async move {
-        let applied = drafts::step(&ctx.db, &project, base, step).await?;
+        let applied =
+            drafts::step(&ctx.db, &Pagehaven::from(ctx).store, &project, base, step).await?;
         change_response(ctx, project.id, &applied).await
     })
     .await?;
@@ -558,7 +561,11 @@ async fn add_page(
                     .to_owned(),
             ));
         }
-        if drafts::file(&ctx.db, project.id, &path).await?.is_some() {
+        if drafts::files(&ctx.db, project.id)
+            .await?
+            .iter()
+            .any(|f| f.path.to_lowercase() == path.to_lowercase())
+        {
             return Err(ApiError::Invalid(
                 "A page with that name already exists.".to_owned(),
             ));
@@ -572,7 +579,7 @@ async fn add_page(
         }
         let html = read_page(ctx, &state, &project, &body.from).await?;
         let change = {
-            let mut document = Document::parse(&html);
+            let mut document = Document::parse_checked(&html)?;
             let description = document.description().unwrap_or_default();
             document.apply(&PageEdit::SetPageMeta {
                 title: body.title.clone(),
@@ -643,12 +650,13 @@ async fn rename_page(
         }
         let files = drafts::files(&ctx.db, project.id).await?;
         let source = files.iter().find(|f| f.path == body.from && drafts::is_page(&f.path)).ok_or(ApiError::NotFound)?;
-        if files.iter().any(|f| f.path == to) {
+        if files.iter().any(|f| f.path.to_lowercase() == to.to_lowercase()) {
             return Err(ApiError::Invalid("A page with that name already exists.".to_owned()));
         }
         let mut changes = vec![Change { path: body.from.clone(), after: None }, Change { path: to.clone(), after: Some((source.blob.clone(), source.bytes)) }];
         for page in files.iter().filter(|f| drafts::is_page(&f.path)) {
-            let mut document = Document::parse(&String::from_utf8_lossy(&state.store.read(&page.blob)?));
+            let mut document = Document::parse_checked(&String::from_utf8_lossy(&state.store.read(&page.blob)?))?;
+            document.validate_depth()?;
             let own_path = if page.path == body.from { to.as_str() } else { page.path.as_str() };
             if document.rewrite_hrefs(|href| relink(own_path, href, &body.from, &to)) {
                 changes.retain(|c| c.path != own_path);
@@ -772,6 +780,7 @@ async fn publish_draft(
     let state = Pagehaven::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
+    publish::ensure_publishable(&project)?;
     let started = std::time::Instant::now();
     let release = publish::publish(&ctx.db, &state, &project, user.id, body.base_revision).await?;
     tracing::info!(
@@ -807,6 +816,7 @@ async fn activate_release(
     let state = Pagehaven::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
+    publish::ensure_publishable(&project)?;
     Ok(Json(
         json!({"release": publish::activate(&ctx.db, &state, &project, number).await?}),
     ))

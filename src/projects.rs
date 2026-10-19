@@ -1,6 +1,6 @@
 //! Projects and who may touch them. Every project route goes through [`owned`].
 
-use sea_orm::{ConnectionTrait, DatabaseConnection, QueryResult};
+use sea_orm::{ConnectionTrait, DatabaseConnection, QueryResult, TransactionTrait};
 
 use crate::{auth::User, db, error::ApiError};
 
@@ -13,12 +13,13 @@ pub struct Project {
     pub slug: String,
     pub revision: i64,
     pub live_release_id: Option<i64>,
+    pub suspended_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 const COLUMNS: &str =
-    "id, pid, user_id, name, slug, revision, live_release_id, created_at, updated_at";
+    "id, pid, user_id, name, slug, revision, live_release_id, suspended_at, created_at, updated_at";
 
 fn from_row(row: &QueryResult) -> Result<Project, sea_orm::DbErr> {
     Ok(Project {
@@ -29,6 +30,7 @@ fn from_row(row: &QueryResult) -> Result<Project, sea_orm::DbErr> {
         slug: row.try_get("", "slug")?,
         revision: row.try_get("", "revision")?,
         live_release_id: row.try_get("", "live_release_id")?,
+        suspended_at: row.try_get("", "suspended_at")?,
         created_at: row.try_get("", "created_at")?,
         updated_at: row.try_get("", "updated_at")?,
     })
@@ -232,6 +234,19 @@ pub async fn unique_slug<C: ConnectionTrait>(
     Ok(format!("site-{}", crate::store::random_token(4)))
 }
 
+fn slug_taken() -> ApiError {
+    ApiError::Invalid("That web address is taken. Please choose another.".to_owned())
+}
+
+/// Turns a competing project slug into the same error as a competing claim.
+pub fn slug_write_error(error: sea_orm::DbErr) -> ApiError {
+    if matches!(error.sql_err(), Some(sea_orm::SqlErr::UniqueConstraintViolation(message)) if message == "UNIQUE constraint failed: projects.slug")
+    {
+        return slug_taken();
+    }
+    error.into()
+}
+
 /// Records that `user` uses `slug`, so it never moves to another account.
 pub async fn claim_slug<C: ConnectionTrait>(
     db: &C,
@@ -244,6 +259,16 @@ pub async fn claim_slug<C: ConnectionTrait>(
         [slug.into(), user_id.into()],
     )
     .await?;
+    if db::one(
+        db,
+        "SELECT user_id FROM slug_claims WHERE slug = ? AND user_id = ?",
+        [slug.into(), user_id.into()],
+    )
+    .await?
+    .is_none()
+    {
+        return Err(slug_taken());
+    }
     Ok(())
 }
 
@@ -261,14 +286,13 @@ pub async fn update_settings(
     }
     let slug = slug.trim().to_ascii_lowercase();
     validate_slug(&slug)?;
-    if !slug_available(db, project.user_id, &slug, Some(project.id)).await? {
-        return Err(ApiError::Invalid(
-            "That web address is taken. Please choose another.".to_owned(),
-        ));
+    let tx = db.begin().await?;
+    claim_slug(&tx, project.user_id, &slug).await?;
+    if !slug_available(&tx, project.user_id, &slug, Some(project.id)).await? {
+        return Err(slug_taken());
     }
-    claim_slug(db, project.user_id, &slug).await?;
     db::exec(
-        db,
+        &tx,
         "UPDATE projects SET name = ?, slug = ?, updated_at = ? WHERE id = ?",
         [
             name.into(),
@@ -277,7 +301,9 @@ pub async fn update_settings(
             project.id.into(),
         ],
     )
-    .await?;
+    .await
+    .map_err(slug_write_error)?;
+    tx.commit().await?;
     reload(db, project.id).await
 }
 

@@ -12,13 +12,13 @@ use crate::{db, hosts::Host, import::policy::FileKind, paths, preview::respond, 
 async fn live_release(ctx: &AppContext, host: &Host) -> Result<Option<(i64, i64)>, sea_orm::DbErr> {
     let row = match host {
         Host::Site(slug) => {
-            db::one(&ctx.db, "SELECT p.id AS project, r.number FROM projects p JOIN releases r ON r.id = p.live_release_id WHERE p.slug = ?", [slug.as_str().into()]).await?
+            db::one(&ctx.db, "SELECT p.id AS project, r.number FROM projects p JOIN releases r ON r.id = p.live_release_id WHERE p.slug = ? AND p.suspended_at IS NULL", [slug.as_str().into()]).await?
         }
         Host::Custom(hostname) => {
             db::one(
                 &ctx.db,
                 "SELECT p.id AS project, r.number FROM domains d JOIN projects p ON p.id = d.project_id
-                 JOIN releases r ON r.id = p.live_release_id WHERE d.hostname = ? AND d.verified_at IS NOT NULL",
+                 JOIN releases r ON r.id = p.live_release_id WHERE d.hostname = ? AND d.verified_at IS NOT NULL AND p.suspended_at IS NULL",
                 [hostname.as_str().into()],
             )
             .await?

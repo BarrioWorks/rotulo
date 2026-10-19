@@ -237,7 +237,7 @@ function reportEditing(active) {
         return;
     post({ type: "editing", element: id, active, formats: active ? formats() : { bold: false, italic: false, link: false } });
 }
-function startText(at) {
+function startText() {
     if (!selected || !canOf(selected).includes("t") || editing?.el === selected)
         return;
     const id = idOf(selected);
@@ -251,15 +251,8 @@ function startText(at) {
     document.execCommand("styleWithCSS", false, "false");
     const sel = document.getSelection();
     if (sel) {
-        const range = at ? document.caretRangeFromPoint?.(at.x, at.y) : null;
-        if (range && el.contains(range.startContainer)) {
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }
-        else {
-            sel.selectAllChildren(el);
-            sel.collapseToEnd();
-        }
+        sel.selectAllChildren(el);
+        sel.collapseToEnd();
     }
     reportEditing(true);
     schedule();
@@ -278,12 +271,13 @@ function stopText() {
     return current;
 }
 function commitText() {
-    const current = stopText();
+    const current = editing;
     if (!current)
         return;
     const html = current.el.innerHTML;
     if (html !== current.original)
         post({ type: "text", element: current.id, html: html.slice(0, 65536) });
+    stopText();
     if (selected === current.el)
         select(current.el);
 }
@@ -378,6 +372,7 @@ function handle(message) {
             schedule();
             break;
         case "start_text":
+            select(byId(message.element));
             startText();
             break;
         case "finish_text":
@@ -503,6 +498,24 @@ for (const type of ["mousedown", "pointerdown"]) {
     }, true);
 }
 document.addEventListener("click", (event) => {
+    if (mode === "preview" && !isOurs(event) && !event.defaultPrevented && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+        const link = asElement(event.target)?.closest("a");
+        const href = link?.getAttribute("href");
+        if (href && !link?.hasAttribute("download") && link?.getAttribute("target") !== "_blank") {
+            try {
+                const destination = new URL(href, location.href);
+                if (destination.origin === location.origin && (destination.pathname !== location.pathname || destination.search !== location.search)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    post({ type: "navigate", href: destination.href.slice(0, 2048) });
+                    return;
+                }
+            }
+            catch {
+                // Invalid links keep the browser's usual behavior.
+            }
+        }
+    }
     if (mode !== "edit" || isOurs(event))
         return;
     if (editingContains(event.target)) {
@@ -518,10 +531,7 @@ document.addEventListener("click", (event) => {
         return;
     const result = pick(target);
     if (result.kind === "element") {
-        if (result.el === selected && canOf(result.el).includes("t"))
-            startText({ x: event.clientX, y: event.clientY });
-        else
-            select(result.el);
+        select(result.el);
     }
     else if (result.kind === "blocked") {
         showBlocked(result.el);
@@ -529,14 +539,6 @@ document.addEventListener("click", (event) => {
     else {
         select(null);
     }
-}, true);
-document.addEventListener("dblclick", (event) => {
-    if (mode !== "edit" || isOurs(event) || editingContains(event.target))
-        return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (selected && canOf(selected).includes("t"))
-        startText({ x: event.clientX, y: event.clientY });
 }, true);
 for (const type of ["auxclick", "contextmenu"]) {
     document.addEventListener(type, (event) => {
@@ -579,10 +581,6 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && (selected || blocked)) {
         event.preventDefault();
         select(null);
-    }
-    else if (event.key === "Enter" && selected && canOf(selected).includes("t")) {
-        event.preventDefault();
-        startText();
     }
     else if ((event.key === "Enter" || event.key === " ") && asElement(event.target)?.closest("a, button, summary")) {
         event.preventDefault();
