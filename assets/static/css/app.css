@@ -461,7 +461,7 @@ dialog.modal {
   box-shadow: var(--shadow-lg);
 }
 dialog.modal[open] { animation: pop var(--mid) var(--ease); }
-dialog.modal::backdrop { background: rgba(28, 24, 16, 0.28); backdrop-filter: blur(2px); }
+dialog.modal::backdrop { background: rgba(28, 24, 16, 0.32); }
 .modal-body { padding: var(--s6); }
 .modal-body h2 { font-size: 18px; font-weight: 650; letter-spacing: -0.01em; }
 .modal-body p { margin-top: 8px; color: var(--text-2); font-size: 14.5px; }
@@ -541,7 +541,7 @@ body.editor-body { height: 100vh; overflow: hidden; background: var(--bg-sunken)
 
 .publish-box { display: flex; flex-direction: column; gap: var(--s3); }
 .live-address { display: flex; align-items: center; gap: var(--s2); padding: 10px 12px; border-radius: var(--r); background: var(--bg); border: 1px solid var(--line); min-width: 0; }
-.live-address a { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 550; }
+.live-address .live-link { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 550; }
 .publish-state { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
 .publish-state .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); flex: none; }
 .publish-state[data-state="live"] .dot { background: var(--green); }
@@ -558,7 +558,7 @@ body.editor-body { height: 100vh; overflow: hidden; background: var(--bg-sunken)
 .domain { padding: var(--s3); border-radius: var(--r-md); border: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; gap: var(--s3); }
 .domain + .domain { margin-top: var(--s2); }
 .domain-head { display: flex; align-items: center; gap: var(--s2); }
-.domain-head strong { font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.domain-head strong { font-size: 13.5px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .dns-records { display: flex; flex-direction: column; gap: var(--s2); }
 .dns-record { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; font-size: 12px; }
 .dns-record-type { font-weight: 700; font-size: 11px; color: var(--text-2); letter-spacing: 0.04em; }
@@ -577,7 +577,7 @@ body.editor-body { height: 100vh; overflow: hidden; background: var(--bg-sunken)
 .canvas-area[data-device="mobile"] .canvas-frame { width: 390px; max-height: 844px; border-radius: 38px; box-shadow: 0 0 0 10px #1f1d1a, 0 0 0 11px #3a3631, var(--shadow-lg); }
 .canvas-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s3); background: rgba(255, 255, 255, 0.86); color: var(--text-2); font-size: 13.5px; opacity: 0; pointer-events: none; transition: opacity var(--mid) var(--ease); }
 .canvas-frame.is-loading .canvas-loading { opacity: 1; pointer-events: auto; }
-.mode-hint { position: absolute; left: 50%; top: var(--s3); transform: translateX(-50%); z-index: 5; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-pill); background: rgba(34, 32, 28, 0.86); color: #fff; font-size: 12.5px; pointer-events: none; box-shadow: var(--shadow-md); }
+.mode-hint { position: absolute; left: 50%; bottom: var(--s5); transform: translateX(-50%); z-index: 5; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: var(--r-pill); background: rgba(34, 32, 28, 0.86); color: #fff; font-size: 12.5px; pointer-events: none; box-shadow: var(--shadow-md); }
 
 .ftb {
   position: fixed; z-index: 40; left: 0; top: 0;
