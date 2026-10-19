@@ -403,6 +403,14 @@ fn northwind_studio_fixture_selects_dist() {
     real_fixture("northwind-studio", Some("dist"), false);
 }
 #[test]
+fn a_bootstrap_template_repository_imports_its_dist_folder() {
+    real_fixture("startbootstrap-agency", Some("dist"), false);
+}
+#[test]
+fn a_tailwind_template_repository_imports_from_its_root() {
+    real_fixture("landwind", Some(""), false);
+}
+#[test]
 fn vite_source_only_fixture_requires_a_build() {
     real_fixture("vite-source-only", None, true);
 }

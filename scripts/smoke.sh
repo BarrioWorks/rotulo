@@ -35,7 +35,8 @@ REV=$(json "$W/editor.json" "d['project']['revision']")
 s=$(host_get "$PO/"); expect "$s" 200 "preview home page"
 grep -q 'data-pagehaven="agent"' "$W/page" && echo "ok   preview has the editor agent"
 grep -qi '^set-cookie' "$W/headers" && { echo "FAIL preview set a cookie"; exit 1; }
-H1=$(python3 -I -c "import re,sys; h=open(sys.argv[1]).read(); m=re.search(r'<h1[^>]*data-ph-id=\"([0-9a-z]+)\"', h); print(m.group(1))" "$W/page")
+# The first main heading, or the first section heading when a page has no <h1>.
+H1=$(python3 -I -c "import re,sys; h=open(sys.argv[1]).read(); m=re.search(r'<h1[^>]*data-ph-id=\"([0-9a-z]+)\"', h) or re.search(r'<h2[^>]*data-ph-id=\"([0-9a-z]+)\"', h); print(m.group(1))" "$W/page")
 s=$(call POST "/api/projects/$PID/edits" "{\"base_revision\":$REV,\"page\":\"index.html\",\"edit\":{\"op\":\"set_text\",\"element\":\"$H1\",\"html\":\"Smoke test headline\"}}")
 expect "$s" 200 "edit the headline"
 REV=$(json "$W/out" "d['revision']")
@@ -46,7 +47,7 @@ SITE=$(json "$W/out" "d['site_url']")
 s=$(host_get "$SITE/"); expect "$s" 200 "live site home page"
 grep -q "Smoke test headline" "$W/page" && echo "ok   live site shows the edit"
 grep -q "data-ph-" "$W/page" && { echo "FAIL live site has editor markup"; exit 1; }
-CSS=$(python3 -I -c "import re,sys; h=open(sys.argv[1]).read(); print(re.search(r'<link[^>]*rel=\"stylesheet\"[^>]*href=\"([^\"]+)\"|<link[^>]*href=\"([^\"]+\\.css)\"', h).group(1) or '')" "$W/page")
+CSS=$(python3 -I -c "import re,sys; h=open(sys.argv[1]).read(); m=re.search(r'<link[^>]*rel=\"stylesheet\"[^>]*href=\"([^\"]+)\"|<link[^>]*href=\"([^\"]+\\.css)\"', h); print(m.group(1) or m.group(2))" "$W/page")
 CSS=${CSS#/}
 s=$(host_get "$SITE/$CSS"); expect "$s" 200 "live stylesheet $CSS"
 grep -qi "content-type: text/css" "$W/headers" && echo "ok   stylesheet MIME type"
