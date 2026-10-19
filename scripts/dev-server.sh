@@ -6,7 +6,12 @@ cd "$(dirname "$0")/.."
 mkdir -p "$DIR"
 if [ -f "$DIR/pid" ] && kill -0 "$(cat "$DIR/pid")" 2>/dev/null; then kill "$(cat "$DIR/pid")"; sleep 1; fi
 cargo build -q
+if ss -ltn | grep -q '127.0.0.1:5150 '; then echo "port 5150 is taken by another process:"; ss -ltnp | grep 5150; exit 1; fi
 PAGEHAVEN_DATA_DIR="$DIR/data" DATABASE_URL="sqlite://$DIR/db.sqlite?mode=rwc" setsid nohup target/debug/pagehaven-cli start > "$DIR/server.log" 2>&1 &
 echo $! > "$DIR/pid"
-for _ in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:5150/_ping && { echo "running, log in $DIR/server.log"; exit 0; }; sleep 0.5; done
+for _ in $(seq 1 60); do
+  kill -0 "$(cat "$DIR/pid")" 2>/dev/null || break
+  curl -s -o /dev/null http://127.0.0.1:5150/_ping && { echo "running, log in $DIR/server.log"; exit 0; }
+  sleep 0.5
+done
 echo "server did not start"; tail -20 "$DIR/server.log"; exit 1
