@@ -155,6 +155,47 @@ impl Store {
         Ok(target)
     }
 
+    /// Best-effort cleanup after the project deletion commits. Blobs are shared and retained.
+    pub fn remove_project_files(&self, project_id: i64, project_pid: &str) {
+        // Build paths from identifiers, never from an archive_path stored in the database.
+        if project_id <= 0
+            || project_pid.is_empty()
+            || !project_pid
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+        {
+            tracing::warn!(
+                project_id,
+                project_pid,
+                "invalid project cleanup identifiers"
+            );
+            return;
+        }
+        for (directory, name) in [
+            ("releases", project_id.to_string()),
+            ("archives", project_pid.to_owned()),
+        ] {
+            let parent = self.root.join(directory);
+            let result = (|| -> io::Result<()> {
+                let metadata = fs::symlink_metadata(&parent)?;
+                if !metadata.is_dir() || metadata.file_type().is_symlink() {
+                    return Err(io::Error::other("store directory is not a real directory"));
+                }
+                let path = parent.join(name);
+                match fs::symlink_metadata(&path) {
+                    // remove_dir_all does not follow symlinks within the directory.
+                    Ok(metadata) if metadata.is_dir() => fs::remove_dir_all(&path),
+                    Ok(_) => fs::remove_file(&path),
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+                    Err(error) => Err(error),
+                }
+            })();
+            if let Err(error) = result {
+                tracing::warn!(%error, project_id, directory, "deleted project file cleanup failed");
+            }
+        }
+    }
+
     pub fn releases_dir(&self, project_id: i64) -> PathBuf {
         self.root.join("releases").join(project_id.to_string())
     }

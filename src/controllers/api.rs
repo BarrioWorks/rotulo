@@ -3,6 +3,7 @@
 
 use std::io::Write;
 
+use axum::routing::delete;
 use axum::{
     extract::{DefaultBodyLimit, Multipart, Path, State},
     http::StatusCode,
@@ -769,6 +770,41 @@ async fn update_settings(
     ))
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DeleteProject {
+    confirm_name: String,
+}
+
+async fn delete_project(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<DeleteProject>,
+) -> ApiResult<StatusCode> {
+    let state = Pagehaven::from(&ctx);
+    state.limit(state::PUBLISH, &user.id.to_string())?;
+    let project = projects::owned(&ctx.db, &user, &pid).await?;
+    let lock = state.project_lock(project.id);
+    let _guard = lock.lock().await;
+    let tx = ctx.db.begin().await?;
+    let project = projects::owned(&tx, &user, &pid).await?;
+    if body.confirm_name != project.name {
+        return Err(ApiError::Invalid(
+            "Type the website's current name to delete it.".to_owned(),
+        ));
+    }
+    db::exec(
+        &tx,
+        "DELETE FROM projects WHERE id = ?",
+        [project.id.into()],
+    )
+    .await?;
+    tx.commit().await?;
+    state.store.remove_project_files(project.id, &project.pid);
+    Ok(StatusCode::NO_CONTENT)
+}
+
 // ---------- Publishing ----------
 
 async fn publish_draft(
@@ -916,6 +952,7 @@ pub fn routes(upload_bytes: u64, image_bytes: u64) -> Routes {
                 (upload_bytes + multipart_slack) as usize,
             )),
         )
+        .add("/projects/{pid}", delete(delete_project))
         .add("/projects/{pid}/editor", get(editor_state))
         .add("/projects/{pid}/edits", post(create_edit))
         .add("/projects/{pid}/undo", post(undo))

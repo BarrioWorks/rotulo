@@ -131,3 +131,47 @@ async fn import_slug_collisions_are_readable_and_roll_back_the_claim() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn deleting_a_website_requires_its_owner_and_name_and_preserves_its_address() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let alice = register(&server, "alice@example.com").await;
+        let bob = register(&server, "bob@example.com").await;
+        let p = Project::new(&server, &alice).await;
+        let other = Project::new(&server, &bob).await;
+        p.publish(&server, &alice).await;
+        let id = project_id(&ctx, &p.pid).await;
+        let project = projects::reload(&ctx.db, id).await.unwrap();
+        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let blob = pagehaven::drafts::files(&ctx.db, id).await.unwrap()[0].blob.clone();
+        let outside = state.store.staging().unwrap();
+        std::fs::write(outside.path().join("sentinel"), b"keep").unwrap();
+        std::os::unix::fs::symlink(outside.path(), state.store.release_dir(id, 1).join("outside")).unwrap();
+        let url = format!("/api/projects/{}", p.pid);
+        server.delete(&url).add_header("host", HOST).add_header("origin", ORIGIN)
+            .add_header("cookie", &bob).json(&json!({"confirm_name":project.name})).await.assert_status_not_found();
+        server.delete(&url).add_header("host", HOST).add_header("origin", ORIGIN)
+            .add_header("cookie", &alice).json(&json!({"confirm_name":"Wrong name"})).await.assert_status_unprocessable_entity();
+        hosted(&server, &p.site, "/").await.assert_status_ok();
+        server.delete(&url).add_header("host", HOST).add_header("origin", "https://attacker.example")
+            .add_header("cookie", &alice).json(&json!({"confirm_name":project.name})).await.assert_status_forbidden();
+        db::exec(&ctx.db, "INSERT INTO domains (project_id, hostname, token, verified_at, created_at) VALUES (?, 'deleted.example.com', 'test', 1, 1)", [id.into()]).await.unwrap();
+        hosted(&server, "http://deleted.example.com", "/").await.assert_status_ok();
+        server.delete(&url).add_header("host", HOST).add_header("origin", ORIGIN)
+            .add_header("cookie", &alice).json(&json!({"confirm_name":project.name})).await.assert_status(axum::http::StatusCode::NO_CONTENT);
+        let deleted_site = hosted(&server, &p.site, "/").await;
+        deleted_site.assert_status_not_found();
+        assert!(deleted_site.text().contains("No website here yet"));
+        hosted(&server, "http://deleted.example.com", "/").await.assert_status_not_found();
+        get(&server, &p.api("editor"), &alice).await.assert_status_not_found();
+        assert!(!state.store.releases_dir(id).exists());
+        assert!(!state.store.root().join("archives").join(&p.pid).exists());
+        assert!(state.store.read(&blob).is_ok());
+        assert_eq!(std::fs::read(outside.path().join("sentinel")).unwrap(), b"keep");
+        for table in ["draft_files", "edits", "imports", "releases", "domains"] {
+            assert!(db::one(&ctx.db, &format!("SELECT project_id FROM {table} WHERE project_id = ?"), [id.into()]).await.unwrap().is_none());
+        }
+        post(&server, &other.api("settings"), &bob).json(&json!({"name":"Bob", "slug":project.slug})).await.assert_status_unprocessable_entity();
+    }).await;
+}

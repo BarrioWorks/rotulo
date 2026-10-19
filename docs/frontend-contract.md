@@ -101,6 +101,10 @@ All three answer like `/edits`, plus `"pages"` (the new page list).
 
 `POST /api/projects/{pid}/settings` `{"name","slug"}` gives `200 {"project": {...as in editor...}}` or `422`. Slugs are 3 to 32 of `a-z 0-9 -`.
 
+### Delete a website
+
+`DELETE /api/projects/{pid}` with `{"confirm_name":"<current project name>"}` returns `204`. Owner only (others receive `404`), with the usual unsafe-method CSRF protection and publish rate limit. Exact name mismatch returns `422 {"error":"invalid","message":"Type the website's current name to delete it."}`. Deletion removes drafts, history, imports, releases and domains and immediately stops serving the site. Project release files and kept archives are cleaned up after commit, best effort. The address stays reserved to its original account.
+
 ### Publishing
 
 - `POST /api/projects/{pid}/publish` `{"base_revision"}` gives `201 {"release": Release, "site_url"}`. `422 {"error":"invalid","message"}` when the draft can't be published (for example a missing stylesheet).

@@ -118,7 +118,7 @@ export function onConflict(handler: (error: ApiError) => void): void {
 
 type Body = FormData | Record<string, unknown> | undefined;
 
-async function request<T>(method: "GET" | "POST", path: string, body: Body, parse: Parser<T> | null): Promise<T> {
+async function request<T>(method: "GET" | "POST" | "DELETE", path: string, body: Body, parse: Parser<T> | null): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json" };
   let payload: BodyInit | undefined;
   if (body instanceof FormData) payload = body;
@@ -163,6 +163,8 @@ async function request<T>(method: "GET" | "POST", path: string, body: Body, pars
 const base = (pid: string) => `/api/projects/${encodeURIComponent(pid)}`;
 
 export const api = {
+  deleteProject: (pid: string, confirmName: string): Promise<void> =>
+    request("DELETE", base(pid), { confirm_name: confirmName }, null),
   bootstrap: (pid: string) => request("GET", `${base(pid)}/editor`, undefined, parseBootstrap),
   edit: (pid: string, baseRevision: number, page: string, edit: Edit) =>
     request("POST", `${base(pid)}/edits`, { base_revision: baseRevision, page, edit }, parseEditResult),

@@ -117,6 +117,7 @@ async function request(method, path, body, parse) {
 }
 const base = (pid) => `/api/projects/${encodeURIComponent(pid)}`;
 export const api = {
+    deleteProject: (pid, confirmName) => request("DELETE", base(pid), { confirm_name: confirmName }, null),
     bootstrap: (pid) => request("GET", `${base(pid)}/editor`, undefined, parseBootstrap),
     edit: (pid, baseRevision, page, edit) => request("POST", `${base(pid)}/edits`, { base_revision: baseRevision, page, edit }, parseEditResult),
     undo: (pid, baseRevision) => request("POST", `${base(pid)}/undo`, { base_revision: baseRevision }, parseUndoResult),

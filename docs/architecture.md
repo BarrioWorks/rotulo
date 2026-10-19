@@ -113,3 +113,7 @@ The owner adds a hostname. Pagehaven shows a TXT record (`_pagehaven.<host>` = `
 ## Frontend
 
 The app pages are Tera templates with a small amount of TypeScript. The editor and the agent are plain TypeScript compiled by `tsc` to ES modules in `assets/static/js/`. There is no framework and no runtime npm dependency. GrapesJS was not used: it converts imported pages into its own component model and re-renders them, which loses markup the owner did not touch, and it brings a large bundle for features Pagehaven does not offer.
+
+## Project deletion and storage gap
+
+Deleting a project removes its metadata and dependent rows in a transaction under the project lock. After commit, its release and archive directories are removed best effort, with cleanup failures logged. Cleanup does not follow symlinks and only uses project identifiers beneath the store directories. Slug claims remain reserved to the original user. Shared content-addressed blobs are retained: blob garbage collection is a known storage gap.
