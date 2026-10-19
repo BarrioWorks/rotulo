@@ -67,3 +67,29 @@ async fn anonymous_requests_and_cross_origin_posts_are_refused() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn sign_in_attempts_are_limited_per_address_and_never_echo_a_huge_email() {
+    request_with_create_db::<App, _, _>(|server, _ctx| async move {
+        let huge = format!("{}@example.com", "a".repeat(100_000));
+        let r = post(&server, "/login", "")
+            .form(&json!({"email":huge,"password":"incorrect-password"}))
+            .await;
+        r.assert_status_ok();
+        assert!(r.text().len() < 20_000);
+        for n in 0..49 {
+            let r = post(&server, "/login", "")
+                .form(
+                    &json!({"email":format!("u{n}@not-an-email"),"password":"incorrect-password"}),
+                )
+                .await;
+            assert!(!r.text().contains("too often"), "attempt {n}");
+        }
+        let r = post(&server, "/login", "")
+            .form(&json!({"email":"fresh@example.com","password":"incorrect-password"}))
+            .await;
+        assert!(r.text().contains("too often"));
+    })
+    .await;
+}

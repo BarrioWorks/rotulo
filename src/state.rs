@@ -9,16 +9,51 @@ use std::{
 use loco_rs::app::AppContext;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
+use sha2::{Digest, Sha256};
+
 use crate::{error::ApiError, settings::Settings, store::Store};
 
-/// Requests counted per rate and key, with the start of the current window.
-type Counters = HashMap<(&'static str, String), (Instant, u32)>;
+/// The most rate counters kept in memory at once.
+const MAX_COUNTERS: usize = 50_000;
+
+/// Fixed-window request counters per rate and key, with the start of each window. Keys are
+/// stored as digests, so a counter costs the same memory however long its key is.
+#[derive(Default)]
+struct Limiter(HashMap<(&'static str, [u8; 32]), (Instant, u32)>);
+
+impl Limiter {
+    fn hit(&mut self, rate: Rate, key: &str, now: Instant) -> Result<(), ApiError> {
+        if self.0.len() >= MAX_COUNTERS {
+            self.0
+                .retain(|(name, _), (start, _)| now.duration_since(*start) < rate_window(name));
+        }
+        if self.0.len() >= MAX_COUNTERS {
+            // A flood of distinct keys: forget the older half rather than grow without bound.
+            let mut starts: Vec<Instant> = self.0.values().map(|(start, _)| *start).collect();
+            let middle = starts.len() / 2;
+            let cutoff = *starts.select_nth_unstable(middle).1;
+            self.0.retain(|_, (start, _)| *start > cutoff);
+        }
+        let entry = self
+            .0
+            .entry((rate.name, Sha256::digest(key.as_bytes()).into()))
+            .or_insert((now, 0));
+        if now.duration_since(entry.0) >= rate.per {
+            *entry = (now, 0);
+        }
+        if entry.1 >= rate.max {
+            return Err(ApiError::RateLimited);
+        }
+        entry.1 += 1;
+        Ok(())
+    }
+}
 
 pub struct Pagehaven {
     pub settings: Settings,
     pub store: Store,
     jobs: Arc<Semaphore>,
-    limits: Mutex<Counters>,
+    limits: Mutex<Limiter>,
     project_locks: Mutex<HashMap<i64, Arc<tokio::sync::Mutex<()>>>>,
 }
 
@@ -33,6 +68,12 @@ pub struct Rate {
 pub const SIGN_IN: Rate = Rate {
     name: "sign_in",
     max: 10,
+    per: Duration::from_secs(15 * 60),
+};
+/// Sign-in attempts from one address across all accounts.
+pub const SIGN_IN_ADDRESS: Rate = Rate {
+    name: "sign_in_address",
+    max: 50,
     per: Duration::from_secs(15 * 60),
 };
 pub const REGISTER: Rate = Rate {
@@ -73,7 +114,7 @@ impl Pagehaven {
             jobs: Arc::new(Semaphore::new(settings.limits.concurrent_jobs.max(1))),
             settings,
             store,
-            limits: Mutex::new(HashMap::new()),
+            limits: Mutex::new(Limiter::default()),
             project_locks: Mutex::new(HashMap::new()),
         })
     }
@@ -94,22 +135,10 @@ impl Pagehaven {
 
     /// Fixed-window counter. Returns an error once `key` used up `rate` in the current window.
     pub fn limit(&self, rate: Rate, key: &str) -> Result<(), ApiError> {
-        let mut limits = self.limits.lock().expect("rate limits lock");
-        let now = Instant::now();
-        if limits.len() > 50_000 {
-            limits.retain(|(name, _), (start, _)| now.duration_since(*start) < rate_window(name));
-        }
-        let entry = limits
-            .entry((rate.name, key.to_owned()))
-            .or_insert((now, 0));
-        if now.duration_since(entry.0) >= rate.per {
-            *entry = (now, 0);
-        }
-        if entry.1 >= rate.max {
-            return Err(ApiError::RateLimited);
-        }
-        entry.1 += 1;
-        Ok(())
+        self.limits
+            .lock()
+            .expect("rate limits lock")
+            .hit(rate, key, Instant::now())
     }
 
     /// Serializes draft changes and publishes of one project within this process.
@@ -124,8 +153,45 @@ impl Pagehaven {
 }
 
 fn rate_window(name: &str) -> Duration {
-    [SIGN_IN, REGISTER, IMPORT, UPLOAD, PUBLISH, EDIT, DNS_CHECK]
-        .iter()
-        .find(|rate| rate.name == name)
-        .map_or(Duration::from_secs(3600), |rate| rate.per)
+    [
+        SIGN_IN,
+        SIGN_IN_ADDRESS,
+        REGISTER,
+        IMPORT,
+        UPLOAD,
+        PUBLISH,
+        EDIT,
+        DNS_CHECK,
+    ]
+    .iter()
+    .find(|rate| rate.name == name)
+    .map_or(Duration::from_secs(3600), |rate| rate.per)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_flood_of_distinct_long_keys_keeps_the_counters_bounded() {
+        let mut limiter = Limiter::default();
+        let now = Instant::now();
+        let long = "x".repeat(512);
+        for n in 0..MAX_COUNTERS + 10 {
+            limiter.hit(SIGN_IN, &format!("{n}{long}"), now).unwrap();
+        }
+        assert!(limiter.0.len() <= MAX_COUNTERS);
+    }
+
+    #[test]
+    fn a_key_is_limited_within_its_window_and_free_after_it() {
+        let mut limiter = Limiter::default();
+        let now = Instant::now();
+        for _ in 0..SIGN_IN.max {
+            limiter.hit(SIGN_IN, "ip|a@b.co", now).unwrap();
+        }
+        assert!(limiter.hit(SIGN_IN, "ip|a@b.co", now).is_err());
+        assert!(limiter.hit(SIGN_IN, "ip|c@b.co", now).is_ok());
+        assert!(limiter.hit(SIGN_IN, "ip|a@b.co", now + SIGN_IN.per).is_ok());
+    }
 }

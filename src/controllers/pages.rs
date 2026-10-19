@@ -119,19 +119,28 @@ async fn login(
     Form(form): Form<LoginForm>,
 ) -> Result<Response> {
     let state = Pagehaven::from(&ctx);
+    // Echo what was typed so a typo can be fixed, unless it is too long to be an email.
+    let typed = if form.email.len() <= 254 {
+        form.email.as_str()
+    } else {
+        ""
+    };
     let again = |error: String| {
         format::render().view(
             &view,
             "auth/login.html",
-            json!({"error": error, "email": form.email}),
+            json!({"error": error, "email": typed}),
         )
     };
-    let key = format!(
-        "{}|{}",
-        state.settings.client_ip(&headers),
-        form.email.trim().to_ascii_lowercase()
-    );
-    if state.limit(state::SIGN_IN, &key).is_err() {
+    let ip = state.settings.client_ip(&headers);
+    if state.limit(state::SIGN_IN_ADDRESS, &ip).is_err()
+        || state
+            .limit(
+                state::SIGN_IN,
+                &format!("{ip}|{}", form.email.trim().to_ascii_lowercase()),
+            )
+            .is_err()
+    {
         return again(ApiError::RateLimited.to_string());
     }
     match auth::authenticate(&ctx.db, &form.email, &form.password).await {

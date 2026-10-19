@@ -89,7 +89,11 @@ pub async fn register(
     if password.chars().count() < 10 || password.len() > 512 {
         return Err(AuthError::Password);
     }
-    let hash = loco_rs::hash::hash_password(password).map_err(|_| AuthError::Hash)?;
+    let password = password.to_owned();
+    let hash = tokio::task::spawn_blocking(move || loco_rs::hash::hash_password(&password))
+        .await
+        .map_err(|_| AuthError::Hash)?
+        .map_err(|_| AuthError::Hash)?;
     let pid = uuid::Uuid::new_v4().to_string();
     let inserted = db::insert(
         db,
@@ -129,15 +133,23 @@ pub async fn authenticate(
         [email.into()],
     )
     .await?;
-    let Some(row) = row else {
-        let _ = loco_rs::hash::verify_password(password, decoy_hash());
-        return Err(AuthError::Credentials);
-    };
-    let hash: String = row.try_get("", "password_hash")?;
-    if !loco_rs::hash::verify_password(password, &hash) {
-        return Err(AuthError::Credentials);
+    let hash: Option<String> = row
+        .as_ref()
+        .map(|row| row.try_get("", "password_hash"))
+        .transpose()?;
+    let password = password.to_owned();
+    let verified = tokio::task::spawn_blocking(move || {
+        let known = hash.is_some();
+        let matches =
+            loco_rs::hash::verify_password(&password, hash.as_deref().unwrap_or(decoy_hash()));
+        known && matches
+    })
+    .await
+    .unwrap_or(false);
+    match row {
+        Some(row) if verified => Ok(user_from(&row)?),
+        _ => Err(AuthError::Credentials),
     }
-    Ok(user_from(&row)?)
 }
 
 pub async fn create_session<C: ConnectionTrait>(
