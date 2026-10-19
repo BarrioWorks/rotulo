@@ -24,7 +24,7 @@ Pagehaven imports a finished static website from a ZIP, lets its owner edit it v
 
 | Host | Serves | Credentials |
 |---|---|---|
-| `APP` (dev `127.0.0.1:5150`) | Dashboard, import, editor, JSON API | `ph_session` cookie, HttpOnly, SameSite=Lax, Secure in production |
+| `APP` (dev `127.0.0.1:5150`) | Dashboard, import, editor, JSON API | `__Host-ph_session` cookie in production (`ph_session` on local HTTP), HttpOnly, SameSite=Lax, Secure in production |
 | `<token>.PREVIEW` (dev `*.preview.localhost:5150`) | The current draft of one project, with the editor agent injected into HTML pages | None. The token in the hostname is an expiring HMAC capability |
 | `<slug>.SITES` (dev `*.sites.localhost:5150`) and verified custom domains | The live release of one project | None |
 

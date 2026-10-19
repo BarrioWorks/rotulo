@@ -151,7 +151,7 @@ async fn login(
     }
     match auth::authenticate(&ctx.db, &form.email, &form.password).await {
         Ok(user) => {
-            if let Some(old) = jar.get(auth::COOKIE) {
+            if let Some(old) = jar.get(auth::cookie_name(auth::secure_cookies(&ctx))) {
                 auth::revoke_session(&ctx.db, old.value())
                     .await
                     .map_err(internal)?;
@@ -171,7 +171,7 @@ async fn login(
 }
 
 async fn logout(State(ctx): State<AppContext>, jar: CookieJar) -> Result<Response> {
-    if let Some(cookie) = jar.get(auth::COOKIE) {
+    if let Some(cookie) = jar.get(auth::cookie_name(auth::secure_cookies(&ctx))) {
         auth::revoke_session(&ctx.db, cookie.value())
             .await
             .map_err(internal)?;

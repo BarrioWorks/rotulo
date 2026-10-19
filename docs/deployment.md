@@ -61,7 +61,7 @@ Not determinable from the repositories: VPS size, RAM, disk, swap, firewall impl
 
 ## 2. Domains and TLS
 
-Pagehaven needs an app domain and a separate registrable user-content domain, for example `pagehaven.app` and `pagehaven.site`. `src/settings.rs` refuses an app origin inside a user-content domain.
+Pagehaven needs an app domain and a separate registrable user-content domain, for example `pagehaven.app` and `pagehaven.site`. `src/settings.rs` always refuses an app origin inside a user-content domain. It also rejects app and user-content hosts whose last two labels match (for example `pagehaven.com` with `sites.pagehaven.com`, or `app.pagehaven.com` with `preview.pagehaven.com`). This conservative check is not a full Public Suffix List lookup; `localhost` is treated as a public suffix, so development hosts such as `app.localhost`, `sites.localhost` and `preview.localhost` work.
 
 Why: imported sites run arbitrary JavaScript. On a different registrable domain they cannot read app cookies or storage, and the browser treats them as cross-site (`docs/architecture.md`, `docs/threat-model.md`).
 
@@ -73,7 +73,9 @@ DNS records, all proxied by Cloudflare:
 | `*.pagehaven.site` | tunnel |
 | `*.preview.pagehaven.site` | tunnel |
 
-Submit `pagehaven.site` and `preview.pagehaven.site` to the Public Suffix List. Both entries matter. With only `pagehaven.site` listed, every preview would share the site `preview.pagehaven.site`, and one preview's script could set cookies for another. PSL inclusion takes weeks, so submit early.
+Submit `pagehaven.site` and `preview.pagehaven.site` to the Public Suffix List. Both entries matter. With only `pagehaven.site` listed, every preview would share the site `preview.pagehaven.site`, and one preview's script could set cookies for another. PSL inclusion takes weeks, so submit early. Only after both user-content domains are actually listed may you set `settings.user_content_on_public_suffix: true` to allow a shared last-two-label suffix with the app. The setting defaults to false and is an operator acknowledgement, not an automatic PSL lookup. A separate registrable app domain remains the default.
+
+With `secure_cookies: true`, sessions use `__Host-ph_session` with Secure, Path=/ and no Domain attribute, preventing sibling hosts from tossing a parent-domain session cookie. Local HTTP development keeps `ph_session` with `secure_cookies: false`. Enabling secure cookies invalidates existing unprefixed sessions; owners sign in again.
 
 Edge certificates:
 

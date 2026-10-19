@@ -43,6 +43,9 @@ pub struct Settings {
     pub data_dir: PathBuf,
     pub secret: String,
     pub secure_cookies: bool,
+    /// Confirms both user-content domains are on the Public Suffix List.
+    #[serde(default)]
+    pub user_content_on_public_suffix: bool,
     pub dns_over_https: String,
     pub server_ipv4: String,
     /// Header that carries the visitor's address, set by the trusted proxy in front of Pagehaven:
@@ -61,6 +64,13 @@ pub struct Settings {
 
 fn enabled() -> bool {
     true
+}
+
+// A conservative last-two-labels check; localhost is itself a public suffix.
+fn registrable_domain(host: &str) -> &str {
+    host.rmatch_indices('.')
+        .nth(1)
+        .map_or(host, |(i, _)| &host[i + 1..])
 }
 
 impl Settings {
@@ -82,11 +92,19 @@ impl Settings {
                 "settings.secret must be at least 32 bytes",
             ));
         }
-        let app_host = self.app_host();
+        let app_host = self.app_host().trim_end_matches('.').to_owned();
         for user_content in [&self.sites_domain, &self.preview_domain] {
-            if app_host == *user_content || app_host.ends_with(&format!(".{user_content}")) {
+            let user_content = user_content.trim_end_matches('.').to_ascii_lowercase();
+            if app_host == user_content || app_host.ends_with(&format!(".{user_content}")) {
                 return Err(loco_rs::Error::string(
                     "the app origin must not be inside a user-content domain",
+                ));
+            }
+            if !self.user_content_on_public_suffix
+                && registrable_domain(&app_host) == registrable_domain(&user_content)
+            {
+                return Err(loco_rs::Error::string(
+                    "the app and user-content domains must use different registrable domains, unless user_content_on_public_suffix confirms the user-content domains are on the Public Suffix List",
                 ));
             }
         }
@@ -173,5 +191,98 @@ impl Settings {
             self.sites_domain,
             self.port_suffix()
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn settings(app: &str, sites: &str, preview: &str, public_suffix: bool) -> Settings {
+        serde_json::from_value(serde_json::json!({
+            "app_origin": format!("https://{app}"), "scheme": "https",
+            "sites_domain": sites, "preview_domain": preview,
+            "data_dir": "data", "secret": "x".repeat(32), "secure_cookies": true,
+            "dns_over_https": "", "server_ipv4": "",
+            "user_content_on_public_suffix": public_suffix,
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn app_and_user_content_must_not_share_a_registrable_domain() {
+        for (app, sites, preview) in [
+            ("pagehaven.com", "sites.pagehaven.com", "preview.other.net"),
+            (
+                "app.pagehaven.com",
+                "sites.other.net",
+                "preview.pagehaven.com",
+            ),
+            (
+                "app.pagehaven.com",
+                "sites.pagehaven.com",
+                "preview.pagehaven.com",
+            ),
+            ("pagehaven.com", "SITES.PAGEHAVEN.COM.", "preview.other.net"),
+        ] {
+            assert!(
+                settings(app, sites, preview, false).validate().is_err(),
+                "accepted {app}, {sites}, {preview}"
+            );
+        }
+        assert!(settings(
+            "pagehaven.app",
+            "pagehaven.site",
+            "preview.pagehaven.site",
+            false
+        )
+        .validate()
+        .is_ok());
+        assert!(settings(
+            "app.localhost",
+            "sites.localhost",
+            "preview.localhost",
+            false
+        )
+        .validate()
+        .is_ok());
+        assert!(settings(
+            "127.0.0.1:5150",
+            "sites.localhost",
+            "preview.localhost",
+            false
+        )
+        .validate()
+        .is_ok());
+    }
+
+    #[test]
+    fn public_suffix_acknowledgement_allows_siblings_but_not_the_app_inside_content() {
+        assert!(settings(
+            "app.pagehaven.com",
+            "sites.pagehaven.com",
+            "preview.pagehaven.com",
+            true
+        )
+        .validate()
+        .is_ok());
+        for flag in [false, true] {
+            assert!(settings(
+                "app.sites.pagehaven.com",
+                "sites.pagehaven.com",
+                "preview.other.net",
+                flag
+            )
+            .validate()
+            .is_err());
+            assert!(settings(
+                "sites.pagehaven.com",
+                "sites.pagehaven.com",
+                "preview.other.net",
+                flag
+            )
+            .validate()
+            .is_err());
+        }
     }
 }

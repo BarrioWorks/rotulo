@@ -20,7 +20,13 @@ use crate::{
     store::{hex, random_token},
 };
 
-pub const COOKIE: &str = "ph_session";
+pub fn cookie_name(secure: bool) -> &'static str {
+    if secure {
+        "__Host-ph_session"
+    } else {
+        "ph_session"
+    }
+}
 const SESSION_SECONDS: i64 = 30 * 24 * 60 * 60;
 
 #[derive(Debug, Clone)]
@@ -206,7 +212,7 @@ pub async fn user_for_token(
 }
 
 pub fn session_cookie(token: String, secure: bool) -> Cookie<'static> {
-    Cookie::build((COOKIE, token))
+    Cookie::build((cookie_name(secure), token))
         .path("/")
         .http_only(true)
         .secure(secure)
@@ -216,7 +222,7 @@ pub fn session_cookie(token: String, secure: bool) -> Cookie<'static> {
 }
 
 pub fn removal_cookie(secure: bool) -> Cookie<'static> {
-    Cookie::build((COOKIE, ""))
+    Cookie::build((cookie_name(secure), ""))
         .path("/")
         .http_only(true)
         .secure(secure)
@@ -231,7 +237,7 @@ fn time_duration(seconds: i64) -> cookie::time::Duration {
 
 async fn signed_in(parts: &mut Parts, ctx: &AppContext) -> Result<Option<User>, sea_orm::DbErr> {
     let jar = CookieJar::from_headers(&parts.headers);
-    let Some(cookie) = jar.get(COOKIE) else {
+    let Some(cookie) = jar.get(cookie_name(secure_cookies(ctx))) else {
         return Ok(None);
     };
     user_for_token(&ctx.db, cookie.value()).await
@@ -291,4 +297,24 @@ impl FromRequestParts<AppContext> for MaybeUser {
 
 pub fn secure_cookies(ctx: &AppContext) -> bool {
     Pagehaven::from(ctx).settings.secure_cookies
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn secure_session_cookies_use_the_host_prefix() {
+        let cookie = session_cookie("token".to_owned(), true);
+        assert_eq!(cookie.name(), "__Host-ph_session");
+        assert_eq!(cookie.secure(), Some(true));
+        assert_eq!(cookie.path(), Some("/"));
+        assert_eq!(cookie.domain(), None);
+        assert_eq!(removal_cookie(true).name(), cookie.name());
+        assert_eq!(
+            session_cookie("token".to_owned(), false).name(),
+            "ph_session"
+        );
+        assert_eq!(removal_cookie(false).name(), "ph_session");
+    }
 }
