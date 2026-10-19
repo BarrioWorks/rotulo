@@ -55,7 +55,7 @@
       </a>
       <button class="btn btn-primary" type="button" data-action="publish">
         <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-send"/></svg>
-        Publish
+        <span data-publish-label>Publish</span>
       </button>
     </div>
   </header>
@@ -78,12 +78,12 @@
         <div class="publish-state" data-publish-state data-state="draft"><span class="dot" aria-hidden="true"></span><span data-publish-state-text>Not published yet</span></div>
         <div class="live-address" data-live-address hidden>
           <svg class="icon icon-sm subtle" aria-hidden="true"><use href="/static/img/icons.svg#i-globe"/></svg>
-          <a href="#" target="_blank" rel="noopener noreferrer" data-live-link></a>
+          <a class="live-link" href="#" target="_blank" rel="noopener noreferrer" data-live-link></a>
           <a class="btn btn-ghost btn-sm" href="#" target="_blank" rel="noopener noreferrer" data-live-open>Open</a>
         </div>
         <button class="btn btn-primary btn-block" type="button" data-action="publish">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-send"/></svg>
-          Publish
+          <span data-publish-label>Publish changes</span>
         </button>
 
         <div>
