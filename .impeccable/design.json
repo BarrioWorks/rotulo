@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T18:10:00Z",
+  "title": "Design System: Pagehaven",
+  "extensions": {
+    "shadows": [
+      { "name": "shadow-xs", "value": "0 1px 2px rgba(28, 24, 16, 0.05)", "purpose": "Secondary buttons." },
+      { "name": "shadow-sm", "value": "0 1px 2px rgba(28, 24, 16, 0.05), 0 2px 6px rgba(28, 24, 16, 0.04)", "purpose": "Resting cards, selected segmented control." },
+      { "name": "shadow-md", "value": "0 1px 2px rgba(28, 24, 16, 0.05), 0 6px 18px rgba(28, 24, 16, 0.07)", "purpose": "Card hover, editor canvas." },
+      { "name": "shadow-lg", "value": "0 2px 4px rgba(28, 24, 16, 0.04), 0 12px 32px rgba(28, 24, 16, 0.1), 0 24px 64px rgba(28, 24, 16, 0.06)", "purpose": "Menus, dialogs, floating toolbar, toasts." },
+      { "name": "ring", "value": "0 0 0 3px rgba(47, 92, 224, 0.28)", "purpose": "Focus on every control." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "cubic-bezier(0.2, 0.7, 0.2, 1)", "purpose": "All state transitions." },
+      { "name": "fast", "value": "120ms", "purpose": "Hover, press, toolbar." },
+      { "name": "mid", "value": "180ms", "purpose": "Menus, dialogs, toasts, chevrons." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "520px" },
+      { "name": "tablet", "value": "760px" },
+      { "name": "editor-min", "value": "900px" },
+      { "name": "editor-compact", "value": "1100px" }
+    ]
+  },
+  "components": [
+    { "name": "Primary Button", "kind": "button", "refersTo": "button-primary", "description": "The one filled action per view.", "html": "<button class=\"ds-btn-primary\">Publish</button>", "css": ".ds-btn-primary { height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #2f5ce0; color: #fff; font: 550 14px/1 system-ui, sans-serif; box-shadow: 0 1px 2px rgba(32,56,140,.25), inset 0 1px 0 rgba(255,255,255,.12); cursor: pointer; transition: background-color 120ms cubic-bezier(.2,.7,.2,1); } .ds-btn-primary:hover { background: #2650cc; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47,92,224,.28); }" },
+    { "name": "Secondary Button", "kind": "button", "refersTo": "button-secondary", "description": "Every other action.", "html": "<button class=\"ds-btn-secondary\">Choose a file</button>", "css": ".ds-btn-secondary { height: 36px; padding: 0 14px; border: 1px solid rgba(40,34,24,.16); border-radius: 10px; background: #fff; color: #1c1b18; font: 550 14px/1 system-ui, sans-serif; box-shadow: 0 1px 2px rgba(28,24,16,.05); cursor: pointer; } .ds-btn-secondary:hover { background: #f6f5f1; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47,92,224,.28); }" },
+    { "name": "Text Input", "kind": "input", "refersTo": "input", "description": "Single-line field.", "html": "<input class=\"ds-input\" placeholder=\"www.example.com\">", "css": ".ds-input { height: 38px; padding: 0 12px; border: 1px solid rgba(40,34,24,.16); border-radius: 10px; background: #fff; font: 14px system-ui, sans-serif; color: #1c1b18; } .ds-input:focus { outline: none; border-color: #2f5ce0; box-shadow: 0 0 0 3px rgba(47,92,224,.28); }" },
+    { "name": "Status Pill", "kind": "chip", "refersTo": "pill-published", "description": "Draft, Published, Pending.", "html": "<span class=\"ds-pill\">Published</span>", "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; background: #e6f4ec; color: #1d7f55; font: 600 12px system-ui, sans-serif; } .ds-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }" },
+    { "name": "Card", "kind": "card", "refersTo": "card", "description": "White surface on paper.", "html": "<div class=\"ds-card\">Agency</div>", "css": ".ds-card { padding: 24px; border-radius: 14px; background: #fff; border: 1px solid rgba(40,34,24,.09); box-shadow: 0 1px 2px rgba(28,24,16,.05), 0 2px 6px rgba(28,24,16,.04); font: 15px system-ui, sans-serif; color: #1c1b18; }" },
+    { "name": "Floating Toolbar", "kind": "custom", "refersTo": "toolbar-button", "description": "Contextual toolbar next to the selected element.", "html": "<div class=\"ds-ftb\"><span class=\"ds-ftb-label\">Text</span><button class=\"ds-tb\">Edit text</button><button class=\"ds-tb\" aria-pressed=\"true\">Style</button></div>", "css": ".ds-ftb { display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: 12px; background: #fff; border: 1px solid rgba(40,34,24,.09); box-shadow: 0 2px 4px rgba(28,24,16,.04), 0 12px 32px rgba(28,24,16,.1), 0 24px 64px rgba(28,24,16,.06); font: 13px system-ui, sans-serif; } .ds-ftb-label { font-weight: 650; font-size: 12px; color: #57534b; padding: 0 8px 0 6px; } .ds-tb { height: 30px; padding: 0 7px; border: 0; border-radius: 8px; background: transparent; color: #57534b; font-weight: 550; cursor: pointer; } .ds-tb:hover { background: #f6f5f1; color: #1c1b18; } .ds-tb[aria-pressed='true'] { background: #edf1fd; color: #2448b8; }" }
+  ],
+  "narrative": {
+    "northStar": "The Picture Mat",
+    "keyCharacteristics": [
+      "Warm off-white paper (`paper`) behind white surfaces; never pure gray, never dark mode.",
+      "Soft, low-opacity, warm-tinted shadows with real offset and blur; borders at 9 to 16 percent warm ink.",
+      "Rounded but not bubbly: 8 to 14 px on controls and cards, 20 px on large panels, pills for status.",
+      "One accent, Haven Blue, for the primary action, the current selection and focus.",
+      "Plain-language labels; icons always come from the one stroked icon sprite."
+    ],
+    "rules": [
+      { "name": "The One Blue Rule", "body": "Haven Blue marks the next step, the current thing, or focus. It is never decoration, and a view has one filled blue button.", "section": "colors" },
+      { "name": "The Owner's Colors Rule", "body": "Pagehaven never tints, filters or overlays the owner's site beyond the selection outline. The canvas is pure white so the site's own colors read true.", "section": "colors" },
+      { "name": "The Weight-Not-Font Rule", "body": "Hierarchy is size and weight within one family. Never add a second typeface to Pagehaven's own interface.", "section": "typography" },
+      { "name": "The Paper-Not-Glass Rule", "body": "Surfaces are opaque paper. The only blur is the sticky app header, so content scrolling under it stays legible.", "section": "elevation" }
+    ]
+  }
+}
