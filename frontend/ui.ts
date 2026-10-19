@@ -51,17 +51,124 @@ export function must<T extends Element>(root: ParentNode, selector: string): T {
   return el;
 }
 
-export function toast(message: string, kind: "info" | "error" = "info", ms = 3600): void {
+export interface ToastOptions {
+  kind?: "info" | "error";
+  /** A real button in the toast, for example "Undo". Toasts with an action stay 8 seconds. */
+  action?: { label: string; run: () => void };
+  ms?: number;
+}
+
+const MAX_TOASTS = 2;
+
+/**
+ * Shows a toast. Toasts pause while hovered or focused, and at most two show at once.
+ * Returns the action button, so a caller can move focus to it.
+ */
+export function toast(message: string, options: ToastOptions | "info" | "error" = {}, ms?: number): HTMLButtonElement | null {
+  const opts: ToastOptions = typeof options === "string" ? { kind: options, ...(ms === undefined ? {} : { ms }) } : options;
   const host = document.getElementById("toasts");
-  if (!host) return;
-  const el = h("div", { class: kind === "error" ? "toast is-error" : "toast" },
+  if (!host) return null;
+  const kind = opts.kind ?? "info";
+  const action = opts.action
+    ? Object.assign(h("button", { class: "toast-action", text: opts.action.label, attrs: { type: "button" } }), { onclick: () => {
+      opts.action?.run();
+      leave();
+    } })
+    : null;
+  const el = h("div", { class: kind === "error" ? "toast is-error" : "toast", attrs: kind === "error" ? { role: "alert" } : {} },
     icon(kind === "error" ? "alert" : "success", "icon-sm"),
-    h("span", { text: message }));
+    h("span", { text: message }),
+    action);
   host.append(el);
-  window.setTimeout(() => {
+  while (host.children.length > MAX_TOASTS) host.firstElementChild?.remove();
+  let remaining = opts.ms ?? (action ? 8000 : kind === "error" ? 6000 : 3600);
+  let started = Date.now();
+  let timer = window.setTimeout(leave, remaining);
+  function pause(): void {
+    window.clearTimeout(timer);
+    remaining -= Date.now() - started;
+  }
+  function resume(): void {
+    if (el.matches(":hover, :focus-within")) return;
+    started = Date.now();
+    timer = window.setTimeout(leave, Math.max(1200, remaining));
+  }
+  function leave(): void {
+    window.clearTimeout(timer);
     el.classList.add("is-leaving");
     window.setTimeout(() => el.remove(), 220);
-  }, ms);
+  }
+  el.addEventListener("mouseenter", pause);
+  el.addEventListener("focusin", pause);
+  el.addEventListener("mouseleave", resume);
+  el.addEventListener("focusout", resume);
+  return action;
+}
+
+let announceTimer = 0;
+
+/** Says something through the page's polite live region (`#editor-announcer`). */
+export function announce(message: string): void {
+  const region = document.getElementById("editor-announcer");
+  if (!region) return;
+  window.clearTimeout(announceTimer);
+  region.textContent = "";
+  announceTimer = window.setTimeout(() => {
+    region.textContent = message;
+  }, 60);
+}
+
+/**
+ * Tooltips for elements with `data-tip`: after 500 ms on hover, at once on keyboard focus.
+ * An optional `data-kbd` adds the shortcut.
+ */
+export function installTooltips(root: HTMLElement = document.body): void {
+  const tip = h("div", { class: "tooltip", attrs: { role: "tooltip", id: "ed-tooltip" }, hidden: true });
+  document.body.append(tip);
+  let timer = 0;
+  let owner: HTMLElement | null = null;
+  const show = (el: HTMLElement) => {
+    const text = el.dataset["tip"];
+    if (!text || !el.isConnected) return;
+    owner = el;
+    const kbd = el.dataset["kbd"];
+    tip.replaceChildren(h("span", { text }), ...(kbd ? [h("span", { class: "kbd", text: kbd })] : []));
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const hgt = tip.offsetHeight;
+    let top = r.bottom + 6;
+    if (top + hgt > window.innerHeight - 4) top = r.top - hgt - 6;
+    const left = Math.min(Math.max(4, r.left + r.width / 2 - w / 2), window.innerWidth - w - 4);
+    tip.style.left = `${Math.round(left)}px`;
+    tip.style.top = `${Math.round(top)}px`;
+  };
+  const hide = () => {
+    window.clearTimeout(timer);
+    tip.hidden = true;
+    owner = null;
+  };
+  root.addEventListener("pointerover", (event) => {
+    const el = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-tip]") : null;
+    if (el === owner) return;
+    hide();
+    if (el) timer = window.setTimeout(() => show(el), 500);
+  });
+  root.addEventListener("pointerout", (event) => {
+    const to = event.relatedTarget instanceof Element ? event.relatedTarget.closest("[data-tip]") : null;
+    if (to !== owner) hide();
+  });
+  root.addEventListener("focusin", (event) => {
+    const el = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>("[data-tip]") : null;
+    hide();
+    if (el && el.matches(":focus-visible")) show(el);
+  });
+  root.addEventListener("focusout", hide);
+  root.addEventListener("pointerdown", hide);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !tip.hidden) hide();
+  });
+  window.addEventListener("scroll", hide, true);
 }
 
 export interface ConfirmOptions {
@@ -127,4 +234,17 @@ export function formatBytes(bytes: number): string {
 
 export function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/** "Today, 14:20", "Yesterday, 16:05" or "12 Oct 2026, 09:18" for an ISO date. */
+export function dateTime(iso: string, now = Date.now()): string {
+  const then = new Date(Date.parse(iso));
+  if (Number.isNaN(then.getTime())) return "";
+  const time = then.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOfDay(new Date(now)) - startOfDay(then)) / 86400000);
+  if (days === 0) return `Today, ${time}`;
+  if (days === 1) return `Yesterday, ${time}`;
+  const date = then.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return `${date}, ${time}`;
 }

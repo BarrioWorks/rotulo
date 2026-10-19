@@ -4,171 +4,199 @@
 {% block head %}<script type="module" src="/static/js/editor/main.js"></script>{% endblock head %}
 {% block body_class %}editor-body{% endblock body_class %}
 {% block body %}
-<div class="small-screen">
-  <img src="/static/img/logo.svg" alt="" width="44" height="44">
-  <h1>The editor needs a bigger screen</h1>
-  <p>Open {{ project.name }} on a computer or a tablet in landscape to edit it. Your website itself works on every screen.</p>
-  <a class="btn btn-secondary" href="/projects">Back to your websites</a>
-</div>
+<div class="visually-hidden" id="editor-announcer" role="status" aria-live="polite"></div>
+
+<section class="manage" data-manage aria-labelledby="manage-title">
+  <a class="btn btn-ghost btn-sm manage-back" href="/projects">
+    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
+    Your websites
+  </a>
+  <h1 class="manage-title" id="manage-title">{{ project.name }}</h1>
+  <p class="manage-address" data-manage-address></p>
+  <div class="alert alert-info" data-manage-wide hidden>
+    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-info"/></svg>
+    <span class="grow">Your window is wide enough to edit now.</span>
+    <button class="link-btn" type="button" data-manage-open>Open the editor</button>
+  </div>
+  <section class="manage-card" aria-label="Publishing" data-manage-review></section>
+  <section class="manage-card" aria-labelledby="manage-history-title">
+    <h2 class="manage-heading" id="manage-history-title">Version history</h2>
+    <ul class="release-list" role="list" data-manage-history></ul>
+  </section>
+  <button class="btn btn-secondary btn-block" type="button" data-manage-settings>Website settings</button>
+  <p class="manage-note">To change text and pictures, open Pagehaven on a computer.</p>
+</section>
 
 <div class="editor" id="editor" data-pid="{{ project.pid }}" data-name="{{ project.name }}">
   <header class="ed-top">
     <div class="ed-top-left">
-      <a class="btn btn-ghost btn-icon btn-sm" href="/projects" aria-label="Back to your websites" title="Back to your websites">
+      <a class="btn btn-ghost btn-icon btn-sm" href="/projects" aria-label="Back to your websites" data-tip="Your websites">
         <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
       </a>
-      <h1 class="ed-site-name" data-site-name>{{ project.name }}</h1>
+      <button class="ed-crumb ed-site" type="button" data-site-menu aria-haspopup="menu" aria-expanded="false" data-tip="Settings, versions and shortcuts">
+        <span class="ed-site-name truncate" data-site-name>{{ project.name }}</span>
+      </button>
+      <span class="ed-slash" aria-hidden="true">/</span>
+      <button class="ed-crumb ed-page" type="button" data-page-switcher aria-haspopup="menu" aria-expanded="false" data-tip="Switch page" data-kbd="Ctrl+K">
+        <span class="truncate" data-page-name>Home</span>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-down"/></svg>
+      </button>
     </div>
 
     <div class="ed-top-center">
-      <div class="row">
-        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="undo" aria-label="Undo" title="Undo" disabled>
+      <div class="row ed-history">
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="undo" aria-label="Undo" data-tip="Undo" data-kbd="Ctrl+Z" disabled>
           <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-undo"/></svg>
         </button>
-        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="redo" aria-label="Redo" title="Redo" disabled>
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="redo" aria-label="Redo" data-tip="Redo" data-kbd="Ctrl+Shift+Z" disabled>
           <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-redo"/></svg>
         </button>
       </div>
       <span class="ed-divider" aria-hidden="true"></span>
       <div class="seg" role="group" aria-label="Mode">
-        <button type="button" data-mode="edit" aria-pressed="true" title="Click things on the page to change them">
+        <button type="button" data-mode="edit" aria-pressed="true" aria-label="Edit" data-tip="Click parts of the page to change them">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit"/></svg><span class="label-text">Edit</span>
         </button>
-        <button type="button" data-mode="preview" aria-pressed="false" title="Use the page like a visitor would">
+        <button type="button" data-mode="preview" aria-pressed="false" aria-label="Preview" data-tip="Use the page like a visitor would">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-preview"/></svg><span class="label-text">Preview</span>
         </button>
       </div>
       <div class="seg seg-icon" role="group" aria-label="Screen size">
-        <button type="button" data-device="desktop" aria-pressed="true" aria-label="Computer screen" title="Computer screen">
+        <button type="button" data-device="desktop" aria-pressed="true" aria-label="Computer screen" data-tip="Computer screen">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-desktop"/></svg>
         </button>
-        <button type="button" data-device="mobile" aria-pressed="false" aria-label="Phone screen" title="Phone screen">
+        <button type="button" data-device="mobile" aria-pressed="false" aria-label="Phone screen" data-tip="Phone screen">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-phone"/></svg>
         </button>
       </div>
     </div>
 
     <div class="ed-top-right">
-      <span class="save-status" data-save-status data-state="saved" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span data-save-text>Saved</span></span>
-      <a class="btn btn-ghost btn-sm" href="#" target="_blank" rel="noopener noreferrer" data-view-live hidden>
-        View website
-        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
-      </a>
-      <button class="btn btn-primary" type="button" data-action="publish">
-        <span data-publish-label>Publish</span>
+      <button class="pill ed-status" type="button" data-status-pill data-tone="neutral" aria-haspopup="dialog" aria-expanded="false">
+        <span class="ed-status-spinner" aria-hidden="true"></span><span data-status-text>Saved</span>
       </button>
+      <button class="btn btn-primary ed-publish" type="button" data-action="publish" aria-haspopup="dialog" aria-expanded="false">Publish</button>
     </div>
   </header>
 
-  <aside class="ed-side" aria-label="Website">
-    <details class="ed-section" open>
-      <summary>Pages <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
-      <div class="ed-section-body">
-        <ul class="page-list" data-page-list role="list"></ul>
-        <button class="btn btn-ghost btn-sm add-page" type="button" data-action="add-page">
+  <aside class="ed-rail" aria-label="Pages and properties" data-rail>
+    <section class="rail-pages" data-rail-pages aria-labelledby="rail-pages-title">
+      <div class="rail-head">
+        <h2 class="rail-title" id="rail-pages-title">Pages</h2>
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="add-page" aria-label="Add page" data-tip="Add page">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-add-page"/></svg>
-          Add page
         </button>
       </div>
-    </details>
-
-    <details class="ed-section" open>
-      <summary>Publishing <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
-      <div class="ed-section-body publish-box">
-        <div class="publish-state" data-publish-state data-state="draft"><span class="dot" aria-hidden="true"></span><span data-publish-state-text>Not published yet</span></div>
-        <div class="live-address" data-live-address hidden>
-          <svg class="icon icon-sm subtle" aria-hidden="true"><use href="/static/img/icons.svg#i-domain"/></svg>
-          <a class="live-link" href="#" target="_blank" rel="noopener noreferrer" data-live-link></a>
-          <a class="btn btn-ghost btn-icon btn-sm" href="#" target="_blank" rel="noopener noreferrer" data-live-open aria-label="Open your website in a new tab" title="Open your website in a new tab"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg></a>
-        </div>
-        <button class="btn btn-secondary btn-block" type="button" data-action="publish">
-          <span data-publish-label>Publish changes</span>
-        </button>
-
-        <div>
-          <h2 class="ed-section-title">Version history</h2>
-          <ul class="release-list" data-release-list role="list"></ul>
-          <p class="small subtle" data-release-empty>Each time you publish, a version is saved here so you can go back to it.</p>
-        </div>
-
-        <div data-domain-section>
-          <h2 class="ed-section-title">Your own domain</h2>
-          <div data-domain-list></div>
-          <form class="stack" data-domain-form>
-            <p class="small subtle" data-domain-intro>Use an address you own, like www.yourbusiness.com.</p>
-            <div class="row">
-              <label class="visually-hidden" for="domain-input">Domain name</label>
-              <input class="input input-sm grow" id="domain-input" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="253" placeholder="www.example.com" data-domain-input>
-              <button class="btn btn-secondary btn-sm" type="submit">Add</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </details>
-
-    <details class="ed-section">
-      <summary>Page settings <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
-      <form class="ed-section-body" data-meta-form>
-        <p class="small subtle">Shown in search results and browser tabs for <strong data-meta-page>this page</strong>.</p>
-        <div class="field">
-          <label class="label" for="meta-title">Page title</label>
-          <input class="input input-sm" id="meta-title" type="text" maxlength="200" data-meta-title>
-        </div>
-        <div class="field">
-          <label class="label" for="meta-description">Description</label>
-          <textarea class="textarea" id="meta-description" maxlength="500" rows="3" data-meta-description></textarea>
-        </div>
-        <div class="btn-row"><button class="btn btn-secondary btn-sm" type="submit">Save page settings</button></div>
-      </form>
-    </details>
-
-    <details class="ed-section">
-      <summary>Website settings <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
-      <form class="ed-section-body" data-settings-form>
-        <div class="field">
-          <label class="label" for="site-name">Website name</label>
-          <input class="input input-sm" id="site-name" type="text" maxlength="80" required data-settings-name>
-        </div>
-        <div class="field">
-          <label class="label" for="site-slug">Web address</label>
-          <div class="input-group">
-            <input class="input input-sm" id="site-slug" type="text" minlength="3" maxlength="32" pattern="[a-z0-9-]{3,32}" autocomplete="off" autocapitalize="off" spellcheck="false" required data-settings-slug aria-describedby="slug-hint">
-            <span class="input-addon" data-settings-suffix></span>
-          </div>
-          <span class="hint" id="slug-hint">3 to 32 lowercase letters, numbers or dashes.</span>
-        </div>
-        <div class="alert alert-error" role="alert" data-settings-error hidden></div>
-        <div class="btn-row"><button class="btn btn-secondary btn-sm" type="submit">Save</button></div>
-      </form>
-    </details>
-
-    <details class="ed-section" data-assets-section>
-      <summary>Images <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
-      <div class="ed-section-body">
-        <div class="asset-grid" data-asset-grid></div>
-        <p class="asset-summary" data-asset-summary>Loading…</p>
-      </div>
-    </details>
+      <div class="rail-note" data-page-note hidden></div>
+      <ul class="page-list" data-page-list role="list"></ul>
+    </section>
+    <section class="rail-panel" id="ed-rail-panel" data-rail-panel role="group" aria-labelledby="ed-rail-title" hidden></section>
   </aside>
 
-  <main id="main" class="ed-main">
-    <div class="canvas-area" data-canvas-area data-device="desktop">
-      <div class="mode-hint" data-mode-hint hidden>
-        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-preview"/></svg>
-        Preview: links and buttons work like on your live website
-      </div>
-      <div class="canvas-frame is-loading" data-canvas-frame>
-        <iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" title="Your page" data-canvas></iframe>
+  <main class="ed-main" id="main">
+    <div class="canvas-area" data-canvas-area data-device="desktop" data-mode="edit">
+      <div class="canvas-frame is-loading" data-canvas-frame role="application" tabindex="0" aria-roledescription="page canvas">
+        <iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" title="Your page" class="canvas-iframe" tabindex="-1" data-canvas></iframe>
         <div class="canvas-loading" data-canvas-loading>
           <span class="spinner spinner-lg" aria-hidden="true"></span>
           <span data-canvas-loading-text>Opening your website…</span>
         </div>
       </div>
     </div>
+
+    <div class="ftb" id="toolbar" role="toolbar" aria-orientation="horizontal" aria-label="Tools" data-toolbar></div>
+    <button class="ed-offscreen" type="button" data-offscreen hidden>
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-move-up"/></svg>
+      <span data-offscreen-text></span>
+    </button>
+
+    <div class="canvas-foot">
+      <p class="canvas-hint" data-canvas-hint aria-live="polite"></p>
+      <button class="btn btn-ghost btn-sm canvas-zoom" type="button" data-zoom><span class="tnum" data-zoom-label>Fit</span></button>
+    </div>
   </main>
 </div>
 
-<div class="ftb" id="toolbar" role="toolbar" aria-label="Edit the selected part" data-toolbar></div>
+<div class="popover ed-publish-pop" role="dialog" aria-labelledby="ed-publish-title" data-publish-pop hidden></div>
+
+<dialog class="sheet" data-dialog="history" aria-labelledby="history-title">
+  <div class="sheet-head">
+    <h2 id="history-title">Version history</h2>
+    <button class="btn btn-ghost btn-icon btn-sm" type="button" data-close aria-label="Close version history">
+      <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-close"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <p class="hint">Every publish is saved as a version. Make an earlier version live if something went wrong, or open it in the editor to start from it.</p>
+    <ul class="release-list" role="list" data-release-list></ul>
+  </div>
+</dialog>
+
+<dialog class="modal ed-settings" data-dialog="settings" aria-labelledby="settings-title">
+  <div class="modal-body">
+    <div class="row-between">
+      <h2 id="settings-title">Website settings</h2>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" data-close aria-label="Close website settings">
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-close"/></svg>
+      </button>
+    </div>
+    <form class="settings-group" data-settings-form>
+      <div class="field">
+        <label class="label" for="site-name">Website name</label>
+        <input class="input" id="site-name" type="text" maxlength="80" required data-settings-name>
+      </div>
+      <div class="field">
+        <label class="label" for="site-slug">Web address</label>
+        <div class="input-group">
+          <input class="input" id="site-slug" type="text" minlength="3" maxlength="32" pattern="[a-z0-9-]{3,32}" autocomplete="off" autocapitalize="off" spellcheck="false" required data-settings-slug aria-describedby="slug-hint">
+          <span class="input-addon" data-settings-suffix></span>
+        </div>
+        <span class="hint" id="slug-hint">3 to 32 lowercase letters, numbers or dashes. Changing it moves your website to the new address.</span>
+      </div>
+      <div class="alert alert-error" role="alert" data-settings-error hidden></div>
+      <div class="settings-actions"><button class="btn btn-primary" type="submit">Save</button></div>
+    </form>
+
+    <section class="settings-group" data-domain-section aria-labelledby="domain-title">
+      <h3 class="settings-heading" id="domain-title">Your own domain</h3>
+      <p class="hint">Use an address you own, like www.yourbusiness.com.</p>
+      <div class="domain-list" data-domain-list></div>
+      <form class="domain-form" data-domain-form>
+        <label class="visually-hidden" for="domain-input">Domain name</label>
+        <input class="input grow" id="domain-input" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="253" placeholder="www.example.com" aria-describedby="domain-error" data-domain-input>
+        <button class="btn btn-secondary" type="submit">Add domain</button>
+      </form>
+      <p class="field-error" id="domain-error" role="alert" data-domain-error hidden></p>
+    </section>
+  </div>
+</dialog>
+
+<dialog class="modal" data-dialog="shortcuts" aria-labelledby="shortcuts-title">
+  <div class="modal-body">
+    <div class="row-between">
+      <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" data-close aria-label="Close keyboard shortcuts">
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-close"/></svg>
+      </button>
+    </div>
+    <dl class="shortcuts">
+      <dt><span class="kbd">↓</span> <span class="kbd">↑</span></dt><dd>Select the next or previous part of the page</dd>
+      <dt><span class="kbd">←</span> <span class="kbd">→</span></dt><dd>Select the part around it, or the first part inside</dd>
+      <dt><span class="kbd">Enter</span></dt><dd>Change the selected part, for example edit its text</dd>
+      <dt><span class="kbd">Tab</span></dt><dd>Move from the page to its tools</dd>
+      <dt><span class="kbd">Esc</span></dt><dd>Close a panel, stop editing, or deselect</dd>
+      <dt><span class="kbd">Alt</span> <span class="kbd">Shift</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move the selected section up or down</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Z</span></dt><dd>Undo</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">Z</span></dt><dd>Redo</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">K</span></dt><dd>Switch page</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">P</span></dt><dd>Review and publish</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">H</span></dt><dd>Version history</dd>
+      <dt><span class="kbd">F6</span></dt><dd>Jump between the top bar, pages, the page and its tools</dd>
+      <dt><span class="kbd">?</span></dt><dd>Show these shortcuts</dd>
+    </dl>
+    <p class="hint">On a Mac, use Cmd instead of Ctrl. Changes save automatically.</p>
+  </div>
+</dialog>
 
 <dialog class="modal" data-dialog="confirm">
   <form method="dialog">
@@ -184,7 +212,7 @@
 </dialog>
 
 <dialog class="modal" data-dialog="page">
-  <form method="dialog" data-page-form>
+  <form method="dialog" data-page-form novalidate>
     <div class="modal-body">
       <h2 data-page-dialog-title>Add a page</h2>
       <p data-page-dialog-text></p>
@@ -193,11 +221,11 @@
         <select class="select" id="page-from" data-page-from></select>
       </div>
       <div class="field">
-        <label class="label" for="page-name">Page name</label>
-        <input class="input" id="page-name" type="text" maxlength="60" required autocomplete="off" data-page-name>
-        <span class="hint" data-page-address></span>
+        <label class="label" for="page-name">Name of the page</label>
+        <input class="input" id="page-name" type="text" maxlength="60" required autocomplete="off" aria-describedby="page-address page-error" data-page-name>
+        <span class="hint" id="page-address" data-page-address></span>
       </div>
-      <div class="alert alert-error" role="alert" data-page-error hidden></div>
+      <div class="alert alert-error" id="page-error" role="alert" data-page-error hidden></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" type="button" value="cancel" data-page-cancel>Cancel</button>

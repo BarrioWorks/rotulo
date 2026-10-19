@@ -1,12 +1,13 @@
 /**
  * The editor agent. Runs inside the draft preview (a different site from the app), draws
- * hover and selection outlines, runs inline text editing and reports what the user selected.
+ * hover and selection marks, runs inline text editing and reports what the user selected.
  * The server prepends `const PAGEHAVEN_APP_ORIGIN = "...";` to this file.
  */
-import { STYLE_KEYS, envelope, isSafeHref, parseEditorMessage, } from "../protocol.js";
-const ACCENT = "#0A86D6";
+import { OVERLAY } from "../overlay-theme.js";
+import { ANCHOR_ID, KIND_LABELS, STYLE_KEYS, envelope, isSafeHref, parseEditorMessage, } from "../protocol.js";
 const appOrigin = typeof PAGEHAVEN_APP_ORIGIN === "string" ? PAGEHAVEN_APP_ORIGIN : "";
 const parentWindow = window.parent;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 let mode = "edit";
 let selected = null;
 let hovered = null;
@@ -16,103 +17,220 @@ let frame = 0;
 function post(message) {
     parentWindow.postMessage(envelope(message), appOrigin);
 }
-/* Overlay: a closed shadow root on <html>, styled through a constructed sheet and inline
-   !important properties so the site's CSS cannot easily reach it. */
+/* Overlay. A closed shadow root on <html>. The host resets every property inline with
+   !important, so no site rule reaches it, and sits in the top layer when the browser has one. */
 const host = document.createElement("pagehaven-overlay");
 const shadow = host.attachShadow({ mode: "closed" });
 const sheet = new CSSStyleSheet();
+const O = OVERLAY;
 sheet.replaceSync(`
   :host { all: initial; }
-  .box { position: fixed; box-sizing: border-box; pointer-events: none; border-radius: 3px; transition: top 60ms linear, left 60ms linear, width 60ms linear, height 60ms linear; }
-  .hover { border: 1.5px solid ${ACCENT}99; }
-  .hover.blocked { border-style: dashed; border-color: #8C8B85; }
-  .select { border: 2px solid ${ACCENT}; box-shadow: 0 0 0 4px ${ACCENT}1f; }
-  .select.editing { border-color: ${ACCENT}; box-shadow: 0 0 0 4px ${ACCENT}33; background: transparent; }
-  .blocked-box { border: 2px dashed #8C8B85; background: rgba(140, 139, 133, 0.08); }
-  .hidden-veil { background: repeating-linear-gradient(135deg, rgba(244, 243, 239, 0.72) 0 10px, rgba(233, 232, 227, 0.78) 10px 20px); border: 1px dashed #8C8B85; border-radius: 0; transition: none; }
-  .badge { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 3px; background: #16161A; color: #fff; font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; letter-spacing: 0; }
+  * { box-sizing: border-box; }
+  .ring { position: fixed; pointer-events: none; border-radius: 2px; }
+  .ring[hidden] { display: none; }
+  .glide { transition: left 140ms cubic-bezier(0.16, 1, 0.3, 1), top 140ms cubic-bezier(0.16, 1, 0.3, 1), width 140ms cubic-bezier(0.16, 1, 0.3, 1), height 140ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .hover { border: 1px dashed ${O.hover}; box-shadow: 0 0 0 1px ${O.halo}, inset 0 0 0 1px ${O.halo}; animation: fade 80ms ease-out; }
+  .hover.blocked { border-color: ${O.muted}; }
+  .select { border: ${O.stroke} solid ${O.accent}; box-shadow: 0 0 0 1px ${O.halo}, inset 0 0 0 1px ${O.halo}; }
+  .select.editing { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 5px ${O.accentSoft}, inset 0 0 0 1px ${O.halo}; }
+  .select.pulse { animation: pulse 400ms ease-out; }
+  .blocked-box { border: ${O.stroke} dashed ${O.muted}; box-shadow: 0 0 0 1px ${O.halo}, inset 0 0 0 1px ${O.halo}; }
+  .crop { position: absolute; width: ${O.cropMark}; height: ${O.cropMark}; border: 0 solid ${O.accent}; filter: drop-shadow(0 0 0.5px ${O.halo}) drop-shadow(0 0 0.5px ${O.halo}); }
+  .crop.tl { left: calc(-${O.cropGap} - ${O.cropMark}); top: calc(-${O.cropGap} - ${O.cropMark}); border-right-width: ${O.stroke}; border-bottom-width: ${O.stroke}; }
+  .crop.tr { right: calc(-${O.cropGap} - ${O.cropMark}); top: calc(-${O.cropGap} - ${O.cropMark}); border-left-width: ${O.stroke}; border-bottom-width: ${O.stroke}; }
+  .crop.bl { left: calc(-${O.cropGap} - ${O.cropMark}); bottom: calc(-${O.cropGap} - ${O.cropMark}); border-right-width: ${O.stroke}; border-top-width: ${O.stroke}; }
+  .crop.br { right: calc(-${O.cropGap} - ${O.cropMark}); bottom: calc(-${O.cropGap} - ${O.cropMark}); border-left-width: ${O.stroke}; border-top-width: ${O.stroke}; }
+  .slug { position: absolute; left: -${O.stroke}; display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 0 0 2px 2px; background: ${O.chipBg}; color: ${O.chipInk}; font: 600 12px/20px system-ui, sans-serif; letter-spacing: 0.01em; white-space: nowrap; box-shadow: 0 0 0 1px ${O.halo}; }
+  .slug.below { top: calc(100% + 1px); }
+  .slug.above { bottom: calc(100% + 1px); border-radius: 2px 2px 0 0; }
+  .slug.inside { top: 1px; left: 1px; border-radius: 0 0 2px 0; }
+  .veil { position: fixed; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.18) 0 6px, rgba(255, 255, 255, 0.18) 6px 12px); border: 1px dashed ${O.muted}; }
+  .veil[hidden] { display: none; }
+  .badge { position: absolute; left: 8px; display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 3px; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 12px/24px system-ui, sans-serif; white-space: nowrap; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 0 ${O.accentSoft}, inset 0 0 0 1px ${O.halo}; } 40% { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 10px ${O.accentSoft}, inset 0 0 0 1px ${O.halo}; } 100% { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 0 transparent, inset 0 0 0 1px ${O.halo}; } }
+  @media (prefers-reduced-motion: reduce) { .glide, .hover, .select.pulse { transition: none; animation: none; } }
 `);
 shadow.adoptedStyleSheets = [sheet];
+host.style.setProperty("all", "initial", "important");
 for (const [prop, value] of [
-    ["position", "fixed"], ["inset", "0"], ["z-index", "2147483647"], ["pointer-events", "none"],
-    ["display", "block"], ["margin", "0"], ["padding", "0"], ["border", "0"], ["background", "transparent"],
-    ["transform", "none"], ["filter", "none"], ["opacity", "1"], ["visibility", "visible"],
+    ["display", "block"], ["position", "fixed"], ["inset", "0"], ["width", "100vw"], ["height", "100vh"],
+    ["max-width", "none"], ["max-height", "none"], ["margin", "0"], ["padding", "0"], ["border", "0"],
+    ["background", "transparent"], ["overflow", "visible"], ["z-index", "2147483647"], ["pointer-events", "none"],
+    ["visibility", "visible"], ["opacity", "1"], ["contain", "layout style"], ["isolation", "isolate"],
+    ["transform", "none"], ["filter", "none"], ["clip-path", "none"], ["mask", "none"], ["mix-blend-mode", "normal"],
+    ["zoom", "1"], ["scale", "none"], ["rotate", "none"], ["translate", "none"], ["content-visibility", "visible"],
 ]) {
     host.style.setProperty(prop, value, "important");
+}
+const topLayer = typeof HTMLElement.prototype.showPopover === "function";
+if (topLayer)
+    host.setAttribute("popover", "manual");
+/** Moves the overlay above anything the site put in the top layer since. */
+function raise() {
+    if (!topLayer || !host.isConnected)
+        return;
+    try {
+        if (host.matches(":popover-open"))
+            host.hidePopover();
+        host.showPopover();
+    }
+    catch {
+        /* Not in a state that allows the popover; the z-index still applies. */
+    }
 }
 /* In preview mode hidden sections disappear, as on the published website. */
 const previewSheet = new CSSStyleSheet();
 previewSheet.replaceSync('[data-ph-hidden="true"] { display: none !important; }');
 previewSheet.disabled = true;
 document.adoptedStyleSheets = [...document.adoptedStyleSheets, previewSheet];
-function makeBox(className) {
-    const box = document.createElement("div");
-    box.className = `box ${className}`;
-    box.hidden = true;
-    shadow.append(box);
-    return box;
+function div(className, parent = shadow) {
+    const el = document.createElement("div");
+    el.className = className;
+    parent.appendChild(el);
+    return el;
 }
-const hoverBox = makeBox("hover");
-const selectBox = makeBox("select");
-const blockedBox = makeBox("blocked-box");
-const veilLayer = document.createElement("div");
-shadow.prepend(veilLayer);
-function place(box, el) {
+const veilLayer = div("veils");
+const hoverBox = div("ring hover");
+const blockedBox = div("ring blocked-box");
+const selectBox = div("ring select");
+for (const corner of ["tl", "tr", "bl", "br"])
+    div(`crop ${corner}`, selectBox);
+const slug = document.createElement("span");
+slug.className = "slug below";
+selectBox.append(slug);
+for (const box of [hoverBox, blockedBox, selectBox])
+    box.hidden = true;
+let origin = { x: 0, y: 0 };
+/**
+ * Positions a ring `offset` px outside the element. A side within 3 px of the viewport edge is
+ * drawn just inside it instead, so a full-width header still shows four sides.
+ */
+function place(box, el, offset) {
     if (!el || !el.isConnected) {
         box.hidden = true;
-        return;
+        return null;
     }
     const r = el.getBoundingClientRect();
-    box.hidden = r.width === 0 && r.height === 0;
-    box.style.left = `${r.left - 2}px`;
-    box.style.top = `${r.top - 2}px`;
-    box.style.width = `${r.width + 4}px`;
-    box.style.height = `${r.height + 4}px`;
+    if ((r.width === 0 && r.height === 0) || r.bottom < -offset || r.top > innerHeight + offset) {
+        box.hidden = true;
+        return r;
+    }
+    const w = document.documentElement.clientWidth || innerWidth;
+    const snap = (value, edge, near) => (Math.abs(near - edge) <= 3 ? edge : value);
+    const left = snap(r.left - offset, 1, r.left);
+    const top = snap(r.top - offset, 1, r.top);
+    const right = snap(r.right + offset, w - 1, r.right);
+    const bottom = snap(r.bottom + offset, innerHeight - 1, r.bottom);
+    box.hidden = false;
+    box.style.left = `${left - origin.x}px`;
+    box.style.top = `${top - origin.y}px`;
+    box.style.width = `${Math.max(2, right - left)}px`;
+    box.style.height = `${Math.max(2, bottom - top)}px`;
+    return r;
 }
-function drawHiddenSections() {
+function placeSlug(r) {
+    if (!r)
+        return;
+    slug.textContent = editing ? "Editing" : KIND_LABELS[kindOf(selected)];
+    const placement = r.bottom + 26 < innerHeight ? "below" : r.top > 26 ? "above" : "inside";
+    slug.className = `slug ${placement}`;
+}
+/* The site's own fixed and sticky bars, so the toolbar and the hidden-section veil avoid them. */
+let barCandidates = null;
+function findBars() {
+    const out = [];
+    for (const el of document.querySelectorAll("body > *, body > * > *, header, nav")) {
+        if (el === host)
+            continue;
+        const position = getComputedStyle(el).position;
+        if (position === "fixed" || position === "sticky")
+            out.push(el);
+        if (out.length >= 24)
+            break;
+    }
+    return out;
+}
+function obstructions() {
+    barCandidates ??= findBars();
+    const out = [];
+    const vw = document.documentElement.clientWidth || innerWidth;
+    for (const el of barCandidates) {
+        if (!el.isConnected)
+            continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < vw / 2 || r.height === 0 || r.height > innerHeight / 2)
+            continue;
+        const nearTop = r.top <= innerHeight * 0.25 && r.bottom > 0;
+        const nearBottom = r.bottom >= innerHeight * 0.75 && r.top < innerHeight;
+        if (!nearTop && !nearBottom)
+            continue;
+        out.push(rectFrom(r));
+        if (out.length === 4)
+            break;
+    }
+    return out;
+}
+function drawHiddenSections(bars) {
     const sections = mode === "edit" ? [...document.querySelectorAll('[data-ph-hidden="true"]')] : [];
     while (veilLayer.childElementCount > sections.length)
         veilLayer.lastElementChild?.remove();
+    const topLimit = Math.max(0, ...bars.filter((b) => b.y < innerHeight / 2).map((b) => b.y + b.height));
     sections.forEach((section, i) => {
         let veil = veilLayer.children[i];
         if (!veil) {
-            veil = document.createElement("div");
-            veil.className = "box hidden-veil";
+            veil = div("veil", veilLayer);
             const badge = document.createElement("span");
             badge.className = "badge";
             badge.textContent = "Hidden on your website";
             veil.append(badge);
-            veilLayer.append(veil);
         }
         const r = section.getBoundingClientRect();
-        veil.hidden = r.height === 0;
-        veil.style.left = `${r.left}px`;
-        veil.style.top = `${r.top}px`;
+        const top = Math.max(r.top, topLimit);
+        veil.hidden = r.height === 0 || r.bottom <= top;
+        veil.style.left = `${r.left - origin.x}px`;
+        veil.style.top = `${top - origin.y}px`;
         veil.style.width = `${r.width}px`;
-        veil.style.height = `${r.height}px`;
+        veil.style.height = `${Math.max(0, r.bottom - top)}px`;
+        const badge = veil.firstElementChild;
+        badge.style.top = `${Math.min(8, Math.max(0, r.bottom - top - 32))}px`;
     });
 }
-function rectOf(el) {
-    const r = el.getBoundingClientRect();
+function rectFrom(r) {
     const clamp = (n) => Math.max(-1e6, Math.min(1e6, n));
     return { x: clamp(r.left), y: clamp(r.top), width: clamp(Math.max(0, r.width)), height: clamp(Math.max(0, r.height)) };
 }
+function rectOf(el) {
+    return rectFrom(el.getBoundingClientRect());
+}
 function redraw() {
     frame = 0;
+    if (!host.isConnected)
+        start();
+    const hostRect = host.getBoundingClientRect();
+    origin = { x: hostRect.left, y: hostRect.top };
     const active = mode === "edit";
-    place(hoverBox, active && hovered !== selected ? hovered : null);
+    const bars = active ? obstructions() : [];
+    place(hoverBox, active && hovered !== selected && !editing ? hovered : null, 2);
     hoverBox.classList.toggle("blocked", hovered !== null && !canOf(hovered));
-    place(selectBox, active ? selected : null);
+    const r = place(selectBox, active ? selected : null, 3);
     selectBox.classList.toggle("editing", editing !== null);
-    place(blockedBox, active ? blocked : null);
-    drawHiddenSections();
-    post({ type: "viewport", scrollY: Math.max(0, window.scrollY), rect: selected ? rectOf(selected) : blocked ? rectOf(blocked) : null });
+    if (active && selected)
+        placeSlug(r);
+    place(blockedBox, active ? blocked : null, 2);
+    drawHiddenSections(bars);
+    post({
+        type: "viewport",
+        scrollY: Math.max(0, window.scrollY),
+        rect: selected ? rectOf(selected) : blocked ? rectOf(blocked) : null,
+        obstructions: bars,
+    });
 }
 function schedule() {
     if (!frame)
         frame = requestAnimationFrame(redraw);
 }
-/* Selection rules */
+/* What can be selected */
 function idOf(el) {
     const id = el.getAttribute("data-ph-id");
     return id && /^[0-9a-z]{1,10}$/.test(id) ? id : null;
@@ -120,6 +238,9 @@ function idOf(el) {
 function canOf(el) {
     const can = el.getAttribute("data-ph-can") ?? "";
     return /^[tilsbxudc]{0,9}$/.test(can) ? can : "";
+}
+function editable(el) {
+    return el instanceof HTMLElement && idOf(el) !== null && canOf(el) !== "";
 }
 function asElement(target) {
     if (target instanceof Element)
@@ -132,10 +253,20 @@ function asElement(target) {
 function chain(start) {
     const out = [];
     for (let el = start; el && el !== document.documentElement; el = el.parentElement) {
-        if (el instanceof HTMLElement && idOf(el) && canOf(el))
+        if (editable(el))
             out.push(el);
     }
     return out;
+}
+const MEDIA = new Set(["img", "picture", "video", "svg", "canvas", "iframe", "input", "textarea", "select", "button"]);
+function hasPhoto(el) {
+    return getComputedStyle(el).backgroundImage.includes("url(");
+}
+/** A layer with no words, no picture and no photo: a hover tint, an icon or its holder. */
+function decorative(el) {
+    if (el instanceof SVGElement)
+        return true;
+    return !MEDIA.has(el.localName) && (el.textContent ?? "").trim() === "" && !el.querySelector("img, picture, video") && !hasPhoto(el);
 }
 /**
  * Elements without `data-ph-id` were created by the site's JavaScript and are not editable.
@@ -153,6 +284,73 @@ function pick(target) {
     const candidates = chain(target);
     const chosen = candidates.find((el) => /[il]/.test(canOf(el))) ?? candidates.find((el) => canOf(el).includes("t")) ?? candidates[0];
     return chosen ? { kind: "element", el: chosen } : { kind: "blocked", el: target };
+}
+/** Looks through decorative layers (a portfolio hover tint, say) for the picture underneath. */
+function pickAt(x, y, target) {
+    for (const el of document.elementsFromPoint(x, y)) {
+        if (el === host || el === document.body || el === document.documentElement)
+            break;
+        if ((el.localName === "img" || el.localName === "picture") && editable(el) && canOf(el).includes("i"))
+            return { kind: "element", el };
+        if (!decorative(el))
+            break;
+    }
+    return pick(target);
+}
+/* Describing the selection */
+function bodyFontSize() {
+    return parseFloat(getComputedStyle(document.body).fontSize) || 16;
+}
+function looksLikeButton(el) {
+    const s = getComputedStyle(el);
+    const filled = s.backgroundColor !== "rgba(0, 0, 0, 0)" && s.backgroundColor !== "transparent";
+    const bordered = parseFloat(s.borderTopWidth) > 0 && s.borderTopStyle !== "none";
+    return s.display !== "inline" && (filled || bordered) && parseFloat(s.paddingTop) >= 6 && parseFloat(s.paddingLeft) >= 6;
+}
+function kindOf(el) {
+    const can = canOf(el);
+    const tag = el.localName;
+    const role = el.getAttribute("role");
+    if (tag === "img" || tag === "picture" || can.includes("i"))
+        return "image";
+    if (tag === "button" || role === "button" || (tag === "a" && looksLikeButton(el)))
+        return "button";
+    if (tag === "a")
+        return "link";
+    if (/^h[1-6]$/.test(tag) || role === "heading")
+        return "heading";
+    if (can.includes("t")) {
+        const s = getComputedStyle(el);
+        if (parseFloat(s.fontSize) >= bodyFontSize() * 1.5 && Number(s.fontWeight) >= 600)
+            return "heading";
+    }
+    if (tag === "nav" || (can.includes("x") && el.querySelector("nav")))
+        return "menu";
+    if (tag === "header" && can.includes("x"))
+        return "header";
+    if (tag === "footer" && can.includes("x"))
+        return "footer";
+    if (can.includes("x"))
+        return "section";
+    if (tag === "li")
+        return "list-item";
+    if (can.includes("t"))
+        return "text";
+    return "box";
+}
+function words(text, max = 60) {
+    const clean = (text ?? "").replace(/\s+/g, " ").trim();
+    return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
+}
+function nameOf(el, kind) {
+    if (kind === "image")
+        return words(el.getAttribute("alt"));
+    if (kind === "section" || kind === "header" || kind === "footer" || kind === "menu" || kind === "box") {
+        const heading = el.querySelector("h1, h2, h3, h4, [role=heading]");
+        const byId = el.id && (kind === "section" || kind === "header" || kind === "footer") ? el.id.replace(/[-_]+/g, " ") : "";
+        return words(heading?.textContent ?? el.getAttribute("aria-label") ?? byId);
+    }
+    return words(el.textContent);
 }
 function rgbToHex(value) {
     const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/.exec(value);
@@ -174,6 +372,8 @@ function styleSnapshot(el) {
 function info(el) {
     const link = el instanceof HTMLAnchorElement ? el : null;
     const img = el instanceof HTMLImageElement ? el : null;
+    const r = el.getBoundingClientRect();
+    const cap = (n) => Math.max(0, Math.min(1e5, Math.round(n)));
     return {
         href: link ? (link.getAttribute("href") ?? "").slice(0, 2048) : null,
         newTab: link ? link.target === "_blank" : false,
@@ -182,23 +382,45 @@ function info(el) {
         hidden: el.getAttribute("data-ph-hidden") === "true",
         text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 200),
         styles: styleSnapshot(el),
+        bgImage: hasPhoto(el),
+        image: img ? { naturalWidth: cap(img.naturalWidth), naturalHeight: cap(img.naturalHeight), width: cap(r.width), height: cap(r.height) } : null,
     };
 }
-function hasEditableParent(el) {
-    return el.parentElement !== null && chain(el.parentElement).length > 0;
+function ancestorsOf(el) {
+    return chain(el.parentElement).slice(0, 8).map((a) => {
+        const kind = kindOf(a);
+        return { element: idOf(a), kind, name: nameOf(a, kind) };
+    });
 }
-function select(el) {
+function select(el, glide = true) {
     if (editing && editing.el !== el)
         commitText();
     blocked = null;
+    hovered = null;
     if (selected && selected !== el)
         resizes.unobserve(selected);
+    const moved = selected !== null && el !== null && selected !== el;
     selected = el;
     if (el)
         resizes.observe(el);
     const id = el ? idOf(el) : null;
     if (el && id) {
-        post({ type: "select", element: id, can: canOf(el), tag: el.localName.slice(0, 32), hasParent: hasEditableParent(el), rect: rectOf(el), info: info(el) });
+        if (moved && glide && !reducedMotion.matches) {
+            selectBox.classList.add("glide");
+            window.setTimeout(() => selectBox.classList.remove("glide"), 180);
+        }
+        const kind = kindOf(el);
+        post({
+            type: "select",
+            element: id,
+            can: canOf(el),
+            tag: el.localName.slice(0, 32),
+            kind,
+            name: nameOf(el, kind),
+            ancestors: ancestorsOf(el),
+            rect: rectOf(el),
+            info: info(el),
+        });
     }
     else {
         post({ type: "deselect" });
@@ -210,25 +432,83 @@ function showBlocked(el) {
         commitText();
     selected = null;
     blocked = el;
-    post({ type: "blocked", rect: rectOf(el) });
+    const around = chain(el.parentElement)[0];
+    post({ type: "blocked", rect: rectOf(el), around: around ? idOf(around) : null });
     schedule();
 }
-function selectParent() {
-    if (!selected?.parentElement)
+function byId(id) {
+    const el = document.querySelector(`[data-ph-id="${id}"]`);
+    return el instanceof HTMLElement ? el : null;
+}
+function visible(el) {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+}
+/** Elements the keyboard steps through: everything a click would pick, plus sections. */
+function stops() {
+    return [...document.querySelectorAll("[data-ph-id][data-ph-can]")].filter((el) => editable(el) && /[tilx]/.test(canOf(el)) && visible(el));
+}
+function reveal(el, pulse) {
+    const r = el.getBoundingClientRect();
+    const bars = obstructions();
+    const topLimit = Math.max(0, ...bars.filter((b) => b.y < innerHeight / 2).map((b) => b.y + b.height));
+    if (r.top < topLimit || r.bottom > innerHeight) {
+        const behavior = reducedMotion.matches ? "instant" : "smooth";
+        const target = window.scrollY + r.top - topLimit - Math.max(16, (innerHeight - topLimit - r.height) / 3);
+        window.scrollTo({ top: Math.max(0, target), behavior });
+    }
+    if (pulse && !reducedMotion.matches) {
+        selectBox.classList.remove("pulse");
+        void selectBox.offsetWidth;
+        selectBox.classList.add("pulse");
+        window.setTimeout(() => selectBox.classList.remove("pulse"), 420);
+    }
+}
+function selectRelative(direction) {
+    let next = null;
+    if (direction === "parent") {
+        next = selected ? chain(selected.parentElement)[0] : null;
+    }
+    else if (direction === "child") {
+        next = selected ? stops().find((el) => el !== selected && selected?.contains(el)) ?? [...selected.querySelectorAll("[data-ph-id]")].find((el) => editable(el) && visible(el)) : null;
+    }
+    else {
+        const list = stops();
+        const current = selected;
+        const index = current ? list.indexOf(current) : -1;
+        if (!current)
+            next = direction === "next" ? list[0] : list[list.length - 1];
+        else if (index >= 0)
+            next = list[direction === "next" ? index + 1 : index - 1];
+        else if (direction === "next")
+            next = list.find((el) => current.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
+        else
+            next = [...list].reverse().find((el) => current.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_PRECEDING);
+    }
+    if (!next)
         return;
-    const parent = chain(selected.parentElement)[0];
-    if (parent)
-        select(parent);
+    select(next);
+    reveal(next, false);
 }
 /* Inline text editing */
 function formats() {
     const sel = document.getSelection();
     const anchor = asElement(sel?.anchorNode ?? null);
-    return {
-        bold: document.queryCommandState("bold"),
-        italic: document.queryCommandState("italic"),
-        link: Boolean(anchor && editing && anchor.closest("a") && editing.el.contains(anchor.closest("a"))),
-    };
+    const root = editing?.el;
+    if (!anchor || !root || !root.contains(anchor))
+        return { bold: false, italic: false, link: false };
+    const rootStyle = getComputedStyle(root);
+    const own = getComputedStyle(anchor);
+    let bold = Number(own.fontWeight) > Number(rootStyle.fontWeight);
+    let italic = own.fontStyle === "italic" && rootStyle.fontStyle !== "italic";
+    for (let el = anchor; el && el !== root; el = el.parentElement) {
+        if (el.localName === "b" || el.localName === "strong")
+            bold = true;
+        if (el.localName === "i" || el.localName === "em")
+            italic = true;
+    }
+    const link = anchor.closest("a");
+    return { bold, italic, link: Boolean(link && root.contains(link)) };
 }
 function reportEditing(active) {
     const target = editing?.el ?? selected;
@@ -270,7 +550,8 @@ function stopText() {
     schedule();
     return current;
 }
-function commitText() {
+/** Saves the typing. `reselect` re-reports the element so the toolbar shows its new state. */
+function commitText(reselect = true) {
     const current = editing;
     if (!current)
         return;
@@ -278,8 +559,8 @@ function commitText() {
     if (html !== current.original)
         post({ type: "text", element: current.id, html: html.slice(0, 65536) });
     stopText();
-    if (selected === current.el)
-        select(current.el);
+    if (reselect && selected === current.el)
+        select(current.el, false);
 }
 function cancelText() {
     const current = stopText();
@@ -323,11 +604,7 @@ function format(command, href) {
     }
     reportEditing(true);
 }
-/* Live previews of toolbar changes (the server applies the real change) */
-function byId(id) {
-    const el = document.querySelector(`[data-ph-id="${id}"]`);
-    return el instanceof HTMLElement ? el : null;
-}
+/* Live previews of changes (the server applies the real change) */
 function previewStyle(el, styles) {
     for (const [key, value] of Object.entries(styles)) {
         if (value === null || value === undefined)
@@ -336,10 +613,19 @@ function previewStyle(el, styles) {
             el.style.setProperty(key, value);
     }
 }
+function sameOrigin(src) {
+    try {
+        const url = new URL(src, location.href);
+        return url.origin === location.origin ? url : null;
+    }
+    catch {
+        return null;
+    }
+}
 /** Re-sends the selection so the toolbar shows the element's new state. */
 function refresh(el) {
     if (el && el === selected && !editing)
-        select(selected);
+        select(selected, false);
     schedule();
 }
 function handle(message) {
@@ -350,29 +636,42 @@ function handle(message) {
                 window.scrollTo({ top: message.scrollY, behavior: "instant" });
             if (message.select !== null) {
                 const el = byId(message.select);
-                if (el && canOf(el)) {
-                    const r = el.getBoundingClientRect();
-                    if (r.bottom < 0 || r.top > window.innerHeight)
-                        el.scrollIntoView({ block: "center", behavior: "smooth" });
-                    select(el);
+                if (editable(el)) {
+                    select(el, false);
+                    reveal(el, false);
                 }
             }
             break;
         case "mode":
             setMode(message.mode);
             break;
-        case "select_parent":
-            selectParent();
+        case "select_relative":
+            if (mode === "edit" && !editing)
+                selectRelative(message.direction);
             break;
+        case "select_element": {
+            const el = byId(message.element);
+            if (mode === "edit" && editable(el)) {
+                select(el);
+                reveal(el, false);
+            }
+            break;
+        }
+        case "reveal": {
+            const el = byId(message.element);
+            if (el)
+                reveal(el, message.pulse);
+            break;
+        }
         case "deselect":
             if (editing)
-                commitText();
+                commitText(false);
             selected = null;
             blocked = null;
             schedule();
             break;
         case "start_text":
-            select(byId(message.element));
+            select(byId(message.element), false);
             startText();
             break;
         case "finish_text":
@@ -393,20 +692,27 @@ function handle(message) {
         }
         case "preview_image": {
             const el = byId(message.element);
-            let url = null;
-            try {
-                url = new URL(message.src, location.href);
-            }
-            catch {
-                url = null;
-            }
-            if (el instanceof HTMLImageElement && url && url.origin === location.origin) {
+            const url = sameOrigin(message.src);
+            if (el instanceof HTMLImageElement && url) {
                 el.removeAttribute("srcset");
                 el.removeAttribute("sizes");
                 el.src = url.href;
                 el.alt = message.alt;
                 el.addEventListener("load", () => refresh(el), { once: true });
             }
+            break;
+        }
+        case "preview_background": {
+            const el = byId(message.element);
+            const url = sameOrigin(message.src);
+            if (el && url) {
+                el.style.setProperty("background-image", `url("${url.href.replace(/["\\]/g, "\\$&")}")`);
+                if (!el.style.backgroundSize)
+                    el.style.setProperty("background-size", "cover");
+                if (!el.style.backgroundPosition)
+                    el.style.setProperty("background-position", "center");
+            }
+            refresh(el);
             break;
         }
         case "preview_alt": {
@@ -448,17 +754,18 @@ function setMode(next) {
     if (next === mode)
         return;
     if (editing)
-        commitText();
+        commitText(false);
     mode = next;
     previewSheet.disabled = mode !== "preview";
     hovered = null;
     blocked = null;
     if (mode === "preview")
         selected = null;
-    document.documentElement.style.removeProperty("cursor");
     schedule();
 }
-/* Events */
+/* Events. In edit mode every pointer, click and key event is caught on the window in the
+   capture phase, before any site handler, so the site's own scripts (modals, carousels,
+   links) stay still while the owner points at things. */
 function isOurs(event) {
     return event.composedPath().includes(host);
 }
@@ -473,13 +780,13 @@ window.addEventListener("message", (event) => {
         handle(message);
 });
 document.addEventListener("pointerover", (event) => {
-    if (mode !== "edit" || isOurs(event))
+    if (mode !== "edit" || isOurs(event) || editing)
         return;
     const target = asElement(event.target);
     if (!target)
         return;
-    const result = pick(target);
-    hovered = result.kind === "element" ? result.el : result.kind === "blocked" ? result.el : null;
+    const result = pickAt(event.clientX, event.clientY, target);
+    hovered = result.kind === "none" ? null : result.el;
     schedule();
 }, true);
 document.addEventListener("mouseout", (event) => {
@@ -488,74 +795,84 @@ document.addEventListener("mouseout", (event) => {
     hovered = null;
     schedule();
 });
-for (const type of ["mousedown", "pointerdown"]) {
-    document.addEventListener(type, (event) => {
-        if (mode !== "edit" || isOurs(event) || editingContains(event.target))
+window.addEventListener("blur", () => {
+    hovered = null;
+    schedule();
+});
+for (const type of ["mousedown", "pointerdown", "mouseup", "pointerup", "touchstart", "touchend", "dblclick"]) {
+    window.addEventListener(type, (event) => {
+        if (mode !== "edit" || isOurs(event))
             return;
-        if (event.button !== 0)
+        event.stopImmediatePropagation();
+        if (editingContains(event.target))
             return;
-        event.preventDefault();
-    }, true);
+        if (event instanceof MouseEvent && event.button !== 0)
+            return;
+        if (event.cancelable)
+            event.preventDefault();
+    }, { capture: true, passive: false });
 }
-document.addEventListener("click", (event) => {
-    if (mode === "preview" && !isOurs(event) && !event.defaultPrevented && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
-        const link = asElement(event.target)?.closest("a");
-        const href = link?.getAttribute("href");
-        if (href && !link?.hasAttribute("download") && link?.getAttribute("target") !== "_blank") {
-            try {
-                const destination = new URL(href, location.href);
-                if (destination.origin === location.origin && (destination.pathname !== location.pathname || destination.search !== location.search)) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    post({ type: "navigate", href: destination.href.slice(0, 2048) });
-                    return;
-                }
-            }
-            catch {
-                // Invalid links keep the browser's usual behavior.
-            }
+function previewNavigation(event) {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
+        return;
+    const link = asElement(event.target)?.closest("a");
+    const href = link?.getAttribute("href");
+    if (!href || link?.hasAttribute("download") || link?.getAttribute("target") === "_blank")
+        return;
+    try {
+        const destination = new URL(href, location.href);
+        if (destination.origin === location.origin && (destination.pathname !== location.pathname || destination.search !== location.search)) {
+            event.preventDefault();
+            event.stopPropagation();
+            post({ type: "navigate", href: destination.href.slice(0, 2048) });
         }
     }
-    if (mode !== "edit" || isOurs(event))
+    catch {
+        // Invalid links keep the browser's usual behavior.
+    }
+}
+window.addEventListener("click", (event) => {
+    if (isOurs(event))
         return;
+    if (mode === "preview") {
+        previewNavigation(event);
+        return;
+    }
+    event.stopImmediatePropagation();
     if (editingContains(event.target)) {
-        event.stopPropagation();
         if (event.target instanceof Element && event.target.closest("a"))
             event.preventDefault();
         return;
     }
     event.preventDefault();
-    event.stopPropagation();
     const target = asElement(event.target);
     if (!target)
         return;
-    const result = pick(target);
-    if (result.kind === "element") {
+    const result = pickAt(event.clientX, event.clientY, target);
+    if (result.kind === "element")
         select(result.el);
-    }
-    else if (result.kind === "blocked") {
+    else if (result.kind === "blocked")
         showBlocked(result.el);
-    }
-    else {
+    else
         select(null);
-    }
 }, true);
 for (const type of ["auxclick", "contextmenu"]) {
-    document.addEventListener(type, (event) => {
-        if (mode === "edit" && !editingContains(event.target))
-            event.preventDefault();
+    window.addEventListener(type, (event) => {
+        if (mode !== "edit" || isOurs(event) || editingContains(event.target))
+            return;
+        event.stopImmediatePropagation();
+        event.preventDefault();
     }, true);
 }
-document.addEventListener("submit", (event) => {
-    if (mode === "edit") {
-        event.preventDefault();
-        event.stopPropagation();
-    }
+window.addEventListener("submit", (event) => {
+    if (mode !== "edit")
+        return;
+    event.stopImmediatePropagation();
+    event.preventDefault();
 }, true);
-document.addEventListener("keydown", (event) => {
-    const key = event.key.toLowerCase();
-    const mod = event.metaKey || event.ctrlKey;
+window.addEventListener("keydown", (event) => {
     if (editing) {
+        event.stopImmediatePropagation();
         if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
             commitText();
@@ -571,18 +888,14 @@ document.addEventListener("keydown", (event) => {
         }
         return;
     }
-    if (mod && (key === "z" || key === "y")) {
-        event.preventDefault();
-        post({ type: "shortcut", action: key === "y" || event.shiftKey ? "redo" : "undo" });
-        return;
-    }
     if (mode !== "edit")
         return;
+    event.stopImmediatePropagation();
     if (event.key === "Escape" && (selected || blocked)) {
         event.preventDefault();
         select(null);
     }
-    else if ((event.key === "Enter" || event.key === " ") && asElement(event.target)?.closest("a, button, summary")) {
+    else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
     }
 }, true);
@@ -600,7 +913,7 @@ document.addEventListener("paste", (event) => {
     });
 }, true);
 for (const type of ["drop", "dragstart"]) {
-    document.addEventListener(type, (event) => {
+    window.addEventListener(type, (event) => {
         if (mode === "edit")
             event.preventDefault();
     }, true);
@@ -622,29 +935,97 @@ document.addEventListener("selectionchange", () => {
         reportEditing(true);
     }
 });
+/* Page facts for the editor: the site's own colours and the parts a link can jump to */
+function palette() {
+    const weight = new Map();
+    const add = (value, w) => {
+        const hex = rgbToHex(value);
+        if (!/^#[0-9a-f]{6}$/.test(hex) || w <= 0)
+            return;
+        weight.set(hex, (weight.get(hex) ?? 0) + w);
+    };
+    const vw = document.documentElement.clientWidth || innerWidth;
+    for (const el of document.querySelectorAll("body, h1, h2, h3, h4, p, a, button, li, [data-ph-can*='x'], .btn")) {
+        if (el.closest("pagehaven-overlay"))
+            continue;
+        const s = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0)
+            continue;
+        add(s.backgroundColor, Math.min(r.width, vw) * Math.min(r.height, 2000) / 1000);
+        add(s.color, Math.min(200, (el.textContent ?? "").trim().length) + 20);
+    }
+    return [...weight.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([hex]) => hex);
+}
+function anchors() {
+    const out = [];
+    for (const el of document.querySelectorAll("body [id]")) {
+        if (!ANCHOR_ID.test(el.id) || MEDIA.has(el.localName) || el.localName === "form" || el.localName === "nav" || !visible(el))
+            continue;
+        const heading = /^h[1-6]$/.test(el.localName) ? el : el.querySelector("h1, h2, h3, h4");
+        const region = /^(section|article|main|header|footer|aside)$/.test(el.localName);
+        const name = words(heading?.textContent ?? el.getAttribute("aria-label") ?? (region ? el.id.replace(/[-_]+/g, " ") : ""));
+        if (!name)
+            continue;
+        out.push({ id: el.id, name });
+        if (out.length === 50)
+            break;
+    }
+    return out;
+}
+let factsTimer = 0;
+function sendFacts() {
+    window.clearTimeout(factsTimer);
+    factsTimer = window.setTimeout(() => {
+        post({ type: "palette", colors: palette() });
+        post({ type: "anchors", items: anchors() });
+    }, 300);
+}
 window.addEventListener("scroll", schedule, { capture: true, passive: true });
-window.addEventListener("resize", schedule);
-new MutationObserver(() => {
+window.addEventListener("resize", () => {
+    barCandidates = null;
+    schedule();
+});
+new MutationObserver((records) => {
+    if (!host.isConnected)
+        start();
     if (selected && !selected.isConnected)
         select(null);
+    if (records.some((r) => r.type === "childList" || r.attributeName === "class" || r.attributeName === "style"))
+        barCandidates = null;
+    if (records.some((r) => r.attributeName === "open" && r.target !== host))
+        raise();
     schedule();
 }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
-window.addEventListener("load", schedule);
+document.addEventListener("toggle", (event) => {
+    if (event.target !== host)
+        raise();
+}, true);
+window.addEventListener("load", () => {
+    schedule();
+    sendFacts();
+});
 document.addEventListener("load", schedule, true);
 document.fonts.addEventListener("loadingdone", schedule);
 const resizes = new ResizeObserver(schedule);
 resizes.observe(document.documentElement);
+let announced = false;
 function start() {
     if (parentWindow === window || !appOrigin)
         return;
     document.documentElement.append(host);
-    post({
-        type: "ready",
-        path: location.pathname.slice(0, 1024),
-        title: document.title.slice(0, 300),
-        description: (document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "").slice(0, 1000),
-        scrollY: Math.max(0, window.scrollY),
-    });
+    raise();
+    if (!announced) {
+        announced = true;
+        post({
+            type: "ready",
+            path: location.pathname.slice(0, 1024),
+            title: document.title.slice(0, 300),
+            description: (document.querySelector('meta[name="description"]')?.getAttribute("content") ?? "").slice(0, 1000),
+            scrollY: Math.max(0, window.scrollY),
+        });
+        sendFacts();
+    }
     schedule();
 }
 start();

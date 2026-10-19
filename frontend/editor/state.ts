@@ -1,14 +1,17 @@
-import type { Formats, Rect, SelectionInfo } from "../protocol.js";
+import type { Ancestor, Formats, Kind, Rect, SelectionInfo } from "../protocol.js";
 import type { Bootstrap, Domain, Dns, History, Page, Project, Release } from "./api.js";
 
 export type Mode = "edit" | "preview";
 export type Device = "desktop" | "mobile";
+export type Zoom = "fit" | "actual";
 
 export interface Selection {
   element: string;
   can: string;
   tag: string;
-  hasParent: boolean;
+  kind: Kind;
+  name: string;
+  ancestors: Ancestor[];
   rect: Rect;
   info: SelectionInfo;
 }
@@ -16,7 +19,32 @@ export interface Selection {
 export type Focus =
   | { kind: "none" }
   | { kind: "selected"; selection: Selection }
-  | { kind: "blocked"; rect: Rect };
+  | { kind: "blocked"; rect: Rect; around: string | null };
+
+/** Panels with fields open in the left rail in place of the page list. */
+export type Panel = "style" | "background" | "link" | "text-link" | "image" | "page";
+
+export type Rail =
+  | { kind: "pages" }
+  | { kind: "panel"; panel: Panel; element: string | null; replaced: boolean };
+
+/** Why the last save did not land. Saving and saved are read from `pending`. */
+export type SaveProblem = { kind: "offline" } | { kind: "error"; message: string } | { kind: "conflict" };
+
+export interface Saves {
+  /** Draft changes queued or in flight. */
+  pending: number;
+  problem: SaveProblem | null;
+  savedAt: number | null;
+}
+
+/** A change made in this session that is not live yet, named by its undo label. */
+export interface LoggedChange {
+  label: string;
+  page: string;
+}
+
+export type SaveLog = "edit" | "undo" | "redo" | "none";
 
 export interface State {
   project: Project;
@@ -28,15 +56,19 @@ export interface State {
   customDomains: boolean;
   history: History;
   draftChanged: boolean;
+  changes: LoggedChange[];
   mode: Mode;
   device: Device;
-  /** Draft changes queued or in flight. */
-  pending: number;
-  saveError: string | null;
+  zoom: Zoom;
+  saves: Saves;
   focus: Focus;
   editing: { active: boolean; formats: Formats };
   canvasLoading: boolean;
   scrollY: number;
+  obstructions: Rect[];
+  palette: string[];
+  anchors: { id: string; name: string }[];
+  rail: Rail;
   pageMeta: { title: string; description: string };
   releases: Release[] | null;
   domains: Domain[] | null;
@@ -47,23 +79,31 @@ export type Action =
   | { type: "bootstrapped"; data: Bootstrap }
   | { type: "mode"; mode: Mode }
   | { type: "device"; device: Device }
+  | { type: "zoom"; zoom: Zoom }
   | { type: "open_page"; path: string }
   | { type: "page_ready"; path: string; title: string; description: string }
   | { type: "canvas_loading" }
   | { type: "selected"; selection: Selection }
-  | { type: "blocked"; rect: Rect }
+  | { type: "blocked"; rect: Rect; around: string | null }
   | { type: "deselected" }
-  | { type: "viewport"; scrollY: number; rect: Rect | null }
+  | { type: "viewport"; scrollY: number; rect: Rect | null; obstructions: Rect[] }
+  | { type: "palette"; colors: string[] }
+  | { type: "anchors"; items: { id: string; name: string }[] }
   | { type: "editing"; active: boolean; formats: Formats }
+  | { type: "open_panel"; panel: Panel; replaced?: boolean }
+  | { type: "close_panel" }
   | { type: "save_queued" }
-  | { type: "save_ok"; revision: number; history: History; draftChanged: boolean }
-  | { type: "save_failed"; message: string }
+  | { type: "save_ok"; revision: number; history: History; draftChanged: boolean; log: SaveLog; page: string; at: number }
   | { type: "save_settled" }
+  | { type: "save_offline" }
+  | { type: "save_failed"; message: string }
+  | { type: "save_conflict" }
   | { type: "pages"; pages: Page[] }
   | { type: "project"; project: Project }
   | { type: "page_meta"; title: string; description: string }
   | { type: "releases"; releases: Release[] }
   | { type: "published"; release: Release }
+  | { type: "nothing_to_publish" }
   | { type: "domains"; domains: Domain[]; dns: Dns | null };
 
 export function initialState(data: Bootstrap, now: number): State {
@@ -77,14 +117,19 @@ export function initialState(data: Bootstrap, now: number): State {
     customDomains: data.features?.custom_domains ?? true,
     history: data.history,
     draftChanged: data.draft_changed_since_publish,
+    changes: [],
     mode: "edit",
     device: "desktop",
-    pending: 0,
-    saveError: null,
+    zoom: "fit",
+    saves: { pending: 0, problem: null, savedAt: null },
     focus: { kind: "none" },
     editing: { active: false, formats: { bold: false, italic: false, link: false } },
     canvasLoading: true,
     scrollY: 0,
+    obstructions: [],
+    palette: [],
+    anchors: [],
+    rail: { kind: "pages" },
     pageMeta: { title: "", description: "" },
     releases: null,
     domains: null,
@@ -104,6 +149,45 @@ export function pagePath(pathname: string): string {
   return path;
 }
 
+/** Whether a rail panel makes sense for a selection. The page panel needs none. */
+export function panelApplies(panel: Panel, selection: Selection | null, editing: boolean): boolean {
+  if (panel === "page") return true;
+  if (!selection) return false;
+  const can = selection.can;
+  switch (panel) {
+    case "style": return can.includes("s") && can.includes("t");
+    case "background": return can.includes("s") || can.includes("b");
+    case "link": return can.includes("l");
+    case "text-link": return editing;
+    case "image": return can.includes("i");
+  }
+}
+
+function selectionOf(focus: Focus): Selection | null {
+  return focus.kind === "selected" ? focus.selection : null;
+}
+
+/** Keeps an open panel on the new selection when it applies, otherwise returns to the pages. */
+function retarget(rail: Rail, focus: Focus, editing: boolean): Rail {
+  if (rail.kind === "pages" || rail.panel === "page") return rail;
+  const selection = selectionOf(focus);
+  if (!selection || !panelApplies(rail.panel, selection, editing)) return { kind: "pages" };
+  return selection.element === rail.element ? rail : { ...rail, element: selection.element, replaced: false };
+}
+
+function logChange(changes: LoggedChange[], log: SaveLog, previous: History, next: History, page: string): LoggedChange[] {
+  switch (log) {
+    case "edit":
+      return next.undo_label ? [...changes, { label: next.undo_label, page }] : changes;
+    case "undo":
+      return changes.slice(0, -1);
+    case "redo":
+      return previous.redo_label ? [...changes, { label: previous.redo_label, page }] : changes;
+    case "none":
+      return changes;
+  }
+}
+
 export function reduce(state: State, action: Action): State {
   switch (action.type) {
     case "bootstrapped":
@@ -115,56 +199,77 @@ export function reduce(state: State, action: Action): State {
         bootstrappedAt: Date.now(),
         history: action.data.history,
         draftChanged: action.data.draft_changed_since_publish,
+        changes: action.data.draft_changed_since_publish ? state.changes : [],
         path: action.data.pages.some((p) => p.path === state.path) ? state.path : "index.html",
       };
     case "mode":
-      return { ...state, mode: action.mode, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
+      return { ...state, mode: action.mode, focus: { kind: "none" }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
     case "device":
       return { ...state, device: action.device };
+    case "zoom":
+      return { ...state, zoom: action.zoom };
     case "open_page":
-      return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0 };
+      return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, rail: retarget(state.rail, { kind: "none" }, false) };
     case "canvas_loading":
       return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
     case "page_ready":
       if (action.path !== state.path) return state;
-      return {
-        ...state,
-        canvasLoading: false,
-        pageMeta: { title: action.title, description: action.description },
-      };
-    case "selected":
-      return { ...state, focus: { kind: "selected", selection: action.selection } };
+      return { ...state, canvasLoading: false, pageMeta: { title: action.title, description: action.description } };
+    case "selected": {
+      const focus: Focus = { kind: "selected", selection: action.selection };
+      return { ...state, focus, rail: retarget(state.rail, focus, state.editing.active) };
+    }
     case "blocked":
-      return { ...state, focus: { kind: "blocked", rect: action.rect }, editing: { ...state.editing, active: false } };
+      return { ...state, focus: { kind: "blocked", rect: action.rect, around: action.around }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
     case "deselected":
-      return { ...state, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
+      return { ...state, focus: { kind: "none" }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
     case "viewport": {
       const { focus } = state;
-      const next =
+      const next: Focus =
         action.rect === null || focus.kind === "none"
           ? focus
           : focus.kind === "blocked"
-            ? { kind: "blocked" as const, rect: action.rect }
-            : { kind: "selected" as const, selection: { ...focus.selection, rect: action.rect } };
-      return { ...state, scrollY: action.scrollY, focus: next };
+            ? { ...focus, rect: action.rect }
+            : { kind: "selected", selection: { ...focus.selection, rect: action.rect } };
+      return { ...state, scrollY: action.scrollY, focus: next, obstructions: action.obstructions };
     }
-    case "editing":
-      return { ...state, editing: { active: action.active, formats: action.formats } };
+    case "palette":
+      return { ...state, palette: action.colors };
+    case "anchors":
+      return { ...state, anchors: action.items };
+    case "editing": {
+      const rail = !action.active && state.rail.kind === "panel" && state.rail.panel === "text-link" ? { kind: "pages" as const } : state.rail;
+      return { ...state, editing: { active: action.active, formats: action.formats }, rail };
+    }
+    case "open_panel": {
+      const selection = selectionOf(state.focus);
+      if (!panelApplies(action.panel, selection, state.editing.active)) return state;
+      return { ...state, rail: { kind: "panel", panel: action.panel, element: action.panel === "page" ? null : (selection?.element ?? null), replaced: action.replaced ?? false } };
+    }
+    case "close_panel":
+      return state.rail.kind === "pages" ? state : { ...state, rail: { kind: "pages" } };
     case "save_queued":
-      return { ...state, pending: state.pending + 1 };
-    case "save_ok":
+      return { ...state, saves: { ...state.saves, pending: state.saves.pending + 1 } };
+    case "save_ok": {
+      const draftChanged = action.draftChanged;
+      const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
       return {
         ...state,
-        pending: Math.max(0, state.pending - 1),
-        saveError: null,
+        saves: { pending: Math.max(0, state.saves.pending - 1), problem: null, savedAt: action.at },
         project: { ...state.project, revision: action.revision },
         history: action.history,
-        draftChanged: action.draftChanged,
+        draftChanged,
+        changes,
       };
-    case "save_failed":
-      return { ...state, pending: Math.max(0, state.pending - 1), saveError: action.message };
+    }
     case "save_settled":
-      return { ...state, pending: Math.max(0, state.pending - 1) };
+      return { ...state, saves: { ...state.saves, pending: Math.max(0, state.saves.pending - 1), problem: state.saves.problem?.kind === "offline" ? null : state.saves.problem } };
+    case "save_offline":
+      return { ...state, saves: { ...state.saves, problem: { kind: "offline" } } };
+    case "save_failed":
+      return { ...state, saves: { ...state.saves, pending: Math.max(0, state.saves.pending - 1), problem: { kind: "error", message: action.message } } };
+    case "save_conflict":
+      return { ...state, saves: { ...state.saves, pending: Math.max(0, state.saves.pending - 1), problem: { kind: "conflict" } } };
     case "pages":
       return { ...state, pages: action.pages };
     case "project":
@@ -183,12 +288,57 @@ export function reduce(state: State, action: Action): State {
         ...state,
         releases,
         draftChanged: false,
+        changes: [],
         project: { ...state.project, live_release: { number: action.release.number, created_at: action.release.created_at } },
       };
     }
+    case "nothing_to_publish":
+      return { ...state, draftChanged: false, changes: [] };
     case "domains":
       return { ...state, domains: action.domains, dns: action.dns ?? state.dns };
   }
+}
+
+/** What visitors see compared with the draft. Derived, never stored. */
+export type SiteState =
+  | { kind: "never" }
+  | { kind: "current"; live: number }
+  | { kind: "changes"; live: number; count: number }
+  | { kind: "older"; live: number; latest: number; draftChanged: boolean };
+
+export function siteState(s: Pick<State, "project" | "releases" | "draftChanged" | "changes">): SiteState {
+  const live = s.project.live_release;
+  if (!live) return { kind: "never" };
+  const latest = Math.max(live.number, ...(s.releases ?? []).map((r) => r.number));
+  if (latest > live.number) return { kind: "older", live: live.number, latest, draftChanged: s.draftChanged };
+  if (!s.draftChanged) return { kind: "current", live: live.number };
+  return { kind: "changes", live: live.number, count: s.changes.length };
+}
+
+export type Tone = "neutral" | "success" | "warning" | "error";
+
+/** The one status pill in the top bar: save problems first, then saving, then what is live. */
+export function statusPill(s: Pick<State, "project" | "releases" | "draftChanged" | "changes" | "saves">, savingVisible: boolean): { tone: Tone; text: string; busy: boolean } {
+  const problem = s.saves.problem;
+  if (problem?.kind === "conflict") return { tone: "error", text: "Changed in another tab", busy: false };
+  if (problem?.kind === "error") return { tone: "error", text: "Not saved", busy: false };
+  if (problem?.kind === "offline") {
+    const n = s.saves.pending;
+    return { tone: "warning", text: n > 0 ? `Offline · ${n === 1 ? "1 change" : `${n} changes`} waiting` : "Offline", busy: false };
+  }
+  if (s.saves.pending > 0 && savingVisible) return { tone: "neutral", text: "Saving…", busy: true };
+  const site = siteState(s);
+  switch (site.kind) {
+    case "never": return { tone: "neutral", text: "Not online yet", busy: false };
+    case "current": return { tone: "success", text: "Live · up to date", busy: false };
+    case "changes": return { tone: "warning", text: site.count > 0 ? `${site.count === 1 ? "1 change" : `${site.count} changes`} not live` : "Changes not live", busy: false };
+    case "older": return { tone: "warning", text: `Visitors see version ${site.live}`, busy: false };
+  }
+}
+
+/** Publishing makes sense only when the draft differs from what is live. */
+export function canPublish(s: Pick<State, "draftChanged">): boolean {
+  return s.draftChanged;
 }
 
 /** `previous` is null on the first call, so a listener renders everything once. */
@@ -196,6 +346,10 @@ export type Listener = (state: State, previous: State | null) => void;
 
 export function changed<K extends keyof State>(state: State, previous: State | null, ...keys: K[]): boolean {
   return previous === null || keys.some((k) => state[k] !== previous[k]);
+}
+
+export function selection(state: State): Selection | null {
+  return selectionOf(state.focus);
 }
 
 export interface Store {

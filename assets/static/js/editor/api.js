@@ -14,7 +14,7 @@ const parseProject = obj({
     live_release: opt(obj({ number: int(), created_at: str(64) })),
 });
 const pageTitle = (v) => (v === null || v === undefined ? "" : str(500)(v));
-const parsePage = obj({ path: str(1024), title: pageTitle });
+const parsePage = obj({ path: str(1024), title: pageTitle, description: opt(str(1000)) });
 const parseBootstrap = obj({
     project: parseProject,
     pages: arr(parsePage),
@@ -122,11 +122,44 @@ export const api = {
     edit: (pid, baseRevision, page, edit) => request("POST", `${base(pid)}/edits`, { base_revision: baseRevision, page, edit }, parseEditResult),
     undo: (pid, baseRevision) => request("POST", `${base(pid)}/undo`, { base_revision: baseRevision }, parseUndoResult),
     redo: (pid, baseRevision) => request("POST", `${base(pid)}/redo`, { base_revision: baseRevision }, parseUndoResult),
-    uploadImage: (pid, file) => {
+    /** Uploads with XMLHttpRequest, because fetch cannot report upload progress. */
+    uploadImage: (pid, file, onProgress) => new Promise((resolve, reject) => {
         const form = new FormData();
         form.append("file", file, file.name);
-        return request("POST", `${base(pid)}/images`, form, parseUpload);
-    },
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${base(pid)}/images`);
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable)
+                onProgress?.(event.loaded / event.total);
+        });
+        xhr.addEventListener("error", () => reject(new ApiError(0, "network", "You seem to be offline. Check your connection and try again.")));
+        xhr.addEventListener("load", () => {
+            if (xhr.status === 401) {
+                window.location.assign("/login");
+                reject(new ApiError(401, "signed_out", "Please sign in again."));
+                return;
+            }
+            let json;
+            try {
+                json = xhr.responseText ? JSON.parse(xhr.responseText) : undefined;
+            }
+            catch {
+                json = undefined;
+            }
+            if (xhr.status < 200 || xhr.status >= 300) {
+                const err = parseErrorBody(json);
+                reject(new ApiError(xhr.status, err?.error ?? "failed", err?.message ?? "Something went wrong. Please try again."));
+                return;
+            }
+            const parsed = parseUpload(json);
+            if (parsed)
+                resolve(parsed);
+            else
+                reject(new ApiError(xhr.status, "bad_response", "Pagehaven sent an unexpected answer. Please reload the page."));
+        });
+        xhr.send(form);
+    }),
     addPage: (pid, baseRevision, from, path, title) => request("POST", `${base(pid)}/pages`, { base_revision: baseRevision, from, path, title }, parsePagesResult),
     renamePage: (pid, baseRevision, from, to) => request("POST", `${base(pid)}/pages/rename`, { base_revision: baseRevision, from, to }, parsePagesResult),
     deletePage: (pid, baseRevision, path) => request("POST", `${base(pid)}/pages/delete`, { base_revision: baseRevision, path }, parsePagesResult),
