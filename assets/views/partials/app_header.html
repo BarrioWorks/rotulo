@@ -1,32 +1,30 @@
 <header class="app-header" data-app-header>
   <div class="app-header-inner">
-    <a class="brand" href="/projects" aria-label="Pagehaven, your websites">
+    <a class="brand" href="/projects">
       <img src="/static/img/logo.svg" alt="" width="28" height="28">
       <span>Pagehaven</span>
+      <span class="visually-hidden">, your websites</span>
     </a>
-    <nav aria-label="Account">
-      <details class="account" data-menu>
-        <summary aria-label="Account menu">
-          <span class="avatar" aria-hidden="true">{% if user.name %}{{ user.name[0] | upper }}{% else %}{{ user.email[0] | upper }}{% endif %}</span>
-          <span class="small hide-sm">{{ user.name }}</span>
-          <svg class="icon icon-sm subtle" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-down"/></svg>
-        </summary>
-        <div class="menu" role="menu">
-          <div class="menu-head">
-            <div class="small menu-name">{{ user.name }}</div>
-            <div class="tiny subtle truncate">{{ user.email }}</div>
-          </div>
-          <a class="menu-item" role="menuitem" href="/projects">
-            Your websites
-          </a>
-          <form method="post" action="/logout">
-            <button class="menu-item" role="menuitem" type="submit">
-              <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-sign-out"/></svg>
-              Sign out
-            </button>
-          </form>
+    <details class="account" data-menu>
+      <summary>
+        <span class="avatar" aria-hidden="true">{% if user.name %}{{ user.name[0] | upper }}{% else %}{{ user.email[0] | upper }}{% endif %}</span>
+        <span class="account-name hide-sm">{{ user.name }}</span>
+        <span class="visually-hidden">Account</span>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-down"/></svg>
+      </summary>
+      <div class="menu">
+        <div class="menu-head">
+          <div class="menu-name truncate">{{ user.name }}</div>
+          <div class="menu-email truncate">{{ user.email }}</div>
         </div>
-      </details>
-    </nav>
+        <a class="menu-item" href="/projects">Your websites</a>
+        <form method="post" action="/logout">
+          <button class="menu-item" type="submit">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-sign-out"/></svg>
+            Sign out
+          </button>
+        </form>
+      </div>
+    </details>
   </div>
 </header>

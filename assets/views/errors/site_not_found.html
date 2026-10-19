@@ -4,23 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Website not found</title>
+<meta name="color-scheme" content="light">
+<title>No website here yet</title>
 <style>
-html{background:#F4F3EF;color:#16161A;font-family:system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
-main{max-width:420px;text-align:center}
-.mark{width:56px;height:56px;margin:0 auto 24px;border-radius:6px;background:#fff;border:1px solid #DEDDD7;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#64635E}
-h1{font-size:1.5rem;letter-spacing:-.01em;margin:0 0 10px}
-p{margin:0 0 8px;color:#4B4A46;line-height:1.55}
-.small{font-size:.8125rem;color:#64635E;margin-top:20px}
+:root{--ground:#F4F3EF;--ink:#16161A;--ink-2:#4B4A46;--ink-3:#64635E;--rule:#DEDDD7}
+*{box-sizing:border-box}
+html{background:var(--ground);color:var(--ink);font:400 0.9375rem/1.4667 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
+main{position:relative;width:100%;max-width:26rem;padding:32px 0 0;border-top:2px solid var(--ink)}
+h1{margin:0 0 12px;font-size:1.5rem;line-height:1.25;font-weight:600;letter-spacing:-0.01em;text-wrap:balance}
+p{margin:0;color:var(--ink-2);text-wrap:pretty}
+.foot{margin-top:32px;padding-top:12px;border-top:1px solid var(--rule);font-size:0.8125rem;color:var(--ink-3)}
 </style>
 </head>
 <body>
 <main>
-<div class="mark" aria-hidden="true">?</div>
-<h1>This website isn't available</h1>
-<p>There is no published website at this address yet. If you own it, open Pagehaven and publish your website.</p>
-<p class="small">Hosted with Pagehaven.</p>
+<h1>No website here yet</h1>
+<p>This address isn't connected to a published Pagehaven website. If it's yours, open Pagehaven and publish your website.</p>
+<p class="foot">Hosted with Pagehaven</p>
 </main>
 </body>
 </html>
