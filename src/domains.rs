@@ -77,12 +77,22 @@ pub fn normalize(settings: &Settings, input: &str) -> Result<String, ApiError> {
     Ok(host)
 }
 
+fn require_custom_domains(settings: &Settings) -> Result<(), ApiError> {
+    if !settings.custom_domains {
+        return Err(ApiError::NotAllowed(
+            "Custom domains are not available yet.".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
 pub async fn add(
     db: &DatabaseConnection,
     settings: &Settings,
     project: &Project,
     input: &str,
 ) -> Result<Domain, ApiError> {
+    require_custom_domains(settings)?;
     let hostname = normalize(settings, input)?;
     if list(db, settings, project).await?.len() >= PER_PROJECT {
         return Err(ApiError::Invalid(format!(
@@ -183,6 +193,7 @@ pub async fn check(
     project: &Project,
     id: i64,
 ) -> Result<Domain, ApiError> {
+    require_custom_domains(settings)?;
     let row = db::one(
         db,
         "SELECT hostname, token FROM domains WHERE id = ? AND project_id = ?",
@@ -251,13 +262,13 @@ pub async fn certificate_allowed(
         )
         .await?
         .is_some()),
-        hosts::Host::Custom(host) => Ok(db::one(
+        hosts::Host::Custom(host) if settings.custom_domains => Ok(db::one(
             db,
             "SELECT id FROM domains WHERE hostname = ? AND verified_at IS NOT NULL",
             [host.into()],
         )
         .await?
         .is_some()),
-        hosts::Host::Preview(_) | hosts::Host::Invalid => Ok(false),
+        hosts::Host::Custom(_) | hosts::Host::Preview(_) | hosts::Host::Invalid => Ok(false),
     }
 }

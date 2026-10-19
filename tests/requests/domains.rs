@@ -198,3 +198,53 @@ async fn dns_proof_routes_custom_domains_and_new_ownership_takes_over_atomically
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn disabled_custom_domains_refuse_changes_routing_and_certificates() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let p = Project::new(&server, &cookie).await;
+        p.publish(&server, &cookie).await;
+        let d = add(&server, &p, &cookie).await;
+        pagehaven::db::exec(
+            &ctx.db,
+            "UPDATE domains SET verified_at = ? WHERE id = ?",
+            [
+                pagehaven::db::now().into(),
+                d["id"].as_i64().unwrap().into(),
+            ],
+        )
+        .await
+        .unwrap();
+        hosted(&server, "www.harbor-example.com:5150", "/")
+            .await
+            .assert_status_ok();
+        let mut settings = pagehaven::state::Pagehaven::from(&ctx).settings.clone();
+        settings.custom_domains = false;
+        ctx.shared_store.insert(Arc::new(
+            pagehaven::state::Pagehaven::new(settings).unwrap(),
+        ));
+        for (route, body) in [
+            (
+                "domains".to_owned(),
+                json!({"hostname":"other.example.com"}),
+            ),
+            (format!("domains/{}/check", d["id"]), json!({})),
+        ] {
+            let r = post(&server, &p.api(&route), &cookie).json(&body).await;
+            r.assert_status_unprocessable_entity();
+            assert_eq!(
+                r.json::<Value>()["message"],
+                "Custom domains are not available yet."
+            );
+        }
+        hosted(&server, "www.harbor-example.com:5150", "/")
+            .await
+            .assert_status_not_found();
+        tls(&server, "www.harbor-example.com", 404).await;
+        hosted(&server, &p.site, "/").await.assert_status_ok();
+        tls(&server, "127.0.0.1", 200).await;
+    })
+    .await;
+}
