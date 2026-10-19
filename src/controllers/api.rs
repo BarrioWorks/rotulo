@@ -299,6 +299,7 @@ async fn editor_state(
         "history": drafts::history(&ctx.db, project.id).await?,
         "draft_changed_since_publish": drafts::changed_since_publish(&ctx.db, &project).await?,
         "limits": {"image_bytes": state.settings.limits.image_bytes},
+        "features": {"custom_domains": state.settings.custom_domains},
     })))
 }
 

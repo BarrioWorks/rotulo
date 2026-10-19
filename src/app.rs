@@ -112,6 +112,10 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
     if path == "/internal/tls/allowed" {
         return tls_allowed(&ctx, &state, request.uri().query().unwrap_or("")).await;
     }
+    if path == "/_ping" || path == "/_health" {
+        // Health checks from a proxy or orchestrator address the container, not a hostname.
+        return next.run(request).await;
+    }
     let host = hosts::classify(
         request
             .headers()

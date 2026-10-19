@@ -6,7 +6,7 @@ logger:
 
 server:
   port: <%= get_env(name="PORT", default="5150") %>
-  binding: 127.0.0.1
+  binding: <%= get_env(name="BINDING", default="127.0.0.1") %>
   host: <%= get_env(name="PAGEHAVEN_APP_ORIGIN") %>
   middlewares:
     static:
@@ -43,7 +43,9 @@ settings:
   secret: <%= get_env(name="PAGEHAVEN_SECRET") %>
   secure_cookies: true
   dns_over_https: https://cloudflare-dns.com/dns-query
-  server_ipv4: <%= get_env(name="PAGEHAVEN_SERVER_IPV4") %>
+  server_ipv4: <%= get_env(name="PAGEHAVEN_SERVER_IPV4", default="") %>
+  client_ip_header: <%= get_env(name="PAGEHAVEN_CLIENT_IP_HEADER", default="cf-connecting-ip") %>
+  custom_domains: <%= get_env(name="PAGEHAVEN_CUSTOM_DOMAINS", default="false") %>
   limits:
     upload_bytes: 26214400
     content_bytes: 104857600

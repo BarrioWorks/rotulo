@@ -58,14 +58,6 @@ async fn register_page(
     )
 }
 
-fn client_key(headers: &axum::http::HeaderMap) -> String {
-    headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        // The last entry is the one our own reverse proxy added; earlier ones come from the client.
-        .and_then(|v| v.rsplit(',').next())
-        .map_or_else(|| "local".to_owned(), |v| v.trim().to_owned())
-}
 
 async fn register(
     State(ctx): State<AppContext>,
@@ -82,7 +74,7 @@ async fn register(
             json!({"error": error, "name": form.name, "email": form.email}),
         )
     };
-    if state.limit(state::REGISTER, &client_key(&headers)).is_err() {
+    if state.limit(state::REGISTER, &state.settings.client_ip(&headers)).is_err() {
         return again(ApiError::RateLimited.to_string());
     }
     match auth::register(&ctx.db, &form.name, &form.email, &form.password).await {
@@ -134,7 +126,7 @@ async fn login(
     };
     let key = format!(
         "{}|{}",
-        client_key(&headers),
+        state.settings.client_ip(&headers),
         form.email.trim().to_ascii_lowercase()
     );
     if state.limit(state::SIGN_IN, &key).is_err() {

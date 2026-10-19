@@ -45,8 +45,19 @@ pub struct Settings {
     pub secure_cookies: bool,
     pub dns_over_https: String,
     pub server_ipv4: String,
+    /// Header that carries the visitor's address, set by the trusted proxy in front of Pagehaven:
+    /// `cf-connecting-ip` behind Cloudflare, `x-forwarded-for` (last entry) behind a plain proxy.
+    #[serde(default)]
+    pub client_ip_header: Option<String>,
+    /// Whether owners may connect their own domains. Needs TLS for arbitrary hostnames.
+    #[serde(default = "enabled")]
+    pub custom_domains: bool,
     #[serde(default)]
     pub limits: Limits,
+}
+
+fn enabled() -> bool {
+    true
 }
 
 impl Settings {
@@ -100,6 +111,15 @@ impl Settings {
         self.public_port
             .map(|port| format!(":{port}"))
             .unwrap_or_default()
+    }
+
+    /// The visitor's address for rate limits, from the configured proxy header.
+    pub fn client_ip(&self, headers: &axum::http::HeaderMap) -> String {
+        let Some(name) = self.client_ip_header.as_deref() else { return "direct".to_owned() };
+        let value = headers.get(name).and_then(|v| v.to_str().ok()).unwrap_or("");
+        // With X-Forwarded-For, earlier entries come from the client; the last one from our proxy.
+        let value = if name.eq_ignore_ascii_case("x-forwarded-for") { value.rsplit(',').next().unwrap_or("") } else { value };
+        value.trim().chars().take(64).collect()
     }
 
     pub fn site_origin(&self, slug: &str) -> String {

@@ -86,6 +86,8 @@ mod tests {
             data_dir: "data".into(),
             secret: "x".repeat(32),
             secure_cookies: true,
+            client_ip_header: None,
+            custom_domains: true,
             dns_over_https: String::new(),
             server_ipv4: String::new(),
             limits: Default::default(),
