@@ -38,5 +38,5 @@ About seven minutes. Everything shown is the real product: real import, real edi
 
 ## Recovery
 
-- A browser tab shows "This website was changed in another tab": click **Reload**.
+- A tab shows "This website was changed in another tab": click **Reload**. The change just attempted in that tab is not kept.
 - Anything stuck: `scripts/dev-server.sh /tmp/pagehaven-demo` restarts the server. Data stays in that folder.

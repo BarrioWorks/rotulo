@@ -112,7 +112,7 @@ fn headers(response: &mut Response, state: &Pagehaven) {
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     h.insert(
         "permissions-policy",
-        HeaderValue::from_static("camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), bluetooth=(), display-capture=()"),
+        HeaderValue::from_static("camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=(), display-capture=()"),
     );
     h.remove(header::SET_COOKIE);
 }
