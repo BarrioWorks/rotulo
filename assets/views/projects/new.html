@@ -16,18 +16,6 @@
   </div>
 
   <section data-step="choose">
-    <label class="dropzone" data-dropzone>
-      <input type="file" accept=".zip,application/zip,application/x-zip-compressed" data-file-input aria-describedby="drop-help">
-      <span class="dropzone-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg></span>
-      <h2>Drop your website ZIP here.</h2>
-      <p id="drop-help">Import a static website containing HTML, CSS, JavaScript, images, and fonts.</p>
-      <span class="btn btn-secondary">Choose a file</span>
-      <span class="dropzone-limits">ZIP files up to {{ limits.upload_mb }} MB, with up to {{ limits.file_count }} files.</span>
-    </label>
-    <div class="alert alert-error" role="alert" data-choose-error hidden>
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
-      <span data-choose-error-text></span>
-    </div>
     <div class="card import-options">
       <div class="field">
         <div class="label-row">
@@ -36,6 +24,18 @@
         </div>
         <input class="input" id="site-name" type="text" maxlength="80" placeholder="We'll use the title of your home page" data-name-input>
       </div>
+    </div>
+    <label class="dropzone" data-dropzone>
+      <input type="file" accept=".zip,application/zip,application/x-zip-compressed" data-file-input aria-describedby="drop-help">
+      <span class="dropzone-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg></span>
+      <h2>Drop your website ZIP here</h2>
+      <p id="drop-help">Use the finished website your tool exported, with its pages, pictures and fonts.</p>
+      <span class="btn btn-secondary">Choose a file</span>
+      <span class="dropzone-limits">ZIP files up to {{ limits.upload_mb }} MB, with up to {{ limits.file_count }} files.</span>
+    </label>
+    <div class="alert alert-error" role="alert" data-choose-error hidden>
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
+      <span data-choose-error-text></span>
     </div>
   </section>
 
