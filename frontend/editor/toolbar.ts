@@ -419,8 +419,8 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
     if (can.includes("t")) {
       out.push(button("Edit text", "pencil", () => {
         canvas.iframe.focus();
-        canvas.send({ type: "start_text" });
-      }, { title: "Edit text (or click the text again)" }));
+        canvas.send({ type: "start_text", element: sel.element });
+      }, { title: "Edit this text" }));
     }
     if (can.includes("i")) {
       out.push(button(busy === "image" ? "Uploading…" : "Replace image", "image", () => replaceImage(sel), { disabled: busy === "image" }));

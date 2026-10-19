@@ -114,6 +114,7 @@ const agentMessages = {
     viewport: obj({ type: lit("viewport"), scrollY: scroll, rect: opt(parseRect) }),
     editing: obj({ type: lit("editing"), element: elementId, active: bool, formats: parseFormats }),
     text: obj({ type: lit("text"), element: elementId, html: str(65536) }),
+    navigate: obj({ type: lit("navigate"), href: str(2048) }),
     shortcut: obj({ type: lit("shortcut"), action: lit("undo", "redo") }),
 };
 const editorMessages = {
@@ -126,7 +127,7 @@ const editorMessages = {
     mode: obj({ type: lit("mode"), mode: lit("edit", "preview") }),
     select_parent: obj({ type: lit("select_parent") }),
     deselect: obj({ type: lit("deselect") }),
-    start_text: obj({ type: lit("start_text") }),
+    start_text: obj({ type: lit("start_text"), element: elementId }),
     finish_text: obj({ type: lit("finish_text"), commit: bool }),
     format: obj({ type: lit("format"), command: lit("bold", "italic", "link", "unlink"), href: opt(str(2048)) }),
     preview_style: obj({ type: lit("preview_style"), element: elementId, styles: parseStyleChanges }),

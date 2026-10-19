@@ -76,8 +76,7 @@ async function main() {
         return fresh;
     });
     const canvas = createCanvas(store, {
-        onText(element, html) {
-            const page = store.get().path;
+        onText(element, html, page) {
             void change((base) => api.edit(pid, base, page, { op: "set_text", element, html }), {
                 onRejected: () => canvas.reload(element),
             });

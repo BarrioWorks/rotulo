@@ -58,9 +58,10 @@ export function reduce(state, action) {
         case "canvas_loading":
             return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
         case "page_ready":
+            if (action.path !== state.path)
+                return state;
             return {
                 ...state,
-                path: action.path,
                 canvasLoading: false,
                 pageMeta: { title: action.title, description: action.description },
             };
