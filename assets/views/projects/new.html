@@ -4,7 +4,7 @@
 {% block skip_target %}import{% endblock skip_target %}
 {% block body %}
 {% include "partials/app_header.html" %}
-<main class="page page-narrow" id="import" data-upload-mb="{{ limits.upload_mb }}" data-content-mb="{{ limits.content_mb }}" data-file-count="{{ limits.file_count }}">
+<main class="page page-narrow import" id="import" data-upload-mb="{{ limits.upload_mb }}" data-content-mb="{{ limits.content_mb }}" data-file-count="{{ limits.file_count }}">
   <a class="back-link" href="/projects">
     <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
     Your websites
@@ -12,75 +12,84 @@
   <div class="page-head">
     <div>
       <h1>Import a website</h1>
-      <p>Bring in the ZIP file you downloaded from Lovable, Bolt, v0, Claude or another tool.</p>
+      <p>Upload the ZIP of your finished website. Nothing goes online until you publish it.</p>
     </div>
   </div>
 
-  <section data-step="choose">
-    <div class="card import-options">
-      <div class="field">
-        <div class="label-row">
-          <label class="label" for="site-name">Website name</label>
-          <span class="hint">Optional</span>
-        </div>
-        <input class="input" id="site-name" type="text" maxlength="80" placeholder="We'll use the title of your home page" data-name-input>
-      </div>
-    </div>
+  <section data-step="choose" aria-label="Choose a file">
     <label class="dropzone" data-dropzone>
-      <input type="file" accept=".zip,application/zip,application/x-zip-compressed" data-file-input aria-describedby="drop-help">
+      <input type="file" accept=".zip,application/zip,application/x-zip-compressed" data-file-input aria-label="Choose your website ZIP file" aria-describedby="drop-limits choose-error">
       <span class="dropzone-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg></span>
-      <h2>Drop your website ZIP here</h2>
-      <p id="drop-help">Use the finished website your tool exported, with its pages, pictures and fonts.</p>
-      <span class="btn btn-secondary">Choose a file</span>
-      <span class="dropzone-limits">ZIP files up to {{ limits.upload_mb }} MB, with up to {{ limits.file_count }} files.</span>
+      <span class="dropzone-title">Drop your website ZIP here</span>
+      <span class="dropzone-or">or</span>
+      <span class="btn btn-secondary dropzone-btn" aria-hidden="true">Choose a ZIP file</span>
+      <span class="dropzone-limits" id="drop-limits">A ZIP of your finished website · up to {{ limits.upload_mb }} MB · up to {{ limits.file_count_text }} files</span>
     </label>
-    <div class="alert alert-error" role="alert" data-choose-error hidden>
+    <div class="alert alert-error" role="alert" id="choose-error" data-choose-error hidden>
       <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
       <span data-choose-error-text></span>
     </div>
+    <div class="field import-name">
+      <div class="label-row">
+        <label class="label" for="site-name">Website name</label>
+        <span class="hint">Optional</span>
+      </div>
+      <input class="input" id="site-name" type="text" maxlength="80" aria-describedby="site-name-hint" data-name-input>
+      <span class="hint" id="site-name-hint">Leave it empty to use the title of your home page. You can change it later.</span>
+    </div>
   </section>
 
-  <section class="card progress-card" data-step="progress" hidden aria-live="polite">
+  <section class="import-panel progress-panel" data-step="progress" hidden>
     <div class="progress-file">
       <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-zip"/></svg>
-      <span data-progress-file></span>
+      <span class="truncate" data-progress-file></span>
+      <span class="progress-size" data-progress-size></span>
     </div>
-    <div class="progress" data-progress role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Upload progress">
+    <div class="progress" data-progress role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="progress-label">
       <div class="progress-bar" data-progress-bar></div>
     </div>
-    <p class="progress-label" data-progress-label>Uploading…</p>
-    <button class="btn btn-ghost btn-sm" type="button" data-cancel>Cancel</button>
+    <div class="progress-foot">
+      <p class="progress-label" id="progress-label" data-progress-label aria-live="polite">Uploading…</p>
+      <button class="btn btn-ghost btn-sm" type="button" data-cancel>Cancel</button>
+    </div>
+    <p class="progress-note" data-progress-note hidden>Pagehaven is checking every file. Server code and private files are left out.</p>
   </section>
 
-  <section class="card error-card" data-step="folders" hidden>
-    <div class="dropzone-icon folder-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-folder"/></svg></div>
-    <h2>Which folder is your website?</h2>
-    <p data-folders-message></p>
+  <section class="import-panel" data-step="folders" hidden aria-labelledby="folders-title">
+    <h2 class="panel-title" id="folders-title" tabindex="-1">Which folder is your website?</h2>
+    <p class="panel-text" data-folders-message></p>
     <div class="folder-list" data-folder-list></div>
-    <button class="btn btn-ghost" type="button" data-retry>Try another file</button>
+    <button class="btn btn-ghost" type="button" data-retry>Choose another file</button>
   </section>
 
-  <section class="card error-card" data-step="error" hidden role="alert">
-    <div class="error-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg></div>
-    <h2 data-error-title>We couldn't import this file</h2>
-    <p data-error-message></p>
-    <button class="btn btn-primary" type="button" data-retry>Try another file</button>
+  <section class="import-panel error-panel" data-step="error" hidden aria-labelledby="error-title">
+    <div class="error-head" role="alert">
+      <svg class="icon icon-lg error-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
+      <h2 class="panel-title" id="error-title" data-error-title>We couldn't import this file</h2>
+      <p class="panel-text" data-error-message></p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-primary" type="button" data-retry>Try another file</button>
+      <a class="btn btn-ghost" href="/projects">Back to your websites</a>
+    </div>
   </section>
 
-  <section class="card result-card" data-step="done" hidden>
-    <div class="result-hero">
-      <div class="result-thumb" data-result-thumb></div>
-      <div>
-        <div class="result-badge"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-success"/></svg> Imported</div>
-        <h2 data-result-name></h2>
-        <p data-result-summary></p>
-        <div class="result-actions">
-          <a class="btn btn-primary btn-lg" href="/projects" data-open-editor>
-            Open editor
-            <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg>
-          </a>
-          <a class="btn btn-ghost btn-lg" href="/projects">Back to your websites</a>
-        </div>
+  <div data-help-slot>
+    {% include "partials/export_help.html" %}
+  </div>
+
+  <section class="import-panel result-panel" data-step="done" hidden aria-labelledby="result-name">
+    <div class="result-thumb" data-result-thumb></div>
+    <div class="result-body">
+      <p class="result-badge"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-success"/></svg> Ready to edit</p>
+      <h2 class="panel-title" id="result-name" data-result-name></h2>
+      <p class="panel-text" data-result-summary></p>
+      <div class="result-actions">
+        <a class="btn btn-primary btn-lg" href="/projects" data-open-editor>
+          Open editor
+          <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg>
+        </a>
+        <a class="btn btn-ghost btn-lg" href="/projects">Back to your websites</a>
       </div>
     </div>
     <div class="result-details" data-result-details hidden></div>
