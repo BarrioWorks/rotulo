@@ -1,0 +1,94 @@
+{% extends "layouts/base.html" %}
+{% block title %}Your websites · Pagehaven{% endblock title %}
+{% block body %}
+{% include "partials/app_header.html" %}
+<main class="page">
+  {% if projects | length > 0 %}
+  <div class="page-head">
+    <div>
+      <h1>Your websites</h1>
+      <p>{{ projects | length }} {% if projects | length == 1 %}website{% else %}websites{% endif %}. Click one to edit it.</p>
+    </div>
+    {% if can_create %}
+    <a class="btn btn-primary btn-lg" href="/projects/new">
+      <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
+      Import website
+    </a>
+    {% else %}
+    <span class="btn btn-primary btn-lg" aria-disabled="true">Import website</span>
+    {% endif %}
+  </div>
+
+  {% if not can_create %}
+  <div class="alert alert-info limit-note page-limit" role="note">
+    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-info"/></svg>
+    <span>You have reached the limit of {{ limit }} websites for your account.</span>
+  </div>
+  {% endif %}
+
+  <ul class="site-grid" role="list">
+    {% for p in projects %}
+    <li class="card site-card">
+      <a class="site-thumb" href="/projects/{{ p.pid }}" data-tone="{{ p.name | length % 4 }}" tabindex="-1" aria-hidden="true">
+        {% if p.thumbnail_url %}
+        <img src="{{ p.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-thumb>
+        {% endif %}
+        <div class="placeholder-thumb"{% if p.thumbnail_url %} hidden{% endif %}><span>{% if p.name %}{{ p.name[0] | upper }}{% else %}W{% endif %}</span></div>
+      </a>
+      <div class="site-body">
+        <div class="row-between">
+          <a class="site-title truncate" href="/projects/{{ p.pid }}">{{ p.name }}</a>
+          {% if p.live %}<span class="pill pill-published">Published</span>{% else %}<span class="pill pill-draft">Draft</span>{% endif %}
+        </div>
+        <div class="site-meta">
+          <time datetime="{{ p.updated_at }}">Edited {{ p.updated_human }}</time> · {{ p.page_count }} {% if p.page_count == 1 %}page{% else %}pages{% endif %}
+        </div>
+        {% if p.live or p.domains | length > 0 %}
+        <div class="site-links">
+          {% if p.live %}
+          <a href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-globe"/></svg>
+            <span>{{ p.site_url | replace(from="https://", to="") | replace(from="http://", to="") }}</span>
+          </a>
+          {% endif %}
+          {% for d in p.domains %}
+          <a href="https://{{ d }}" target="_blank" rel="noopener noreferrer">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-link"/></svg>
+            <span>{{ d }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div class="site-actions">
+          <a class="btn btn-secondary btn-sm" href="/projects/{{ p.pid }}">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-pencil"/></svg>
+            Edit
+          </a>
+          {% if p.live %}
+          <a class="btn btn-ghost btn-sm" href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
+            View website
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-external"/></svg>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <section class="empty">
+    <div class="empty-art"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-sparkle"/></svg></div>
+    <h2>Bring in your first website</h2>
+    <p>Export your website as a ZIP from Lovable, Bolt, v0, Claude or any other tool, and import it here. You can then edit it and publish it.</p>
+    {% if can_create %}
+    <a class="btn btn-primary btn-lg" href="/projects/new">
+      <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
+      Import website
+    </a>
+    {% else %}
+    <p class="small subtle">You have reached the limit of {{ limit }} websites for your account.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+</main>
+{% endblock body %}

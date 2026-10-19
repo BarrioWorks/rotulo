@@ -1,0 +1,221 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{ project.name }} · Pagehaven{% endblock title %}
+{% block head %}<script type="module" src="/static/js/editor/main.js"></script>{% endblock head %}
+{% block body_class %}editor-body{% endblock body_class %}
+{% block body %}
+<div class="small-screen">
+  <img src="/static/img/logo.svg" alt="" width="44" height="44">
+  <h1>The editor needs a bigger screen</h1>
+  <p>Open {{ project.name }} on a computer or a tablet in landscape to edit it. Your website itself works on every screen.</p>
+  <a class="btn btn-secondary" href="/projects">Back to your websites</a>
+</div>
+
+<div class="editor" id="editor" data-pid="{{ project.pid }}" data-name="{{ project.name }}">
+  <header class="ed-top">
+    <div class="ed-top-left">
+      <a class="btn btn-ghost btn-icon btn-sm" href="/projects" aria-label="Back to your websites" title="Back to your websites">
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
+      </a>
+      <span class="ed-site-name" data-site-name>{{ project.name }}</span>
+    </div>
+
+    <div class="ed-top-center">
+      <div class="row">
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="undo" aria-label="Undo" title="Undo" disabled>
+          <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-undo"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="redo" aria-label="Redo" title="Redo" disabled>
+          <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-redo"/></svg>
+        </button>
+      </div>
+      <span class="ed-divider" aria-hidden="true"></span>
+      <div class="seg" role="group" aria-label="Mode">
+        <button type="button" data-mode="edit" aria-pressed="true" title="Click things on the page to change them">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-pencil"/></svg><span class="label-text">Edit</span>
+        </button>
+        <button type="button" data-mode="preview" aria-pressed="false" title="Use the page like a visitor would">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-eye"/></svg><span class="label-text">Preview</span>
+        </button>
+      </div>
+      <div class="seg seg-icon" role="group" aria-label="Screen size">
+        <button type="button" data-device="desktop" aria-pressed="true" aria-label="Computer screen" title="Computer screen">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-desktop"/></svg>
+        </button>
+        <button type="button" data-device="mobile" aria-pressed="false" aria-label="Phone screen" title="Phone screen">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-mobile"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ed-top-right">
+      <span class="save-status" data-save-status data-state="saved" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span data-save-text>Saved</span></span>
+      <a class="btn btn-ghost btn-sm" href="#" target="_blank" rel="noopener noreferrer" data-view-live hidden>
+        View website
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-external"/></svg>
+      </a>
+      <button class="btn btn-primary" type="button" data-action="publish">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-send"/></svg>
+        Publish
+      </button>
+    </div>
+  </header>
+
+  <aside class="ed-side" aria-label="Website">
+    <details class="ed-section" open>
+      <summary>Pages <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
+      <div class="ed-section-body">
+        <ul class="page-list" data-page-list role="list"></ul>
+        <button class="btn btn-ghost btn-sm add-page" type="button" data-action="add-page">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-plus"/></svg>
+          Add page
+        </button>
+      </div>
+    </details>
+
+    <details class="ed-section" open>
+      <summary>Publishing <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
+      <div class="ed-section-body publish-box">
+        <div class="publish-state" data-publish-state data-state="draft"><span class="dot" aria-hidden="true"></span><span data-publish-state-text>Not published yet</span></div>
+        <div class="live-address" data-live-address hidden>
+          <svg class="icon icon-sm subtle" aria-hidden="true"><use href="/static/img/icons.svg#i-globe"/></svg>
+          <a href="#" target="_blank" rel="noopener noreferrer" data-live-link></a>
+          <a class="btn btn-ghost btn-sm" href="#" target="_blank" rel="noopener noreferrer" data-live-open>Open</a>
+        </div>
+        <button class="btn btn-primary btn-block" type="button" data-action="publish">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-send"/></svg>
+          Publish
+        </button>
+
+        <div>
+          <h3 class="ed-section-title">Version history</h3>
+          <ul class="release-list" data-release-list role="list"></ul>
+          <p class="small subtle" data-release-empty>Each time you publish, a version is saved here so you can go back to it.</p>
+        </div>
+
+        <div>
+          <h3 class="ed-section-title">Your own domain</h3>
+          <div data-domain-list></div>
+          <form class="stack" data-domain-form>
+            <p class="small subtle" data-domain-intro>Use an address you own, like www.yourbusiness.com.</p>
+            <div class="row">
+              <label class="visually-hidden" for="domain-input">Domain name</label>
+              <input class="input input-sm grow" id="domain-input" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="253" placeholder="www.example.com" data-domain-input>
+              <button class="btn btn-secondary btn-sm" type="submit">Add</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </details>
+
+    <details class="ed-section">
+      <summary>Page settings <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
+      <form class="ed-section-body" data-meta-form>
+        <p class="small subtle">Shown in search results and browser tabs for <strong data-meta-page>this page</strong>.</p>
+        <div class="field">
+          <label class="label" for="meta-title">Page title</label>
+          <input class="input input-sm" id="meta-title" type="text" maxlength="200" data-meta-title>
+        </div>
+        <div class="field">
+          <label class="label" for="meta-description">Description</label>
+          <textarea class="textarea" id="meta-description" maxlength="500" rows="3" data-meta-description></textarea>
+        </div>
+        <div class="btn-row"><button class="btn btn-secondary btn-sm" type="submit">Save page settings</button></div>
+      </form>
+    </details>
+
+    <details class="ed-section">
+      <summary>Website settings <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
+      <form class="ed-section-body" data-settings-form>
+        <div class="field">
+          <label class="label" for="site-name">Website name</label>
+          <input class="input input-sm" id="site-name" type="text" maxlength="80" required data-settings-name>
+        </div>
+        <div class="field">
+          <label class="label" for="site-slug">Web address</label>
+          <div class="input-group">
+            <input class="input input-sm" id="site-slug" type="text" minlength="3" maxlength="32" pattern="[a-z0-9-]{3,32}" autocomplete="off" autocapitalize="off" spellcheck="false" required data-settings-slug aria-describedby="slug-hint">
+            <span class="input-addon" data-settings-suffix></span>
+          </div>
+          <span class="hint" id="slug-hint">3 to 32 lowercase letters, numbers or dashes.</span>
+        </div>
+        <div class="alert alert-error" role="alert" data-settings-error hidden></div>
+        <div class="btn-row"><button class="btn btn-secondary btn-sm" type="submit">Save</button></div>
+      </form>
+    </details>
+
+    <details class="ed-section" data-assets-section>
+      <summary>Images <svg class="icon icon-sm chev" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></summary>
+      <div class="ed-section-body">
+        <div class="asset-grid" data-asset-grid></div>
+        <p class="asset-summary" data-asset-summary>Loading…</p>
+      </div>
+    </details>
+  </aside>
+
+  <main class="ed-main">
+    <div class="canvas-area" data-canvas-area data-device="desktop">
+      <div class="mode-hint" data-mode-hint hidden>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-eye"/></svg>
+        Preview: links and buttons work like on your live website
+      </div>
+      <div class="canvas-frame is-loading" data-canvas-frame>
+        <iframe sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" title="Your page" data-canvas></iframe>
+        <div class="canvas-loading" data-canvas-loading>
+          <span class="spinner spinner-lg" aria-hidden="true"></span>
+          <span data-canvas-loading-text>Opening your website…</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="ftb" id="toolbar" role="toolbar" aria-label="Edit the selected part" data-toolbar></div>
+
+<dialog class="modal" data-dialog="confirm">
+  <form method="dialog">
+    <div class="modal-body">
+      <h2 data-dialog-title></h2>
+      <p data-dialog-text></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" value="cancel" data-dialog-cancel>Cancel</button>
+      <button class="btn btn-primary" value="ok" data-dialog-ok>OK</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal" data-dialog="page">
+  <form method="dialog" data-page-form>
+    <div class="modal-body">
+      <h2 data-page-dialog-title>Add a page</h2>
+      <p data-page-dialog-text></p>
+      <div class="field" data-page-from-field>
+        <label class="label" for="page-from">Start from a copy of</label>
+        <select class="select" id="page-from" data-page-from></select>
+      </div>
+      <div class="field">
+        <label class="label" for="page-name">Page name</label>
+        <input class="input" id="page-name" type="text" maxlength="60" required autocomplete="off" data-page-name>
+        <span class="hint" data-page-address></span>
+      </div>
+      <div class="alert alert-error" role="alert" data-page-error hidden></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" type="button" value="cancel" data-page-cancel>Cancel</button>
+      <button class="btn btn-primary" type="submit" value="ok" data-page-submit>Add page</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal" data-dialog="conflict">
+  <div class="modal-body">
+    <h2>This website changed somewhere else</h2>
+    <p>It was edited in another tab or window. Reload to see the latest version before you continue.</p>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-primary" type="button" data-conflict-reload>Reload</button>
+  </div>
+</dialog>
+
+<input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" hidden data-image-input>
+{% endblock body %}

@@ -1,0 +1,15 @@
+{% extends "layouts/base.html" %}
+{% block title %}Page not found · Pagehaven{% endblock title %}
+{% block body %}
+<main class="auth">
+  <a class="brand" href="/">
+    <img src="/static/img/logo.svg" alt="" width="28" height="28">
+    <span>Pagehaven</span>
+  </a>
+  <div class="card auth-card">
+    <h1>We couldn't find that page</h1>
+    <p class="lead">The link may be old, or the page may have moved.</p>
+    <a class="btn btn-primary btn-lg btn-block" href="/projects">Go to your websites</a>
+  </div>
+</main>
+{% endblock body %}

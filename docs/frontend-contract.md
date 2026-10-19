@@ -5,7 +5,7 @@ The backend (Rust) and the frontend (Tera templates, CSS, TypeScript) meet here.
 ## Hosts in development
 
 - App: `http://127.0.0.1:5150`. Signed-in pages and `/api/*`.
-- Preview of a draft: `http://<token>.preview.localhost:5150`. Serves the draft. HTML pages get `<script type="module" src="/__pagehaven/agent.js" data-pagehaven="agent">` as the first child of `<head>`, and every editable element has `data-ph-id` and `data-ph-can`.
+- Preview of a draft: `http://<token>.preview.localhost:5150`. Serves the draft. HTML pages get `<script type="module" src="/__pagehaven/agent/agent.js" data-pagehaven="agent">` as the first child of `<head>`, and every editable element has `data-ph-id` and `data-ph-can`. The preview serves the compiled `assets/static/js/` tree (`.js` files only) under `/__pagehaven/`, so the agent's relative imports work: `import ... from "../protocol.js"` loads `/__pagehaven/protocol.js`.
 - Published site: `http://<slug>.sites.localhost:5150`.
 
 `data-ph-can` lists what the server accepts for that element, one letter each: `t` text, `i` image, `l` link, `s` style, `x` section (hide, remove), `u` can move up, `d` can move down, `c` can duplicate. Elements with no `data-ph-id` (created by the site's JavaScript) are not editable. `data-ph-hidden="true"` marks a hidden section. It is shown dimmed in the editor and left out when publishing.
@@ -135,7 +135,7 @@ Both sides must:
 - Validate every message against a schema: known `type`, every field of the right type, ids matching `^[0-9a-z]{1,10}$`, strings length-capped, numbers finite. Drop anything else silently.
 - Never put strings from a message into `innerHTML` on the editor side. The editor only sends `set_text` HTML to the server, which sanitizes it.
 
-The agent learns the app origin from a constant the server prepends to `agent.js`: `const PAGEHAVEN_APP_ORIGIN = "http://127.0.0.1:5150";`.
+The agent learns the app origin from a constant the server prepends to `agent/agent.js` only: `const PAGEHAVEN_APP_ORIGIN = "http://127.0.0.1:5150";`.
 
 The site's own JavaScript runs in the same window as the agent and can forge agent messages. That is acceptable: such messages can only produce edits to this project's draft, which the server validates. The editor never publishes, deletes or navigates the app because of a message.
 

@@ -1,0 +1,13 @@
+{
+  "name": "pagehaven-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p frontend/tsconfig.json",
+    "check": "tsc -p frontend/tsconfig.json --noEmit",
+    "test": "npm run build && node --test frontend/tests/"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
