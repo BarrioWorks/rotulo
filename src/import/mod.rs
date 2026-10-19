@@ -65,6 +65,8 @@ pub enum ImportError {
     Limit(String),
     #[error("This ZIP contains an unsafe or conflicting file name: {0}")]
     UnsafePath(String),
+    #[error("This ZIP contains a shortcut (symbolic link) or another special file, which websites can't use: {0}")]
+    SpecialFile(String),
     #[error("This ZIP is encrypted. Upload a ZIP without a password.")]
     Encrypted,
     #[error(

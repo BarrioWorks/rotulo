@@ -692,3 +692,22 @@ fn css_imports_are_stylesheets_even_without_an_extension() {
         1
     );
 }
+#[test]
+fn archives_that_record_permissions_without_a_file_type_import() {
+    let mut index = page();
+    index.mode = 0o600;
+    let mut script = Item::new("a.js", "1");
+    script.mode = 0o644;
+    assert!(Fixture::new(&[index, script])
+        .import(&Limits::default(), None)
+        .is_ok());
+}
+#[test]
+fn a_symlink_is_named_as_a_shortcut_in_the_message() {
+    let mut link = Item::new("link.html", "../../etc/passwd");
+    link.mode = 0o120777;
+    let error = Fixture::new(&[page(), link])
+        .import(&Limits::default(), None)
+        .unwrap_err();
+    assert!(error.to_string().contains("shortcut"), "{error}");
+}

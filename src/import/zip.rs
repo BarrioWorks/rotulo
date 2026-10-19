@@ -193,8 +193,9 @@ impl Archive {
             let directory = name.ends_with('/');
             let path = normalize(&name, limits)?;
             let mode = u32_at(&h, 38) >> 16;
-            if h[5] == 3 && !matches!(mode & 0o170000, 0o100000 | 0o040000) {
-                return Err(ImportError::UnsafePath(name));
+            // Some tools record only permission bits; a missing file type means a plain entry.
+            if h[5] == 3 && !matches!(mode & 0o170000, 0 | 0o100000 | 0o040000) {
+                return Err(ImportError::SpecialFile(name));
             }
             if h[5] == 3
                 && ((mode & 0o170000 == 0o040000 && !directory)
