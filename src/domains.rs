@@ -238,6 +238,10 @@ pub async fn certificate_allowed(
     hostname: &str,
 ) -> Result<bool, ApiError> {
     let hostname = hostname.trim().trim_end_matches('.').to_ascii_lowercase();
+    // Certificate names omit the port in the configured app authority.
+    if hostname == settings.app_host() {
+        return Ok(true);
+    }
     match hosts::classify(Some(&hostname), settings) {
         hosts::Host::App => Ok(true),
         hosts::Host::Site(slug) => Ok(db::one(
