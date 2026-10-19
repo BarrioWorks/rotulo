@@ -3278,6 +3278,7 @@ dependencies = [
  "axum-extra",
  "base64 0.22.1",
  "chrono",
+ "cookie",
  "ego-tree",
  "flate2",
  "hmac 0.12.1",

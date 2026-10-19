@@ -33,10 +33,6 @@ impl ElementId {
         Self(String::from_utf8(out).expect("ascii"))
     }
 
-    fn number(&self) -> u64 {
-        u64::from_str_radix(&self.0, 36).unwrap_or(0)
-    }
-
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -343,10 +339,6 @@ fn qual(name: &str) -> QualName {
 
 fn html_qual(name: &str) -> QualName {
     QualName::new(None, ns!(html), LocalName::from(name))
-}
-
-fn attr(element: &Element, name: &str) -> Option<String> {
-    element.attr(name).map(str::to_owned)
 }
 
 fn set_attr(element: &mut Element, name: &str, value: &str) {

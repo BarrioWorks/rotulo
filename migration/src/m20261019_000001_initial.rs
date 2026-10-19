@@ -98,6 +98,8 @@ impl MigrationTrait for Migration {
                     path TEXT NOT NULL,
                     blob TEXT NOT NULL,
                     bytes INTEGER NOT NULL,
+                    draft_blob TEXT NOT NULL,
+                    draft_bytes INTEGER NOT NULL,
                     PRIMARY KEY (release_id, path)
                 ) WITHOUT ROWID;
                 CREATE TABLE domains (
