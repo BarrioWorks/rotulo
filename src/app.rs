@@ -82,6 +82,7 @@ impl Hooks for App {
 
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(crate::tasks::Unpublish);
+        tasks.register(crate::tasks::Reinstate);
     }
 
     async fn truncate(_ctx: &AppContext) -> Result<()> {

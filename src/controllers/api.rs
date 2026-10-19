@@ -772,6 +772,7 @@ async fn publish_draft(
     let state = Pagehaven::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
+    publish::ensure_publishable(&project)?;
     let started = std::time::Instant::now();
     let release = publish::publish(&ctx.db, &state, &project, user.id, body.base_revision).await?;
     tracing::info!(
@@ -807,6 +808,7 @@ async fn activate_release(
     let state = Pagehaven::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
+    publish::ensure_publishable(&project)?;
     Ok(Json(
         json!({"release": publish::activate(&ctx.db, &state, &project, number).await?}),
     ))

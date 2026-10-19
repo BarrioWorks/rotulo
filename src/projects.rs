@@ -13,12 +13,13 @@ pub struct Project {
     pub slug: String,
     pub revision: i64,
     pub live_release_id: Option<i64>,
+    pub suspended_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 const COLUMNS: &str =
-    "id, pid, user_id, name, slug, revision, live_release_id, created_at, updated_at";
+    "id, pid, user_id, name, slug, revision, live_release_id, suspended_at, created_at, updated_at";
 
 fn from_row(row: &QueryResult) -> Result<Project, sea_orm::DbErr> {
     Ok(Project {
@@ -29,6 +30,7 @@ fn from_row(row: &QueryResult) -> Result<Project, sea_orm::DbErr> {
         slug: row.try_get("", "slug")?,
         revision: row.try_get("", "revision")?,
         live_release_id: row.try_get("", "live_release_id")?,
+        suspended_at: row.try_get("", "suspended_at")?,
         created_at: row.try_get("", "created_at")?,
         updated_at: row.try_get("", "updated_at")?,
     })

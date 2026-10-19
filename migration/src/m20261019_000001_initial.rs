@@ -32,6 +32,7 @@ impl MigrationTrait for Migration {
                     slug TEXT NOT NULL UNIQUE,
                     revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
                     live_release_id INTEGER REFERENCES releases(id),
+                    suspended_at INTEGER,
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
                 );

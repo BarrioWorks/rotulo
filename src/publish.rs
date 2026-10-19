@@ -153,6 +153,20 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
     result
 }
 
+fn suspended() -> ApiError {
+    ApiError::NotAllowed(
+        "This website was taken offline after a report. Contact Pagehaven support.".to_owned(),
+    )
+}
+
+/// Refuses publication until an operator lifts the suspension.
+pub fn ensure_publishable(project: &Project) -> Result<(), ApiError> {
+    if project.suspended_at.is_some() {
+        return Err(suspended());
+    }
+    Ok(())
+}
+
 /// Publishes the draft at revision `base` as the next release and makes it live.
 pub async fn publish(
     db: &DatabaseConnection,
@@ -165,6 +179,7 @@ pub async fn publish(
     let lock = state.project_lock(project.id);
     let _guard = lock.lock().await;
     let project = crate::projects::reload(db, project.id).await?;
+    ensure_publishable(&project)?;
     if project.revision != base {
         return Err(ApiError::Conflict {
             revision: project.revision,
@@ -218,7 +233,10 @@ pub async fn publish(
             )
             .await?;
         }
-        db::exec(&tx, "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ?", [release_id.into(), db::now().into(), project.id.into()]).await?;
+        let changed = db::exec(&tx, "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ? AND suspended_at IS NULL", [release_id.into(), db::now().into(), project.id.into()]).await?;
+        if changed == 0 {
+            return Err(suspended());
+        }
         tx.commit().await?;
         Ok::<i64, ApiError>(release_id)
     }
@@ -259,15 +277,17 @@ pub async fn activate(
 ) -> Result<Release, ApiError> {
     let lock = state.project_lock(project.id);
     let _guard = lock.lock().await;
-    let release_id = find(db, project, number).await?;
+    let project = crate::projects::reload(db, project.id).await?;
+    ensure_publishable(&project)?;
+    let release_id = find(db, &project, number).await?;
     if !state.store.release_dir(project.id, number).is_dir() {
         return Err(ApiError::internal(format!(
             "release directory {number} is missing"
         )));
     }
-    db::exec(
+    let changed = db::exec(
         db,
-        "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ? AND user_id = ?",
+        "UPDATE projects SET live_release_id = ?, updated_at = ? WHERE id = ? AND user_id = ? AND suspended_at IS NULL",
         [
             release_id.into(),
             db::now().into(),
@@ -276,6 +296,9 @@ pub async fn activate(
         ],
     )
     .await?;
+    if changed == 0 {
+        return Err(suspended());
+    }
     let project = crate::projects::reload(db, project.id).await?;
     list(db, &project)
         .await?

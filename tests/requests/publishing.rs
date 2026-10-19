@@ -185,6 +185,37 @@ async fn an_operator_can_take_a_harmful_website_offline() {
         let r = hosted(&server, &p.site, "/").await;
         r.assert_status_not_found();
         assert!(r.text().contains("Report a harmful website"));
+        for route in ["publish", "releases/1/activate"] {
+            let r = post(&server, &p.api(route), &cookie)
+                .json(&json!({"base_revision":p.revision}))
+                .await;
+            r.assert_status_unprocessable_entity();
+            assert_eq!(r.json::<Value>()["message"], "This website was taken offline after a report. Contact Pagehaven support.");
+        }
+        let id = project_id(&ctx, &p.pid).await;
+        let row = pagehaven::db::one(&ctx.db, "SELECT suspended_at FROM projects WHERE id = ?", [id.into()])
+            .await.unwrap().unwrap();
+        assert!(row.try_get::<Option<i64>>("", "suspended_at").unwrap().is_some());
+        pagehaven::db::exec(
+            &ctx.db,
+            "INSERT INTO domains (project_id, hostname, token, verified_at, created_at) VALUES (?, 'reported.example.com', 'proof', 1, 1)",
+            [id.into()],
+        ).await.unwrap();
+        // A stale live pointer must never bypass a suspension on either kind of host.
+        pagehaven::db::exec(&ctx.db, "UPDATE projects SET live_release_id = (SELECT id FROM releases WHERE project_id = ? AND number = 1) WHERE id = ?", [id.into(), id.into()]).await.unwrap();
+        hosted(&server, &p.site, "/").await.assert_status_not_found();
+        hosted(&server, "reported.example.com:5150", "/").await.assert_status_not_found();
+        pagehaven::db::exec(&ctx.db, "UPDATE projects SET live_release_id = NULL WHERE id = ?", [id.into()]).await.unwrap();
+        loco_rs::task::Task::run(&pagehaven::tasks::Reinstate, &ctx, &vars)
+            .await
+            .unwrap();
+        hosted(&server, &p.site, "/").await.assert_status_not_found();
+        post(&server, &p.api("releases/1/activate"), &cookie)
+            .await
+            .assert_status_ok();
+        hosted(&server, &p.site, "/").await.assert_status_ok();
+        hosted(&server, "reported.example.com:5150", "/").await.assert_status_ok();
+        assert_eq!(p.publish(&server, &cookie).await["release"]["number"], 2);
     })
     .await;
 }
