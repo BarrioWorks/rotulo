@@ -60,7 +60,7 @@ async fn serve_inner(
         .await
         .map_err(std::io::Error::other)?
     else {
-        return Ok(not_found());
+        return Ok(not_found(&state.settings));
     };
     let Some(path) = paths::from_request(uri_path) else {
         return Ok(respond(
@@ -98,17 +98,28 @@ async fn serve_inner(
         Err(_) => Ok(respond(
             StatusCode::NOT_FOUND,
             "text/html; charset=utf-8",
-            PAGE_NOT_FOUND,
+            page(PAGE_NOT_FOUND, &state.settings),
         )),
     }
 }
 
-pub fn not_found() -> Response {
+pub fn not_found(settings: &crate::settings::Settings) -> Response {
     respond(
         StatusCode::NOT_FOUND,
         "text/html; charset=utf-8",
-        SITE_NOT_FOUND,
+        page(SITE_NOT_FOUND, settings),
     )
+}
+
+/// Pagehaven's own page on a website host, with the address for reporting harmful websites.
+fn page(body: &str, settings: &crate::settings::Settings) -> String {
+    let report = settings
+        .abuse_email
+        .as_deref()
+        .filter(|e| !e.is_empty() && e.bytes().all(|b| b.is_ascii_alphanumeric() || b"@.-_+".contains(&b)))
+        .map(|e| format!("<p style=\"font-size:13px;color:#77746d\">Report a harmful website: <a href=\"mailto:{e}\">{e}</a></p>"))
+        .unwrap_or_default();
+    body.replace("</main>", &format!("{report}</main>"))
 }
 
 const PAGE_NOT_FOUND: &str = "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Page not found</title><body style=\"font:16px/1.5 system-ui,sans-serif;color:#2b2a27;background:#faf9f6;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"text-align:center\"><h1 style=\"font-size:22px\">Page not found</h1><p><a href=\"/\">Go to the home page</a></p></main>";

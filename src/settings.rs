@@ -52,6 +52,9 @@ pub struct Settings {
     /// Whether owners may connect their own domains. Needs TLS for arbitrary hostnames.
     #[serde(default = "enabled")]
     pub custom_domains: bool,
+    /// Where visitors report a harmful published website. Shown on Pagehaven's own error pages.
+    #[serde(default)]
+    pub abuse_email: Option<String>,
     #[serde(default)]
     pub limits: Limits,
 }

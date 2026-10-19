@@ -162,3 +162,29 @@ async fn unknown_sites_and_sites_without_a_live_release_return_not_found() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn an_operator_can_take_a_harmful_website_offline() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let p = Project::new(&server, &cookie).await;
+        p.publish(&server, &cookie).await;
+        hosted(&server, &p.site, "/").await.assert_status_ok();
+        let slug = p
+            .site
+            .trim_start_matches("http://")
+            .split('.')
+            .next()
+            .unwrap()
+            .to_owned();
+        let vars = loco_rs::task::Vars::from_cli_args(vec![("slug".to_owned(), slug)]);
+        loco_rs::task::Task::run(&pagehaven::tasks::Unpublish, &ctx, &vars)
+            .await
+            .unwrap();
+        let r = hosted(&server, &p.site, "/").await;
+        r.assert_status_not_found();
+        assert!(r.text().contains("Report a harmful website"));
+    })
+    .await;
+}

@@ -45,6 +45,7 @@ settings:
   secure_cookies: false
   dns_over_https: <%= get_env(name="PAGEHAVEN_DOH", default="http://127.0.0.1:5399/dns-query") %>
   server_ipv4: 127.0.0.1
+  abuse_email: abuse@pagehaven.example
   limits:
     upload_bytes: 26214400
     content_bytes: 104857600

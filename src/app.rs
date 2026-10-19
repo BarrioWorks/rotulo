@@ -80,7 +80,9 @@ impl Hooks for App {
         Ok(())
     }
 
-    fn register_tasks(_tasks: &mut Tasks) {}
+    fn register_tasks(tasks: &mut Tasks) {
+        tasks.register(crate::tasks::Unpublish);
+    }
 
     async fn truncate(_ctx: &AppContext) -> Result<()> {
         Ok(())
@@ -144,7 +146,7 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
         Host::Site(_) | Host::Custom(_) => {
             sites::serve(&ctx, &host, &path, request.method() == Method::HEAD).await
         }
-        Host::Invalid => sites::not_found(),
+        Host::Invalid => sites::not_found(&state.settings),
     }
 }
 

@@ -46,6 +46,7 @@ settings:
   server_ipv4: <%= get_env(name="PAGEHAVEN_SERVER_IPV4", default="") %>
   client_ip_header: <%= get_env(name="PAGEHAVEN_CLIENT_IP_HEADER", default="cf-connecting-ip") %>
   custom_domains: <%= get_env(name="PAGEHAVEN_CUSTOM_DOMAINS", default="false") %>
+  abuse_email: <%= get_env(name="PAGEHAVEN_ABUSE_EMAIL", default="") %>
   limits:
     upload_bytes: 26214400
     content_bytes: 104857600

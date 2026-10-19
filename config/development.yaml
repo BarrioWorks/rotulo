@@ -45,6 +45,7 @@ settings:
   secure_cookies: false
   dns_over_https: https://cloudflare-dns.com/dns-query
   server_ipv4: 127.0.0.1
+  abuse_email: abuse@pagehaven.example
   limits:
     upload_bytes: 26214400
     content_bytes: 104857600

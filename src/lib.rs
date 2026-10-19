@@ -17,3 +17,4 @@ pub mod settings;
 pub mod sites;
 pub mod state;
 pub mod store;
+pub mod tasks;

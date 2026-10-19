@@ -88,6 +88,7 @@ mod tests {
             secure_cookies: true,
             client_ip_header: None,
             custom_domains: true,
+            abuse_email: None,
             dns_over_https: String::new(),
             server_ipv4: String::new(),
             limits: Default::default(),
