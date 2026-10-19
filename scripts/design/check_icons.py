@@ -1,4 +1,5 @@
-"""Fail when a template or TypeScript icon reference has no sprite symbol, or a symbol is unused.
+"""Fail when a template or TypeScript icon reference has no sprite symbol, a symbol is unused,
+or an icon-only button (.btn-icon) has no aria-label.
 
 Usage: python3 -I scripts/design/check_icons.py (from the repository root)
 """
@@ -16,5 +17,8 @@ errors = [f"template uses missing symbol i-{i}" for i in sorted(in_views - sprit
 errors += [f"IconName lists i-{i}, which the sprite lacks" for i in sorted(typed - sprite)]
 errors += [f"sprite symbol i-{i} is missing from IconName" for i in sorted(sprite - typed)]
 errors += [f"sprite symbol i-{i} is unused" for i in sorted(sprite - used)]
+tags = re.findall(r"<(?:a|button)\b[^>]*\bbtn-icon\b[^>]*>", views)
+tags += [line for line in ts.splitlines() if "btn-icon" in line]
+errors += [f"icon-only button without aria-label: {t.strip()[:90]}" for t in tags if "aria-label" not in t]
 print("\n".join(errors) or f"icons ok: {len(sprite)} symbols, all used and typed")
 sys.exit(1 if errors else 0)
