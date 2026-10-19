@@ -46,7 +46,9 @@ SITE=$(json "$W/out" "d['site_url']")
 s=$(host_get "$SITE/"); expect "$s" 200 "live site home page"
 grep -q "Smoke test headline" "$W/page" && echo "ok   live site shows the edit"
 grep -q "data-ph-" "$W/page" && { echo "FAIL live site has editor markup"; exit 1; }
-s=$(host_get "$SITE/css/styles.css"); expect "$s" 200 "live stylesheet"
+CSS=$(python3 -I -c "import re,sys; h=open(sys.argv[1]).read(); print(re.search(r'<link[^>]*rel=\"stylesheet\"[^>]*href=\"([^\"]+)\"|<link[^>]*href=\"([^\"]+\\.css)\"', h).group(1) or '')" "$W/page")
+CSS=${CSS#/}
+s=$(host_get "$SITE/$CSS"); expect "$s" 200 "live stylesheet $CSS"
 grep -qi "content-type: text/css" "$W/headers" && echo "ok   stylesheet MIME type"
 s=$(call POST "/api/projects/$PID/undo" "{\"base_revision\":$REV}"); expect "$s" 200 "undo"
 REV=$(json "$W/out" "d['revision']")
