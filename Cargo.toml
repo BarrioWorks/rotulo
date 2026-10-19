@@ -1,0 +1,59 @@
+[workspace]
+
+[package]
+name = "pagehaven"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.99"
+publish = false
+default-run = "pagehaven-cli"
+
+[workspace.dependencies]
+loco-rs = { version = "1.2" }
+
+[dependencies]
+loco-rs = { workspace = true }
+migration = { path = "migration" }
+async-trait = "0.1"
+axum = { version = "0.8", features = ["multipart"] }
+axum-extra = { version = "0.10", features = ["cookie"] }
+base64 = "0.22"
+chrono = "0.4"
+ego-tree = "0.10"
+flate2 = "1"
+html5ever = "0.36"
+hmac = "0.12"
+percent-encoding = "2"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+scraper = { version = "0.25", features = ["deterministic"] }
+sea-orm = { version = "2.0", features = ["sqlx-sqlite", "runtime-tokio-rustls", "macros"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+tokio = { version = "1.45", default-features = false, features = ["rt-multi-thread", "macros", "fs", "sync", "io-util"] }
+tracing = "0.1"
+uuid = { version = "1.6", features = ["v4"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[[bin]]
+name = "pagehaven-cli"
+path = "src/bin/main.rs"
+required-features = []
+
+[dev-dependencies]
+loco-rs = { workspace = true, features = ["testing"] }
+serial_test = "3.1"
+tower = { version = "0.5", features = ["util"] }
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.release]
+strip = "symbols"

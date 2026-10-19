@@ -1,0 +1,56 @@
+logger:
+  enable: true
+  pretty_backtrace: false
+  level: info
+  format: json
+
+server:
+  port: <%= get_env(name="PORT", default="5150") %>
+  binding: 127.0.0.1
+  host: <%= get_env(name="PAGEHAVEN_APP_ORIGIN") %>
+  middlewares:
+    static:
+      enable: true
+      must_exist: true
+      precompressed: false
+      folder:
+        uri: "/static"
+        path: "assets/static"
+      fallback: "assets/static/404.html"
+    fallback:
+      enable: false
+
+workers:
+  mode: BackgroundAsync
+
+database:
+  uri: <%= get_env(name="DATABASE_URL") %>
+  enable_logging: false
+  connect_timeout: 2000
+  idle_timeout: 60000
+  min_connections: 1
+  max_connections: 4
+  auto_migrate: true
+  dangerously_truncate: false
+  dangerously_recreate: false
+
+settings:
+  app_origin: <%= get_env(name="PAGEHAVEN_APP_ORIGIN") %>
+  scheme: https
+  sites_domain: <%= get_env(name="PAGEHAVEN_SITES_DOMAIN") %>
+  preview_domain: <%= get_env(name="PAGEHAVEN_PREVIEW_DOMAIN") %>
+  data_dir: <%= get_env(name="PAGEHAVEN_DATA_DIR") %>
+  secret: <%= get_env(name="PAGEHAVEN_SECRET") %>
+  secure_cookies: true
+  dns_over_https: https://cloudflare-dns.com/dns-query
+  server_ipv4: <%= get_env(name="PAGEHAVEN_SERVER_IPV4") %>
+  limits:
+    upload_bytes: 26214400
+    content_bytes: 104857600
+    file_count: 2000
+    depth: 15
+    file_bytes: 20971520
+    compression_ratio: 200
+    image_bytes: 8388608
+    projects_per_user: 25
+    concurrent_jobs: 2
