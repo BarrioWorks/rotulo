@@ -127,9 +127,7 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
             }
             store::create_dir_all(destination.parent().expect("file has a parent"), 0o750)?;
             let source = store.blob_path(&published.0);
-            if fs::hard_link(&source, &destination).is_err() {
-                fs::copy(&source, &destination)?;
-            }
+            link_blob(&source, &destination)?;
             built.push(Built {
                 path: file.path.clone(),
                 published,
@@ -152,6 +150,26 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
         let _ = fs::remove_dir_all(&building);
     }
     result
+}
+
+fn link_blob(source: &Path, destination: &Path) -> std::io::Result<()> {
+    use std::io::{self, ErrorKind};
+    use std::os::unix::fs::OpenOptionsExt;
+
+    match fs::hard_link(source, destination) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == ErrorKind::CrossesDevices => {
+            let mut source = fs::File::open(source)?;
+            let mut destination = fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .mode(0o440)
+                .open(destination)?;
+            io::copy(&mut source, &mut destination)?;
+            Ok(())
+        }
+        Err(error) => Err(error),
+    }
 }
 
 fn suspended() -> ApiError {
@@ -374,4 +392,75 @@ pub async fn restore(
         changes,
     )
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+
+    fn test_root() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("target/publish-tests")
+            .join(store::random_token(12))
+    }
+
+    #[test]
+    fn release_path_collisions_never_overwrite_shared_blobs() {
+        let root = test_root();
+        let store = Store::open(&root).unwrap();
+        let first = store.put_bytes(b"first").unwrap();
+        let second = store.put_bytes(b"other").unwrap();
+        // Reproduce a privileged writer's access without running the test as root.
+        fs::set_permissions(store.blob_path(&first), fs::Permissions::from_mode(0o640)).unwrap();
+        let files = vec![
+            DraftFile {
+                path: "asset.png".to_owned(),
+                blob: first.clone(),
+                bytes: 5,
+            },
+            DraftFile {
+                path: "asset.png".to_owned(),
+                blob: second,
+                bytes: 5,
+            },
+        ];
+        let target = store.release_dir(1, 1);
+        let result = build(&store, &files, &target);
+        let original = store.read(&first).unwrap();
+        let target_exists = target.exists();
+        fs::remove_dir_all(root).unwrap();
+        assert_eq!(original, b"first", "a collision changed the shared blob");
+        assert!(result.is_err());
+        assert!(!target_exists);
+    }
+
+    #[test]
+    fn cross_device_copies_create_new_files_and_refuse_existing_destinations() {
+        let root = test_root();
+        fs::create_dir_all(&root).unwrap();
+        let source = root.join("source");
+        fs::write(&source, b"original").unwrap();
+        let destination_dir =
+            Path::new("/dev/shm").join(format!("ph-publish-{}", store::random_token(12)));
+        fs::create_dir(&destination_dir).unwrap();
+        assert_ne!(
+            fs::metadata(&root).unwrap().dev(),
+            fs::metadata(&destination_dir).unwrap().dev(),
+            "test needs two filesystems"
+        );
+        let destination = destination_dir.join("asset");
+        link_blob(&source, &destination).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"original");
+        fs::write(&source, b"changed!").unwrap();
+        let result = link_blob(&source, &destination);
+        let preserved = fs::read(&destination).unwrap();
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_dir_all(destination_dir).unwrap();
+        assert!(
+            result.is_err(),
+            "an existing cross-device destination was overwritten"
+        );
+        assert_eq!(preserved, b"original");
+    }
 }
