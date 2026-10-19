@@ -175,3 +175,62 @@ async fn deleting_a_website_requires_its_owner_and_name_and_preserves_its_addres
         post(&server, &other.api("settings"), &bob).json(&json!({"name":"Bob", "slug":project.slug})).await.assert_status_unprocessable_entity();
     }).await;
 }
+#[tokio::test]
+#[serial_test::serial]
+async fn dashboard_distinguishes_draft_published_changes_and_offline() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let mut p = Project::new(&server, &cookie).await;
+        let badge = |label: &str| format!(">{label}</span>");
+        assert!(get(&server, "/projects", &cookie)
+            .await
+            .text()
+            .contains(&badge("Draft")));
+        p.publish(&server, &cookie).await;
+        assert!(get(&server, "/projects", &cookie)
+            .await
+            .text()
+            .contains(&badge("Published")));
+        let h1 = element(&p.html(&server, "index.html").await, "h1");
+        p.edit(
+            &server,
+            &cookie,
+            "index.html",
+            json!({"op":"set_text","element":h1,"html":"Unpublished bread"}),
+        )
+        .await;
+        assert!(get(&server, "/projects", &cookie)
+            .await
+            .text()
+            .contains(&badge("Unpublished changes")));
+        p.change(&server, &cookie, "undo", json!({})).await;
+        assert!(get(&server, "/projects", &cookie)
+            .await
+            .text()
+            .contains(&badge("Published")));
+        let id = project_id(&ctx, &p.pid).await;
+        db::exec(
+            &ctx.db,
+            "UPDATE projects SET suspended_at = 1 WHERE id = ?",
+            [id.into()],
+        )
+        .await
+        .unwrap();
+        assert!(get(&server, "/projects", &cookie)
+            .await
+            .text()
+            .contains(&badge("Offline")));
+        db::exec(
+            &ctx.db,
+            "UPDATE projects SET suspended_at = NULL, live_release_id = NULL WHERE id = ?",
+            [id.into()],
+        )
+        .await
+        .unwrap();
+        assert!(get(&server, "/projects", &cookie)
+            .await
+            .text()
+            .contains(&badge("Offline")));
+    })
+    .await;
+}

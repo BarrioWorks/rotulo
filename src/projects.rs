@@ -1,5 +1,7 @@
 //! Projects and who may touch them. Every project route goes through [`owned`].
 
+use serde::Serialize;
+
 use sea_orm::{ConnectionTrait, DatabaseConnection, QueryResult, TransactionTrait};
 
 use crate::{auth::User, db, error::ApiError};
@@ -16,6 +18,43 @@ pub struct Project {
     pub suspended_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Status {
+    Draft,
+    Published,
+    Changes,
+    Offline,
+}
+
+/// Dashboard state reflects the live release's contents, including undo and rollback.
+pub async fn status<C: ConnectionTrait>(db: &C, project: &Project) -> Result<Status, ApiError> {
+    if project.suspended_at.is_some() {
+        return Ok(Status::Offline);
+    }
+    if project.live_release_id.is_some() {
+        return Ok(
+            if crate::drafts::changed_since_publish(db, project).await? {
+                Status::Changes
+            } else {
+                Status::Published
+            },
+        );
+    }
+    let had_release = db::one(
+        db,
+        "SELECT id FROM releases WHERE project_id = ? LIMIT 1",
+        [project.id.into()],
+    )
+    .await?
+    .is_some();
+    Ok(if had_release {
+        Status::Offline
+    } else {
+        Status::Draft
+    })
 }
 
 const COLUMNS: &str =
