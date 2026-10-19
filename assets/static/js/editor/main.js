@@ -227,7 +227,7 @@ async function main() {
         lastAnnounced = key;
         if (sel) {
             const hint = sel.can.includes("t") ? "Press Enter to edit the text." : "Press Tab for its tools.";
-            announce(`${KIND_LABELS[sel.kind]} selected${sel.name ? `: ${sel.name}` : ""}. ${hint}`);
+            announce(`${KIND_LABELS[sel.kind]} selected${sel.name ? `: ${sel.name.replace(/[.!?…]+$/, "")}` : ""}. ${hint}`);
         }
         else if (s.focus.kind === "blocked") {
             announce("This part is made by the website's own code and can't be changed here.");

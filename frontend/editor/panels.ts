@@ -333,6 +333,17 @@ function textLinkPanel(ctx: PanelContext): HTMLElement {
 
 /* Images */
 
+/** Shows a thumbnail only for pictures served by the preview itself. */
+function previewImage(src: string | null, origin: string): string | null {
+  if (!src) return null;
+  try {
+    const url = new URL(src);
+    return url.origin === origin ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
   const body = h("div", { class: "rail-panel-body" });
   if (ctx.replaced) {
@@ -342,8 +353,9 @@ function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
       icon("success", "icon-sm"), h("span", { class: "grow", text: "Picture replaced." }), undo));
   }
   const image = sel.info.image;
-  if (sel.info.src) {
-    const thumb = h("img", { class: "rail-thumb", attrs: { src: sel.info.src, alt: "", referrerpolicy: "no-referrer" } });
+  const src = previewImage(sel.info.src, ctx.store.get().previewOrigin);
+  if (src) {
+    const thumb = h("img", { class: "rail-thumb", attrs: { src, alt: "", referrerpolicy: "no-referrer" } });
     body.append(h("figure", { class: "rail-figure" }, thumb,
       image ? h("figcaption", { class: "hint", text: `Shown at ${image.width} × ${image.height}. The file is ${image.naturalWidth} × ${image.naturalHeight}.` }) : null));
     if (image && image.width > 0 && image.height > 0 && image.naturalWidth > 0 && image.naturalHeight > 0) {

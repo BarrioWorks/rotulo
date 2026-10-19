@@ -374,7 +374,8 @@ function nameOf(el: HTMLElement, kind: Kind): string {
   if (kind === "image") return words(el.getAttribute("alt"));
   if (kind === "section" || kind === "header" || kind === "footer" || kind === "menu" || kind === "box") {
     const heading = el.querySelector("h1, h2, h3, h4, [role=heading]");
-    return words(heading?.textContent ?? el.getAttribute("aria-label") ?? (el.id ? el.id.replace(/[-_]+/g, " ") : ""));
+    const byId = el.id && (kind === "section" || kind === "header" || kind === "footer") ? el.id.replace(/[-_]+/g, " ") : "";
+    return words(heading?.textContent ?? el.getAttribute("aria-label") ?? byId);
   }
   return words(el.textContent);
 }
