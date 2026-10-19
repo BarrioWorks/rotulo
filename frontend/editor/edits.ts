@@ -43,7 +43,10 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
 
   function undoToast(message: string): HTMLButtonElement | null {
     announce(message);
-    return toast(message, { action: { label: "Undo", run: undo } });
+    return toast(message, { action: { label: "Undo", run: () => {
+      undo();
+      canvas.surface.focus({ preventScroll: true });
+    } } });
   }
 
   /** Asks for a picture. Resolves with null when the owner cancels or the file is refused. */
