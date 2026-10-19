@@ -204,6 +204,13 @@ pub async fn publish(
             revision: project.revision,
         });
     }
+    if project.live_release_id.is_some() && !drafts::changed_since_publish(db, &project).await? {
+        return Err(ApiError::Rejected {
+            code: "nothing_to_publish",
+            status: axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+            message: "Everything is already live.".to_owned(),
+        });
+    }
     let files = drafts::files(db, project.id).await?;
     let number = db::one(
         db,
