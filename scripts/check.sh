@@ -7,6 +7,7 @@ cargo clippy --all-targets -q -- -D warnings
 cargo test -q 2>&1 | grep -E "^test result|FAILED|panicked" || true
 cargo test -q > /dev/null 2>&1
 npm run -s check
+python3 -I scripts/design/check_icons.py
 npm test --silent > /dev/null && echo "frontend tests passed"
 git diff --exit-code --stat -- assets/static/js || { echo "assets/static/js is out of date: run npm run build and commit"; exit 1; }
 echo "check passed"

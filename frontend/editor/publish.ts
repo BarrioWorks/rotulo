@@ -171,7 +171,7 @@ export function createPublishing({ store, change, afterRestore }: PublishDeps): 
 
   function domainCard(domain: Domain, dns: Dns | null): HTMLElement {
     const verified = domain.status === "verified";
-    const remove = h("button", { class: "btn btn-ghost btn-icon btn-sm", attrs: { type: "button", "aria-label": `Remove ${domain.hostname}`, title: "Remove" } }, icon("x", "icon-sm"));
+    const remove = h("button", { class: "btn btn-ghost btn-icon btn-sm", attrs: { type: "button", "aria-label": `Remove ${domain.hostname}`, title: "Remove" } }, icon("close", "icon-sm"));
     remove.addEventListener("click", async () => {
       const ok = await confirmDialog({ title: `Remove ${domain.hostname}?`, text: "Your website will stop showing at this address.", ok: "Remove", danger: true });
       if (!ok) return;

@@ -42,7 +42,7 @@ export function createSidebar({ store, canvas, change }) {
         const s = store.get();
         list.replaceChildren(...s.pages.map((page) => {
             const isHome = page.path === "index.html";
-            const open = h("button", { class: "page-open", attrs: { type: "button", title: `/${page.path}` } }, icon(isHome ? "home" : "page", "icon-sm"), h("span", { class: "truncate", text: pageLabel(page, store.get().project.name) }));
+            const open = h("button", { class: "page-open", attrs: { type: "button", title: `/${page.path}` } }, icon(isHome ? "home-page" : "page", "icon-sm"), h("span", { class: "truncate", text: pageLabel(page, store.get().project.name) }));
             open.addEventListener("click", () => {
                 if (store.get().path !== page.path)
                     canvas.open(page.path);
@@ -77,7 +77,7 @@ export function createSidebar({ store, canvas, change }) {
             });
             return b;
         };
-        return h("div", { class: "menu page-menu", attrs: { role: "menu" } }, item("Rename", "pencil", () => void pageDialog("rename", page)), item("Duplicate", "duplicate", () => void pageDialog("add", page)), item("Delete", "trash", () => void deletePage(page), true));
+        return h("div", { class: "menu page-menu", attrs: { role: "menu" } }, item("Rename", "edit", () => void pageDialog("rename", page)), item("Duplicate", "duplicate", () => void pageDialog("add", page)), item("Delete", "remove", () => void deletePage(page), true));
     }
     /* Add and rename share one dialog */
     const dialog = must(document, 'dialog[data-dialog="page"]');

@@ -1,10 +1,10 @@
 export type IconName =
-  | "upload" | "plus" | "page" | "home" | "more" | "trash" | "copy" | "external" | "globe" | "check"
-  | "check-circle" | "alert" | "info" | "undo" | "redo" | "desktop" | "mobile" | "eye" | "eye-off"
-  | "pencil" | "image" | "link" | "unlink" | "bold" | "italic" | "align-left" | "align-center"
-  | "align-right" | "align-justify" | "chevron-right" | "chevron-left" | "chevron-down" | "arrow-up"
-  | "arrow-down" | "duplicate" | "parent" | "folder" | "logout" | "settings" | "clock" | "send" | "x"
-  | "refresh" | "text-color" | "fill" | "spacing" | "type" | "sparkle" | "lock" | "drag" | "zip";
+  | "add-page" | "alert" | "align-left" | "align-center" | "align-right" | "align-justify" | "background" | "bold"
+  | "check" | "chevron-down" | "chevron-left" | "chevron-right" | "close" | "desktop" | "domain" | "duplicate"
+  | "edit" | "edit-text" | "folder" | "hide" | "home-page" | "info" | "italic" | "link"
+  | "more" | "move-down" | "move-up" | "page" | "phone" | "preview" | "redo" | "refresh"
+  | "remove" | "replace-image" | "select-parent" | "sign-out" | "success" | "text-style" | "undo" | "unlink"
+  | "upload" | "view-live" | "zip";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -55,7 +55,7 @@ export function toast(message: string, kind: "info" | "error" = "info", ms = 360
   const host = document.getElementById("toasts");
   if (!host) return;
   const el = h("div", { class: kind === "error" ? "toast is-error" : "toast" },
-    icon(kind === "error" ? "alert" : "check-circle", "icon-sm"),
+    icon(kind === "error" ? "alert" : "success", "icon-sm"),
     h("span", { text: message }));
   host.append(el);
   window.setTimeout(() => {

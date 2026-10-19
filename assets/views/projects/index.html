@@ -47,7 +47,7 @@
         <div class="site-links">
           {% if p.live %}
           <a href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-globe"/></svg>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-domain"/></svg>
             <span>{{ p.site_url | replace(from="https://", to="") | replace(from="http://", to="") }}</span>
           </a>
           {% endif %}
@@ -61,13 +61,13 @@
         {% endif %}
         <div class="site-actions">
           <a class="btn btn-secondary btn-sm" href="/projects/{{ p.pid }}">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-pencil"/></svg>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit"/></svg>
             Edit
           </a>
           {% if p.live %}
           <a class="btn btn-ghost btn-sm" href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
             View website
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-external"/></svg>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
           </a>
           {% endif %}
         </div>
@@ -77,7 +77,6 @@
   </ul>
   {% else %}
   <section class="empty">
-    <div class="empty-art"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-sparkle"/></svg></div>
     <h2>Bring in your first website</h2>
     <p>Export your website as a ZIP from Lovable, Bolt, v0, Claude or any other tool, and import it here. You can then edit it and publish it.</p>
     {% if can_create %}

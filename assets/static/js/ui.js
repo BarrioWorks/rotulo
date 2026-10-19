@@ -36,7 +36,7 @@ export function toast(message, kind = "info", ms = 3600) {
     const host = document.getElementById("toasts");
     if (!host)
         return;
-    const el = h("div", { class: kind === "error" ? "toast is-error" : "toast" }, icon(kind === "error" ? "alert" : "check-circle", "icon-sm"), h("span", { text: message }));
+    const el = h("div", { class: kind === "error" ? "toast is-error" : "toast" }, icon(kind === "error" ? "alert" : "success", "icon-sm"), h("span", { text: message }));
     host.append(el);
     window.setTimeout(() => {
         el.classList.add("is-leaving");

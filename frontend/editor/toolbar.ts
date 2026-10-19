@@ -241,7 +241,7 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
       urlField.hidden = kind !== "web";
       const k = classifyHref(currentHref(), s.path, pages);
       badge.className = `link-kind${k.kind === "page" || k.kind === "anchor" ? " internal" : ""}`;
-      badge.replaceChildren(icon(k.kind === "page" || k.kind === "anchor" ? "page" : "globe", "icon-sm"), h("span", {
+      badge.replaceChildren(icon(k.kind === "page" || k.kind === "anchor" ? "page" : "domain", "icon-sm"), h("span", {
         text: { page: "Goes to a page on this website", anchor: "Goes to a part of this page", web: "Goes to another website", email: "Writes an email", phone: "Calls a phone number", empty: "Choose where this goes" }[k.kind],
       }));
     }
@@ -417,34 +417,34 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
     }
     const out: HTMLElement[] = [h("span", { class: "ftb-label", text: labelFor(sel) })];
     if (can.includes("t")) {
-      out.push(button("Edit text", "pencil", () => {
+      out.push(button("Edit text", "edit-text", () => {
         canvas.iframe.focus();
         canvas.send({ type: "start_text", element: sel.element });
       }, { title: "Edit this text" }));
     }
     if (can.includes("i")) {
-      out.push(button(busy === "image" ? "Uploading…" : "Replace image", "image", () => replaceImage(sel), { disabled: busy === "image" }));
-      out.push(button("Description", "type", toggle("alt"), { expanded: panel === "alt", title: "Describe this image" }));
+      out.push(button(busy === "image" ? "Uploading…" : "Replace image", "replace-image", () => replaceImage(sel), { disabled: busy === "image" }));
+      out.push(button("Description", null, toggle("alt"), { expanded: panel === "alt", title: "Describe this image" }));
     }
     if (can.includes("l")) out.push(button("Link", "link", toggle("link"), { expanded: panel === "link", title: "Where this link goes" }));
-    if (can.includes("s") && can.includes("t")) out.push(button("Style", "text-color", toggle("text-style"), { expanded: panel === "text-style", title: "Text colour, size and alignment" }));
-    if (can.includes("s")) out.push(button("Background", "fill", toggle("box-style"), { expanded: panel === "box-style", title: "Background and spacing" }));
+    if (can.includes("s") && can.includes("t")) out.push(button("Style", "text-style", toggle("text-style"), { expanded: panel === "text-style", title: "Text colour, size and alignment" }));
+    if (can.includes("s")) out.push(button("Background", "background", toggle("box-style"), { expanded: panel === "box-style", title: "Background and spacing" }));
     const sectionTools = /[xudc]/.test(can);
     if (sectionTools) out.push(sep());
-    if (can.includes("u")) out.push(button("Move up", "arrow-up", () => void save({ op: "move_section", element: sel.element, direction: "up" }, "reload-select"), { iconOnly: true }));
-    if (can.includes("d")) out.push(button("Move down", "arrow-down", () => void save({ op: "move_section", element: sel.element, direction: "down" }, "reload-select"), { iconOnly: true }));
+    if (can.includes("u")) out.push(button("Move up", "move-up", () => void save({ op: "move_section", element: sel.element, direction: "up" }, "reload-select"), { iconOnly: true }));
+    if (can.includes("d")) out.push(button("Move down", "move-down", () => void save({ op: "move_section", element: sel.element, direction: "down" }, "reload-select"), { iconOnly: true }));
     if (can.includes("c")) out.push(button("Duplicate", "duplicate", () => void save({ op: "duplicate_section", element: sel.element }, "reload-select").then((ok) => ok && toast("Section duplicated")), { iconOnly: true }));
     if (can.includes("x")) {
       const hidden = sel.info.hidden;
-      out.push(button(hidden ? "Show" : "Hide", hidden ? "eye" : "eye-off", () => {
+      out.push(button(hidden ? "Show" : "Hide", hidden ? "preview" : "hide", () => {
         canvas.send({ type: "preview_hidden", element: sel.element, hidden: !hidden });
         void save({ op: "hide_section", element: sel.element, hidden: !hidden }, "reload-select");
       }, { iconOnly: true, title: hidden ? "Show this section on your website" : "Hide this section on your website" }));
-      out.push(button("Remove", "trash", () => void removeSection(sel), { iconOnly: true, danger: true, title: "Remove this section" }));
+      out.push(button("Remove", "remove", () => void removeSection(sel), { iconOnly: true, danger: true, title: "Remove this section" }));
     }
     if (sel.hasParent) {
       out.push(sep());
-      out.push(button("Select parent", "parent", () => canvas.send({ type: "select_parent" }), { iconOnly: true, title: "Select the part around this one" }));
+      out.push(button("Select parent", "select-parent", () => canvas.send({ type: "select_parent" }), { iconOnly: true, title: "Select the part around this one" }));
     }
     return out;
   }
