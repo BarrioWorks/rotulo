@@ -13,7 +13,8 @@ const parseProject = obj({
     site_url: str(2048),
     live_release: opt(obj({ number: int(), created_at: str(64) })),
 });
-const parsePage = obj({ path: str(1024), title: str(500) });
+const pageTitle = (v) => (v === null || v === undefined ? "" : str(500)(v));
+const parsePage = obj({ path: str(1024), title: pageTitle });
 const parseBootstrap = obj({
     project: parseProject,
     pages: arr(parsePage),

@@ -18,7 +18,8 @@ const parseProject = obj({
 });
 export type Project = Parsed<typeof parseProject>;
 
-const parsePage = obj({ path: str(1024), title: str(500) });
+const pageTitle: Parser<string> = (v) => (v === null || v === undefined ? "" : str(500)(v));
+const parsePage = obj({ path: str(1024), title: pageTitle });
 export type Page = Parsed<typeof parsePage>;
 
 const parseBootstrap = obj({
