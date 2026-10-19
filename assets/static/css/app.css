@@ -307,7 +307,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; line-hei
 .home-header nav { display: flex; gap: var(--s2); align-items: center; }
 
 .hero { max-width: 1160px; margin: 0 auto; padding: var(--s10) var(--s6) var(--s9); text-align: center; }
-.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: var(--r-pill); background: var(--surface); box-shadow: var(--shadow-sm); border: 1px solid var(--line); font-size: 13px; font-weight: 550; color: var(--text-2); margin-bottom: var(--s6); }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 5px 12px; text-wrap: balance; border-radius: var(--r-pill); background: var(--surface); box-shadow: var(--shadow-sm); border: 1px solid var(--line); font-size: 13px; font-weight: 550; color: var(--text-2); margin-bottom: var(--s6); }
 .hero-eyebrow span { color: var(--accent-text); }
 .hero h1 { font-size: clamp(38px, 6.4vw, 68px); font-weight: 750; letter-spacing: -0.035em; line-height: 1.04; max-width: 920px; margin: 0 auto; text-wrap: balance; }
 .hero h1 em { font-style: normal; color: var(--accent); }
@@ -650,6 +650,7 @@ body.editor-body { height: 100vh; overflow: hidden; background: var(--bg-sunken)
   .page, .app-header-inner, .home-header { padding-left: var(--s4); padding-right: var(--s4); }
   .hero { padding-top: var(--s8); padding-left: var(--s4); padding-right: var(--s4); }
   .hero-art { padding: 0 var(--s4); }
+  .hero-eyebrow span { display: none; }
   .auth-card { padding: var(--s6) var(--s5); }
   .site-grid { grid-template-columns: 1fr; }
   .hide-sm { display: none !important; }
