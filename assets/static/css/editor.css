@@ -157,7 +157,7 @@ body.editor-body { height: 100vh; overflow: hidden; background: var(--canvas-bac
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none;
   height: var(--control-h-sm); min-width: var(--control-h-sm); padding: 0 var(--s2);
   border: 0; border-radius: var(--radius-control); background: transparent; color: var(--ink-2);
-  font-size: var(--fs-control); font-weight: var(--fw-control); cursor: pointer; white-space: nowrap;
+  font-size: var(--fs-meta); font-weight: var(--fw-control); cursor: pointer; white-space: nowrap;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .tb-btn:hover { background: var(--hover); color: var(--ink); }
