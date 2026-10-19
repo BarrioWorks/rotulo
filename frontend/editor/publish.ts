@@ -78,14 +78,15 @@ export function createPublishing({ store, change, afterRestore }: PublishDeps): 
       ok: "Make live",
     });
     if (!ok) return;
-    try {
-      const { release: live } = await api.activate(pid(), release.number);
-      store.dispatch({ type: "project", project: { ...store.get().project, live_release: { number: live.number, created_at: live.created_at } } });
-      await loadReleases();
-      toast(`Version ${live.number} is live`);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Something went wrong.", "error");
-    }
+    const live = await change(async () => {
+      const { release: activated } = await api.activate(pid(), release.number);
+      const fresh = await api.bootstrap(pid());
+      store.dispatch({ type: "bootstrapped", data: fresh });
+      return activated;
+    });
+    if (!live) return;
+    await loadReleases();
+    toast(`Version ${live.number} is live`);
   }
 
   async function editVersion(release: Release): Promise<void> {

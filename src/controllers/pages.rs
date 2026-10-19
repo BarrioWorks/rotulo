@@ -28,13 +28,19 @@ fn internal(error: impl std::fmt::Display) -> loco_rs::Error {
 }
 
 async fn home(
+    State(ctx): State<AppContext>,
     ViewEngine(view): ViewEngine<TeraView>,
     MaybeUser(user): MaybeUser,
 ) -> Result<Response> {
     if user.is_some() {
         return Ok(Redirect::to("/projects").into_response());
     }
-    format::render().view(&view, "home.html", json!({}))
+    let state = Pagehaven::from(&ctx);
+    format::render().view(
+        &view,
+        "home.html",
+        json!({"sites_domain": state.settings.sites_domain}),
+    )
 }
 
 #[derive(Deserialize)]

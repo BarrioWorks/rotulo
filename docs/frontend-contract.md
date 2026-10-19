@@ -16,7 +16,7 @@ All pages extend `layouts/base.html`. Static files are under `/static/` (`assets
 
 | Template | Route | Context |
 |---|---|---|
-| `home.html` | `GET /` signed out | `{}` |
+| `home.html` | `GET /` signed out | `sites_domain: string` (configured hostname, without the public port) |
 | `auth/register.html` | `GET/POST /register` | `error: string?`, `name`, `email` (refill on error) |
 | `auth/login.html` | `GET/POST /login` | `error: string?`, `email` |
 | `projects/index.html` | `GET /projects` | `user {name, email}`, `projects: [Project]`, `can_create: bool`, `limit: int` |
@@ -105,7 +105,7 @@ All three answer like `/edits`, plus `"pages"` (the new page list).
 
 - `POST /api/projects/{pid}/publish` `{"base_revision"}` gives `201 {"release": Release, "site_url"}`. `422 {"error":"invalid","message"}` when the draft can't be published (for example a missing stylesheet).
 - `GET /api/projects/{pid}/releases` gives `{"releases":[Release], "site_url"}`, newest first.
-- `POST /api/projects/{pid}/releases/{number}/activate` makes that release live (rollback). Gives `{"release": Release}`.
+- `POST /api/projects/{pid}/releases/{number}/activate` makes that release live (rollback). Gives `{"release": Release}`. The editor then refetches `GET /api/projects/{pid}/editor` through its save queue to refresh `draft_changed_since_publish` against the newly live release.
 - `POST /api/projects/{pid}/releases/{number}/restore` `{"base_revision"}` copies that release into the draft as one undoable edit. Answers like `/undo`, plus `"page_list"` (the new page list with titles).
 
 `Release = {"number", "created_at", "live": bool, "file_count", "bytes"}`.

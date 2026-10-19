@@ -8,6 +8,16 @@ import type { Selection, State, Store } from "./state.js";
 
 type Panel = "text-style" | "box-style" | "link" | "alt" | "text-link" | null;
 
+export function shouldRenderToolbar({ force, keyChanged, selectionChanged, panelChanged, fieldFocused }: {
+  force: boolean;
+  keyChanged: boolean;
+  selectionChanged: boolean;
+  panelChanged: boolean;
+  fieldFocused: boolean;
+}): boolean {
+  return force || selectionChanged || panelChanged || (keyChanged && !fieldFocused);
+}
+
 export interface ToolbarDeps {
   store: Store;
   canvas: Canvas;
@@ -73,8 +83,12 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   const imageInput = must<HTMLInputElement>(document, "[data-image-input]");
   let panel: Panel = null;
   let renderedKey = "";
+  let renderedSelection = "";
+  let renderedPanel: Panel = null;
   let busy: string | null = null;
   let panelError: string | null = null;
+  let replacementDescription: { path: string; element: string } | null = null;
+  let descriptionHint = false;
 
   root.addEventListener("mousedown", (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -116,6 +130,7 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   function toggle(next: Panel): () => void {
     return () => {
       panel = panel === next ? null : next;
+      descriptionHint = false;
       panelError = null;
       render(true);
     };
@@ -289,7 +304,7 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
     area.value = sel.info.alt ?? "";
     const form = h("form", { class: "ftb-panel" },
       h("label", { class: "field" }, h("span", { class: "label", text: "Describe this image" }), area,
-        h("span", { class: "hint", text: "Helps people who can't see the image, and search engines." })),
+        h("span", { class: "hint", text: descriptionHint ? "Update the description for the new image." : "Helps people who can't see the image, and search engines." })),
       h("div", { class: "ftb-panel-actions" }, h("button", { class: "btn btn-primary btn-sm", text: "Save", attrs: { type: "submit" } })));
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -301,13 +316,19 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
       panel = null;
       render(true);
     });
-    window.setTimeout(() => area.focus(), 0);
+    const preselect = descriptionHint;
+    window.setTimeout(() => {
+      if (!root.contains(area)) return;
+      area.focus();
+      if (preselect) area.select();
+    }, 0);
     return form;
   }
 
   /* Actions */
 
   function replaceImage(sel: Selection): void {
+    const page = store.get().path;
     imageInput.value = "";
     imageInput.onchange = null;
     imageInput.addEventListener("change", () => {
@@ -329,7 +350,16 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
         store.dispatch({ type: "save_settled" });
         const alt = sel.info.alt ?? "";
         return save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt }).then((ok) => {
-          if (ok) canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
+          if (ok && store.get().path === page) {
+            canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
+            replacementDescription = { path: page, element: sel.element };
+            const s = store.get();
+            if (s.focus.kind === "selected" && s.focus.selection.element === sel.element) {
+              openReplacementDescription(s);
+            } else {
+              canvas.reload(sel.element);
+            }
+          }
           return ok;
         });
       }, (error: Error) => {
@@ -341,6 +371,20 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
       });
     }, { once: true });
     imageInput.click();
+  }
+
+  function openReplacementDescription(s: State): void {
+    if (!replacementDescription) return;
+    if (s.path !== replacementDescription.path) {
+      replacementDescription = null;
+      return;
+    }
+    if (s.focus.kind === "selected" && s.focus.selection.element === replacementDescription.element) {
+      replacementDescription = null;
+      descriptionHint = true;
+      panelError = null;
+      panel = "alt";
+    }
   }
 
   async function removeSection(sel: Selection): Promise<void> {
@@ -427,31 +471,34 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   function render(force = false): void {
     const s = store.get();
     const key = keyOf(s);
-    if (!force && key === renderedKey) {
+    const f = s.focus;
+    const selection = JSON.stringify([s.path, f.kind, f.kind === "selected" ? f.selection.element : null]);
+    const focused = document.activeElement;
+    const fieldFocused = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
+    if (!shouldRenderToolbar({ force, keyChanged: key !== renderedKey, selectionChanged: selection !== renderedSelection, panelChanged: panel !== renderedPanel, fieldFocused })) {
       position(s);
       return;
     }
-    renderedKey = key;
-    const f = s.focus;
+    if (fieldFocused && focused instanceof HTMLElement) focused.blur();
     if (key === "none") {
       root.classList.remove("is-visible");
       root.replaceChildren();
+      renderedKey = key;
+      renderedSelection = selection;
+      renderedPanel = panel;
       return;
     }
     if (f.kind === "blocked") {
       root.replaceChildren(h("div", { class: "ftb-note" }, icon("info", "icon-sm"),
         h("span", { text: "This part is created by the website's own code, so it can't be edited here." })));
     } else if (f.kind === "selected") {
-      const focused = document.activeElement;
-      const keepFocus = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
-      if (keepFocus) {
-        position(s);
-        return;
-      }
       root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, f.selection)), panelFor(f.selection, s) ?? "");
     }
     position(s);
     root.classList.add("is-visible");
+    renderedKey = key;
+    renderedSelection = selection;
+    renderedPanel = panel;
   }
 
   function position(s: State): void {
@@ -486,8 +533,10 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
     if (prev && prev.focus.kind === "selected" && (s.focus.kind !== "selected" || s.focus.selection.element !== prev.focus.selection.element)) {
       panel = null;
       panelError = null;
+      descriptionHint = false;
     }
     if (prev && prev.editing.active !== s.editing.active) panel = null;
+    openReplacementDescription(s);
     render();
   });
   window.addEventListener("resize", () => render(true));
