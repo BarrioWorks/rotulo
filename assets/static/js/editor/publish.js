@@ -4,6 +4,10 @@ import { changed } from "./state.js";
 function displayUrl(url) {
     return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
+/** Lets a long address wrap after a dot or colon instead of in the middle of a word. */
+function breakAfterDots(text) {
+    return text.split(/(?<=[.:])/).flatMap((part, i) => (i === 0 ? [part] : [document.createElement("wbr"), part]));
+}
 export function createPublishing({ store, change, afterRestore }) {
     const pid = () => store.get().project.pid;
     const publishButtons = [...document.querySelectorAll('[data-action="publish"]')];
@@ -108,7 +112,7 @@ export function createPublishing({ store, change, afterRestore }) {
         viewLive.hidden = !live;
         for (const a of [liveLink, liveOpen, viewLive])
             a.href = s.project.site_url;
-        liveLink.textContent = displayUrl(s.project.site_url);
+        liveLink.replaceChildren(...breakAfterDots(displayUrl(s.project.site_url)));
     }
     function renderReleases(s) {
         const releases = s.releases ?? [];

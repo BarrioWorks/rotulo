@@ -379,9 +379,9 @@ export function createToolbar({ store, canvas, change }) {
         if (can.includes("l"))
             out.push(button("Link", "link", toggle("link"), { expanded: panel === "link", title: "Where this link goes" }));
         if (can.includes("s") && can.includes("t"))
-            out.push(button("Text style", "text-color", toggle("text-style"), { expanded: panel === "text-style", iconOnly: true }));
+            out.push(button("Style", "text-color", toggle("text-style"), { expanded: panel === "text-style", title: "Text colour, size and alignment" }));
         if (can.includes("s"))
-            out.push(button("Box style", "fill", toggle("box-style"), { expanded: panel === "box-style", iconOnly: true, title: "Background and spacing" }));
+            out.push(button("Background", "fill", toggle("box-style"), { expanded: panel === "box-style", title: "Background and spacing" }));
         const sectionTools = /[xudc]/.test(can);
         if (sectionTools)
             out.push(sep());

@@ -55,7 +55,7 @@ export function confirmDialog(options) {
     ok.className = options.danger ? "btn btn-danger" : "btn btn-primary";
     dialog.returnValue = "cancel";
     dialog.showModal();
-    ok.focus();
+    (options.danger ? must(dialog, "[data-dialog-cancel]") : ok).focus();
     return new Promise((resolve) => {
         dialog.addEventListener("close", () => resolve(dialog.returnValue === "ok"), { once: true });
     });

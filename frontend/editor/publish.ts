@@ -14,6 +14,11 @@ function displayUrl(url: string): string {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+/** Lets a long address wrap after a dot or colon instead of in the middle of a word. */
+function breakAfterDots(text: string): (string | HTMLElement)[] {
+  return text.split(/(?<=[.:])/).flatMap((part, i) => (i === 0 ? [part] : [document.createElement("wbr"), part]));
+}
+
 export function createPublishing({ store, change, afterRestore }: PublishDeps): void {
   const pid = () => store.get().project.pid;
   const publishButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-action="publish"]')];
@@ -114,7 +119,7 @@ export function createPublishing({ store, change, afterRestore }: PublishDeps): 
     liveBox.hidden = !live;
     viewLive.hidden = !live;
     for (const a of [liveLink, liveOpen, viewLive]) a.href = s.project.site_url;
-    liveLink.textContent = displayUrl(s.project.site_url);
+    liveLink.replaceChildren(...breakAfterDots(displayUrl(s.project.site_url)));
   }
 
   function renderReleases(s: State): void {
