@@ -18,8 +18,11 @@ const info = {
   hidden: false,
   text: "See today's menu",
   styles: { color: "#ffffff", "font-size": "16px" },
+  bgImage: false,
+  image: null,
 };
-const select = envelope({ type: "select", element: "w", can: "tls", tag: "a", hasParent: true, rect, info });
+const ancestors = [{ element: "s1", kind: "section", name: "Menu" }];
+const select = envelope({ type: "select", element: "w", can: "tls", tag: "a", kind: "link", name: "See today's menu", ancestors, rect, info });
 
 test("the editor accepts a well-formed selection from the agent", () => {
   const parsed = parseAgentMessage(select);
@@ -120,4 +123,67 @@ test("links follow the server's scheme rules", () => {
 
 test("background image capability survives selection validation", () => {
   assert.equal(parseAgentMessage({ ...select, can: "tilsbxudc" })?.can, "tilsbxudc");
+});
+
+test("selection kind, name and ancestors are validated", () => {
+  assert.equal(parseAgentMessage({ ...select, kind: "widget" }), undefined);
+  assert.equal(parseAgentMessage({ ...select, name: "x".repeat(61) }), undefined);
+  assert.equal(parseAgentMessage({ ...select, ancestors: Array(9).fill(ancestors[0]) }), undefined);
+  assert.equal(parseAgentMessage({ ...select, ancestors: [{ element: "BAD", kind: "section", name: "" }] }), undefined);
+  assert.equal(parseAgentMessage({ ...select, ancestors: [{ element: "a", kind: "nav", name: "" }] }), undefined);
+  assert.deepEqual(parseAgentMessage(select)?.ancestors, ancestors);
+});
+
+test("image metrics are finite numbers in range", () => {
+  const image = { naturalWidth: 700, naturalHeight: 525, width: 356, height: 267 };
+  assert.deepEqual(parseAgentMessage({ ...select, info: { ...info, image } })?.info.image, image);
+  assert.equal(parseAgentMessage({ ...select, info: { ...info, image: { ...image, width: Number.NaN } } }), undefined);
+  assert.equal(parseAgentMessage({ ...select, info: { ...info, image: { ...image, width: -1 } } }), undefined);
+  assert.equal(parseAgentMessage({ ...select, info: { ...info, bgImage: "yes" } }), undefined);
+});
+
+test("the viewport carries at most four obstruction rects", () => {
+  const viewport = envelope({ type: "viewport", scrollY: 10, rect: null, obstructions: [rect] });
+  assert.ok(parseAgentMessage(viewport));
+  assert.equal(parseAgentMessage({ ...viewport, obstructions: Array(5).fill(rect) }), undefined);
+  assert.equal(parseAgentMessage({ ...viewport, obstructions: [{ ...rect, x: Number.POSITIVE_INFINITY }] }), undefined);
+});
+
+test("palette colours are six-digit lowercase hex, at most ten", () => {
+  assert.deepEqual(parseAgentMessage(envelope({ type: "palette", colors: ["#fed136", "#212529"] }))?.colors, ["#fed136", "#212529"]);
+  for (const colors of [["red"], ["#FED136"], ["#fff"], ["url(x)"], Array(11).fill("#000000")]) {
+    assert.equal(parseAgentMessage(envelope({ type: "palette", colors })), undefined, JSON.stringify(colors));
+  }
+});
+
+test("anchor ids are safe fragment names and names are capped", () => {
+  assert.ok(parseAgentMessage(envelope({ type: "anchors", items: [{ id: "services", name: "Services" }] })));
+  for (const item of [{ id: "1abc", name: "x" }, { id: "a b", name: "x" }, { id: "a\"><x", name: "x" }, { id: "ok", name: "x".repeat(61) }]) {
+    assert.equal(parseAgentMessage(envelope({ type: "anchors", items: [item] })), undefined, JSON.stringify(item));
+  }
+  assert.equal(parseAgentMessage(envelope({ type: "anchors", items: Array(51).fill({ id: "a", name: "a" }) })), undefined);
+});
+
+test("blocked clicks may name the editable part around them", () => {
+  assert.equal(parseAgentMessage(envelope({ type: "blocked", rect, around: "1k" }))?.around, "1k");
+  assert.equal(parseAgentMessage(envelope({ type: "blocked", rect }))?.around, null);
+  assert.equal(parseAgentMessage(envelope({ type: "blocked", rect, around: "<b>" })), undefined);
+});
+
+test("keyboard selection messages are closed sets", () => {
+  for (const direction of ["parent", "child", "next", "prev"]) {
+    assert.ok(parseEditorMessage(envelope({ type: "select_relative", direction })));
+  }
+  assert.equal(parseEditorMessage(envelope({ type: "select_relative", direction: "first" })), undefined);
+  assert.equal(parseEditorMessage(envelope({ type: "select_parent" })), undefined, "select_parent was replaced");
+  assert.ok(parseEditorMessage(envelope({ type: "select_element", element: "1k" })));
+  assert.equal(parseEditorMessage(envelope({ type: "select_element", element: "#x" })), undefined);
+  assert.deepEqual(parseEditorMessage(envelope({ type: "reveal", element: "1k", pulse: true })), { type: "reveal", element: "1k", pulse: true });
+  assert.equal(parseEditorMessage(envelope({ type: "reveal", element: "1k" })), undefined);
+});
+
+test("background previews carry an element and a capped URL", () => {
+  assert.ok(parseEditorMessage(envelope({ type: "preview_background", element: "k", src: "http://tok.preview.localhost/images/uploads/a.jpg" })));
+  assert.equal(parseEditorMessage(envelope({ type: "preview_background", element: "k", src: "x".repeat(2049) })), undefined);
+  assert.equal(parseEditorMessage(envelope({ type: "preview_background", element: "k" })), undefined);
 });

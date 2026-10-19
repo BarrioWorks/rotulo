@@ -1,507 +1,403 @@
-import { isSafeHref, isStyleValue } from "../protocol.js";
-import { confirmDialog, h, icon, must, toast } from "../ui.js";
-import { api } from "./api.js";
-import { pageLabel } from "./sidebar.js";
-export function shouldRenderToolbar({ force, keyChanged, selectionChanged, panelChanged, fieldFocused }) {
-    return force || selectionChanged || panelChanged || (keyChanged && !fieldFocused);
+import { KIND_LABELS } from "../protocol.js";
+import { h, icon, must } from "../ui.js";
+import { closeMenus, openMenu } from "./menu.js";
+import { placeToolbar } from "./placement.js";
+import { describeHref } from "./links.js";
+import { panelApplies, selection } from "./state.js";
+export function shouldRenderToolbar({ force, keyChanged, selectionChanged, fieldFocused }) {
+    return force || selectionChanged || (keyChanged && !fieldFocused);
 }
-const TEXT_COLORS = ["#1c1b18", "#57534b", "#8a857b", "#ffffff", "#2f5ce0", "#1d7f55", "#c63d32", "#a5660d", "#7c3aed"];
-const BACKGROUNDS = ["#ffffff", "#f8f7f4", "#f1efea", "#1c1b18", "#edf1fd", "#e6f4ec", "#fcebe8", "#fbf1df", "#2f5ce0"];
-const SIZES = ["12px", "14px", "16px", "18px", "20px", "24px", "30px", "36px", "48px", "60px", "72px", "96px"];
-const WEIGHTS = [["300", "Light"], ["400", "Regular"], ["500", "Medium"], ["600", "Semibold"], ["700", "Bold"], ["800", "Heavy"]];
-const SPACES = ["0", "4px", "8px", "12px", "16px", "24px", "32px", "48px", "64px", "96px", "128px"];
-const TAG_NAMES = {
-    h1: "Heading", h2: "Heading", h3: "Heading", h4: "Heading", h5: "Heading", h6: "Heading",
-    p: "Paragraph", a: "Link", button: "Button", img: "Image", li: "List item", span: "Text",
-    blockquote: "Quote", figcaption: "Caption", label: "Label", strong: "Text", em: "Text", small: "Small text",
-    td: "Table cell", th: "Table heading", nav: "Menu", header: "Header", footer: "Footer", ul: "List", ol: "List",
-    form: "Form", figure: "Figure", picture: "Image", video: "Video",
+const ACTIONS = {
+    "edit-text": { label: "Edit text", icon: "edit-text", applies: (sel) => sel.can.includes("t") },
+    "replace-image": { label: "Replace image", icon: "replace-image", applies: (sel) => sel.can.includes("i") },
+    description: { label: "Description", icon: null, applies: (sel) => sel.can.includes("i"), panel: "image" },
+    link: { label: "Link", icon: "link", applies: (sel) => sel.can.includes("l"), panel: "link" },
+    "parent-link": { label: "Link", icon: "link", applies: (sel) => !sel.can.includes("l") && sel.ancestors.slice(0, 3).some((a) => a.kind === "link" || a.kind === "button") },
+    style: { label: "Style", icon: "text-style", applies: (sel) => sel.can.includes("s") && sel.can.includes("t"), panel: "style" },
+    background: { label: "Background", icon: "background", applies: (sel) => sel.can.includes("s"), panel: "background" },
+    "bg-photo": { label: "Replace background photo", icon: "replace-image", applies: (sel) => sel.can.includes("b") && sel.info.bgImage },
+    show: { label: "Show section", icon: "preview", applies: (sel) => sel.can.includes("x") && sel.info.hidden },
 };
-function labelFor(sel) {
-    if (sel.can.includes("x") && !["a", "img"].includes(sel.tag)) {
-        return sel.tag === "header" ? "Header" : sel.tag === "footer" ? "Footer" : sel.tag === "nav" ? "Menu" : "Section";
+const TEXT = ["edit-text", "style", "link", "parent-link", "bg-photo", "background"];
+const SECTION = ["show", "bg-photo", "background", "edit-text"];
+/** The order actions appear in per kind. The first five that apply are shown, the rest go under More. */
+export const ACTION_ORDER = {
+    heading: TEXT,
+    text: TEXT,
+    "list-item": TEXT,
+    link: ["edit-text", "link", "style", "bg-photo", "background"],
+    button: ["edit-text", "link", "style", "bg-photo", "background"],
+    image: ["replace-image", "description", "parent-link"],
+    section: SECTION,
+    header: SECTION,
+    footer: SECTION,
+    menu: SECTION,
+    box: ["bg-photo", "edit-text", "link", "parent-link", "background"],
+};
+const MAX_PRIMARY = 5;
+/** Actions that would crowd a section row; they move under More there. */
+const SECONDARY_ON_SECTIONS = ["background", "edit-text"];
+export function actionsFor(sel) {
+    const all = ACTION_ORDER[sel.kind].filter((id) => ACTIONS[id].applies(sel));
+    const sectionRow = /[xudc]/.test(sel.can);
+    const primary = [];
+    const overflow = [];
+    for (const id of all) {
+        const secondary = sectionRow && SECONDARY_ON_SECTIONS.includes(id) && primary.length > 0;
+        if (!secondary && primary.length < MAX_PRIMARY - (sectionRow ? 2 : 0))
+            primary.push(id);
+        else
+            overflow.push(id);
     }
-    return TAG_NAMES[sel.tag] ?? (sel.can.includes("t") ? "Text" : "Box");
+    if (primary.length === 0 && overflow.length > 0)
+        primary.push(overflow.shift());
+    return { primary, overflow };
 }
-/** A link from `fromPage` to `toPage`, both draft paths like `blog/post.html`. */
-export function relativeHref(fromPage, toPage) {
-    const from = fromPage.split("/").slice(0, -1);
-    const to = toPage.split("/");
-    let common = 0;
-    while (common < from.length && common < to.length - 1 && from[common] === to[common])
-        common++;
-    return [...Array(from.length - common).fill(".."), ...to.slice(common)].join("/");
-}
-function classifyHref(href, currentPage, pages) {
-    const value = href.trim();
-    if (!value)
-        return { kind: "empty" };
-    if (/^mailto:/i.test(value))
-        return { kind: "email" };
-    if (/^tel:/i.test(value))
-        return { kind: "phone" };
-    if (value.startsWith("#"))
-        return { kind: "anchor" };
-    if (/^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith("//"))
-        return { kind: "web" };
-    try {
-        const resolved = new URL(value, `https://site.invalid/${currentPage}`);
-        let path = decodeURIComponent(resolved.pathname.replace(/^\//, ""));
-        if (path === "" || path.endsWith("/"))
-            path += "index.html";
-        if (pages.includes(path))
-            return { kind: "page", path, hash: resolved.hash };
-    }
-    catch {
-        return { kind: "web" };
-    }
-    return { kind: "web" };
-}
-function toHex(value) {
-    return value && /^#[0-9a-f]{6}$/i.test(value) ? value : "#000000";
-}
-export function createToolbar({ store, canvas, change }) {
+export function createToolbar({ store, canvas, edits }) {
     const root = must(document, "[data-toolbar]");
-    const imageInput = must(document, "[data-image-input]");
-    let panel = null;
+    const offscreen = must(document, "[data-offscreen]");
     let renderedKey = "";
     let renderedSelection = "";
-    let renderedPanel = null;
+    let candidate = null;
     let busy = null;
-    let panelError = null;
-    let replacementDescription = null;
-    let descriptionHint = false;
+    /** After choosing a link around an image, its Link panel opens once the selection arrives. */
+    let pendingPanel = null;
+    let lastSelection = null;
     root.addEventListener("mousedown", (event) => {
         const target = event.target instanceof Element ? event.target : null;
         if (target && !target.closest("input, textarea, select"))
             event.preventDefault();
     });
-    function save(edit, after = "none", onRejected) {
-        const page = store.get().path;
-        return change((base) => api.edit(store.get().project.pid, base, page, edit), {
-            onRejected: () => {
-                onRejected?.();
-                canvas.reload("element" in edit ? edit.element : null);
-            },
-        }).then((result) => {
-            if (result && after !== "none")
-                canvas.reload(after === "reload-select" && "element" in edit ? edit.element : null);
-            return result !== null;
+    /** The toolbar button that opened the rail panel, so focus can return to it. */
+    let panelTrigger = null;
+    function openPanel(panel, replaced = false, trigger = null) {
+        panelTrigger = trigger;
+        const rail = store.get().rail;
+        if (rail.kind === "panel" && rail.panel === panel && !replaced) {
+            store.dispatch({ type: "close_panel" });
+            return;
+        }
+        store.dispatch({ type: "open_panel", panel, replaced });
+    }
+    async function withFile(action, run) {
+        const file = await edits.chooseImage();
+        if (!file)
+            return false;
+        busy = { action, percent: 0 };
+        render(true);
+        const ok = await run(file, (fraction) => {
+            busy = { action, percent: Math.round(fraction * 100) };
+            render(true);
         });
+        busy = null;
+        render(true);
+        return ok;
     }
-    function setStyle(sel, styles) {
-        canvas.send({ type: "preview_style", element: sel.element, styles });
-        void save({ op: "set_style", element: sel.element, styles });
+    function run(id, sel) {
+        const spec = ACTIONS[id];
+        if (spec.panel) {
+            openPanel(spec.panel, false, id);
+            return;
+        }
+        switch (id) {
+            case "edit-text":
+                canvas.frame().focus();
+                canvas.send({ type: "start_text", element: sel.element });
+                break;
+            case "replace-image":
+                void withFile(id, (file, progress) => edits.replaceImage(sel, file, progress)).then((ok) => {
+                    const s = store.get();
+                    if (ok && selection(s)?.element === sel.element)
+                        openPanel("image", true, id);
+                });
+                break;
+            case "bg-photo":
+                void withFile(id, (file, progress) => edits.replaceBackground(sel, file, progress));
+                break;
+            case "parent-link": {
+                const link = sel.ancestors.slice(0, 3).find((a) => a.kind === "link" || a.kind === "button");
+                if (link) {
+                    pendingPanel = { element: link.element, panel: "link" };
+                    canvas.send({ type: "select_element", element: link.element });
+                }
+                break;
+            }
+            case "show":
+                void edits.setHidden(sel, false);
+                break;
+            default:
+                break;
+        }
     }
-    /* Buttons */
-    function button(label, iconName, onClick, opts = {}) {
-        const b = h("button", { class: `tb-btn${opts.danger ? " danger" : ""}`, attrs: { type: "button", title: opts.title ?? label } }, iconName ? icon(iconName, "icon-sm") : null, opts.iconOnly ? null : h("span", { text: label }));
-        if (opts.iconOnly)
-            b.setAttribute("aria-label", label);
+    function button(key, label, iconName, onClick, opts = {}) {
+        const b = h("button", { class: `tb-btn${opts.danger ? " danger" : ""}${opts.iconOnly ? " tb-icon" : ""}`, attrs: { type: "button", "data-key": key, tabindex: "-1" } }, iconName ? icon(iconName, "icon-sm") : null, opts.iconOnly ? null : h("span", { text: label }), opts.detail ? h("span", { class: "tb-detail", text: opts.detail }) : null, opts.dot ? h("span", { class: "tb-dot", attrs: { "aria-hidden": "true" } }) : null, opts.menu ? icon("chevron-down", "icon-sm tb-caret") : null);
+        if (opts.iconOnly || opts.detail || opts.dot)
+            b.setAttribute("aria-label", opts.detail ? `${label}: ${opts.detail}` : opts.dot ? `${label} (missing)` : label);
+        if (opts.tip ?? opts.iconOnly)
+            b.dataset["tip"] = opts.tip ?? label;
+        if (opts.kbd)
+            b.dataset["kbd"] = opts.kbd;
         if (opts.pressed !== undefined)
             b.setAttribute("aria-pressed", String(opts.pressed));
         if (opts.expanded !== undefined)
             b.setAttribute("aria-expanded", String(opts.expanded));
+        if (opts.controls)
+            b.setAttribute("aria-controls", opts.controls);
+        if (opts.menu)
+            b.setAttribute("aria-haspopup", "menu");
         if (opts.disabled)
             b.disabled = true;
-        b.addEventListener("click", onClick);
+        b.addEventListener("click", () => onClick(b));
         return b;
     }
-    function toggle(next) {
-        return () => {
-            panel = panel === next ? null : next;
-            descriptionHint = false;
-            panelError = null;
-            render(true);
-        };
-    }
     const sep = () => h("span", { class: "ftb-sep", attrs: { "aria-hidden": "true" } });
-    /* Panels */
-    function swatches(colors, current, onPick) {
-        const row = h("div", { class: "swatches" });
-        for (const color of colors) {
-            const s = h("button", { class: "swatch", attrs: { type: "button", title: color, "aria-label": `Colour ${color}`, "aria-pressed": String(current?.toLowerCase() === color) } });
-            s.style.background = color;
-            s.addEventListener("click", () => onPick(color));
-            row.append(s);
+    function actionButton(id, sel, s) {
+        const spec = ACTIONS[id];
+        const open = s.rail.kind === "panel" && spec.panel !== undefined && s.rail.panel === spec.panel;
+        const uploading = busy?.action === id;
+        const label = uploading ? `Uploading ${busy?.percent ?? 0}%` : spec.label;
+        const opts = { disabled: uploading };
+        if (spec.panel) {
+            opts.expanded = open;
+            opts.controls = "ed-rail-panel";
         }
-        const custom = h("input", { class: "color-input", attrs: { type: "color", title: "Pick any colour", "aria-label": "Pick any colour" } });
-        custom.value = toHex(current);
-        custom.addEventListener("change", () => onPick(custom.value));
-        const reset = h("button", { class: "swatch swatch-clear", attrs: { type: "button", title: "Back to the original", "aria-label": "Back to the original" } });
-        reset.addEventListener("click", () => onPick(null));
-        row.append(custom, reset);
-        return row;
-    }
-    function select(label, options, current, onPick) {
-        const id = `ftb-${label.toLowerCase().replace(/\W+/g, "-")}`;
-        const el = h("select", { class: "select input-sm", attrs: { id } }, h("option", { text: "Original", attrs: { value: "" } }), ...options.map(([value, text]) => h("option", { text, attrs: { value } })));
-        el.value = current && options.some(([v]) => v === current) ? current : "";
-        el.addEventListener("change", () => onPick(el.value === "" ? null : el.value));
-        return h("label", { class: "field" }, h("span", { class: "label", text: label }), el);
-    }
-    function textStylePanel(sel) {
-        const st = sel.info.styles;
-        const pick = (key) => (value) => {
-            if (value !== null && !isStyleValue(key, value))
-                return;
-            setStyle(sel, { [key]: value });
-        };
-        const align = h("div", { class: "seg seg-icon", attrs: { role: "group", "aria-label": "Alignment" } }, ...["left", "center", "right", "justify"].map((a) => {
-            const b = h("button", { attrs: { type: "button", "aria-label": `Align ${a}`, title: `Align ${a}`, "aria-pressed": String(st["text-align"] === a || (a === "left" && st["text-align"] === "start")) } }, icon(`align-${a}`, "icon-sm"));
-            b.addEventListener("click", () => setStyle(sel, { "text-align": a }));
-            return b;
-        }));
-        return h("div", { class: "ftb-panel" }, h("div", { class: "field" }, h("span", { class: "label", text: "Text colour" }), swatches(TEXT_COLORS, st.color, pick("color"))), h("div", { class: "spacing-grid" }, select("Size", SIZES.map((s) => [s, s.replace("px", "")]), st["font-size"] ?? null, pick("font-size")), select("Weight", WEIGHTS, st["font-weight"] ?? null, pick("font-weight"))), h("div", { class: "field" }, h("span", { class: "label", text: "Alignment" }), align));
-    }
-    function boxStylePanel(sel) {
-        const st = sel.info.styles;
-        const spaceOptions = SPACES.map((s) => [s, s === "0" ? "None" : s.replace("px", "")]);
-        const padding = st["padding-top"] === st["padding-bottom"] ? (st["padding-top"] ?? null) : null;
-        const norm = (v) => (v === "0px" ? "0" : (v ?? null));
-        return h("div", { class: "ftb-panel" }, h("div", { class: "field" }, h("span", { class: "label", text: "Background" }), swatches(BACKGROUNDS, st["background-color"], (v) => setStyle(sel, { "background-color": v }))), h("div", { class: "spacing-grid" }, select("Space above", spaceOptions, norm(st["margin-top"]), (v) => setStyle(sel, { "margin-top": v })), select("Space below", spaceOptions, norm(st["margin-bottom"]), (v) => setStyle(sel, { "margin-bottom": v })), select("Space inside", spaceOptions, norm(padding), (v) => setStyle(sel, { "padding-top": v, "padding-bottom": v, "padding-left": v, "padding-right": v }))));
-    }
-    function linkFields(initialHref, onSubmit, extra, submitLabel = "Save link") {
-        const s = store.get();
-        const pages = s.pages.map((p) => p.path);
-        const initial = classifyHref(initialHref, s.path, pages);
-        let kind = initial.kind === "page" || (initial.kind === "empty" && pages.length > 0) ? "page" : "web";
-        const pageSelect = h("select", { class: "select input-sm", attrs: { "aria-label": "Page" } }, ...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name), attrs: { value: p.path } })));
-        if (initial.kind === "page")
-            pageSelect.value = initial.path;
-        const urlInput = h("input", { class: "input input-sm", attrs: { type: "text", inputmode: "url", placeholder: "https://example.com", "aria-label": "Web address", spellcheck: "false", autocomplete: "off" } });
-        urlInput.value = initial.kind === "page" ? "" : initialHref;
-        const badge = h("span", { class: "link-kind" });
-        const error = h("div", { class: "alert alert-error", attrs: { role: "alert" }, hidden: panelError === null }, h("span", { text: panelError ?? "" }));
-        const seg = h("div", { class: "seg", attrs: { role: "group", "aria-label": "Link to" } });
-        const pageBtn = h("button", { text: "Page on this site", attrs: { type: "button" } });
-        const webBtn = h("button", { text: "Web address", attrs: { type: "button" } });
-        seg.append(pageBtn, webBtn);
-        const pageField = h("div", { class: "field" }, pageSelect);
-        const urlField = h("div", { class: "field" }, urlInput);
-        function currentHref() {
-            if (kind === "page") {
-                const hash = initial.kind === "page" && initial.path === pageSelect.value ? initial.hash : "";
-                return relativeHref(s.path, pageSelect.value) + hash;
-            }
-            let value = urlInput.value.trim();
-            if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(value) && !value.includes("@"))
-                value = `https://${value}`;
-            else if (/^[^\s@/]+@[^\s@/]+\.[a-z]{2,}$/i.test(value))
-                value = `mailto:${value}`;
-            return value;
+        if (id === "link" && sel.info.href !== null)
+            opts.detail = describeHref(sel.info.href, s);
+        if (id === "description" && !(sel.info.alt ?? "").trim()) {
+            opts.dot = true;
+            opts.tip = "This image has no description yet";
         }
-        function refresh() {
-            pageBtn.setAttribute("aria-pressed", String(kind === "page"));
-            webBtn.setAttribute("aria-pressed", String(kind === "web"));
-            pageField.hidden = kind !== "page";
-            urlField.hidden = kind !== "web";
-            const k = classifyHref(currentHref(), s.path, pages);
-            badge.className = `link-kind${k.kind === "page" || k.kind === "anchor" ? " internal" : ""}`;
-            badge.replaceChildren(icon(k.kind === "page" || k.kind === "anchor" ? "page" : "domain", "icon-sm"), h("span", {
-                text: { page: "Goes to a page on this website", anchor: "Goes to a part of this page", web: "Goes to another website", email: "Writes an email", phone: "Calls a phone number", empty: "Choose where this goes" }[k.kind],
-            }));
-        }
-        pageBtn.addEventListener("click", () => { kind = "page"; refresh(); pageSelect.focus(); });
-        webBtn.addEventListener("click", () => { kind = "web"; refresh(); urlInput.focus(); });
-        pageSelect.addEventListener("change", refresh);
-        urlInput.addEventListener("input", refresh);
-        refresh();
-        const submit = h("button", { class: "btn btn-primary btn-sm", text: submitLabel, attrs: { type: "submit" } });
-        const form = h("form", { class: "ftb-panel" }, seg, pageField, urlField, badge, extra ?? null, error, h("div", { class: "ftb-panel-actions" }, submit));
-        form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const href = currentHref();
-            if (!isSafeHref(href)) {
-                error.hidden = false;
-                error.replaceChildren(h("span", { text: "That link can't be used. Use a web address starting with https://, an email address, a phone number or a page of this website." }));
-                return;
-            }
-            void onSubmit(href);
-        });
-        return form;
+        if (id === "edit-text")
+            opts.kbd = "Enter";
+        if (id === "bg-photo")
+            opts.tip = "Upload a new photo for the background";
+        return button(id, label, spec.icon, () => run(id, sel), opts);
     }
-    function linkPanel(sel) {
-        const newTab = h("input", { attrs: { type: "checkbox" } });
-        newTab.checked = sel.info.newTab;
-        const toggleRow = h("label", { class: "switch" }, newTab, h("span", { class: "switch-track", attrs: { "aria-hidden": "true" } }), h("span", { text: "Open in a new tab" }));
-        return linkFields(sel.info.href ?? "", async (href) => {
-            canvas.send({ type: "preview_link", element: sel.element, href, newTab: newTab.checked });
-            const ok = await change((base) => api.edit(store.get().project.pid, base, store.get().path, { op: "set_link", element: sel.element, href, new_tab: newTab.checked }), {
-                toastRejection: false,
-                onRejected: (error) => {
-                    panelError = error.message;
-                    canvas.reload(sel.element);
-                    panel = "link";
-                    render(true);
-                },
-            });
-            if (ok) {
-                panel = null;
-                panelError = null;
-                toast("Link saved");
-                render(true);
-            }
-        }, toggleRow);
+    function crumb(sel) {
+        const label = KIND_LABELS[sel.kind];
+        if (sel.ancestors.length === 0)
+            return h("span", { class: "ftb-label", text: label });
+        return button("crumb", label, null, (b) => {
+            openMenu(b, [
+                { label: `${label}${sel.name ? ` · ${sel.name}` : ""}`, checked: true, run: () => { } },
+                "separator",
+                ...sel.ancestors.map((a) => ({
+                    label: `${KIND_LABELS[a.kind]}${a.name ? ` · ${a.name}` : ""}`,
+                    run: () => canvas.send({ type: "select_element", element: a.element }),
+                })),
+            ], { label: "Select the part around this" });
+        }, { menu: true, tip: "Select the part around this", kbd: "←" });
     }
-    function textLinkPanel() {
-        return linkFields("", async (href) => {
-            canvas.send({ type: "format", command: "link", href });
-            panel = null;
-            render(true);
-        }, undefined, "Add link");
-    }
-    function altPanel(sel) {
-        const area = h("textarea", { class: "textarea", attrs: { rows: "3", maxlength: "1000", id: "ftb-alt", placeholder: "For example: Fresh sourdough loaves on a wooden table" } });
-        area.value = sel.info.alt ?? "";
-        const form = h("form", { class: "ftb-panel" }, h("label", { class: "field" }, h("span", { class: "label", text: "Describe this image" }), area, h("span", { class: "hint", text: descriptionHint ? "Update the description for the new image." : "Helps people who can't see the image, and search engines." })), h("div", { class: "ftb-panel-actions" }, h("button", { class: "btn btn-primary btn-sm", text: "Save", attrs: { type: "submit" } })));
-        form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const alt = area.value.trim();
-            canvas.send({ type: "preview_alt", element: sel.element, alt });
-            void save({ op: "set_alt", element: sel.element, alt }).then((ok) => {
-                if (ok)
-                    toast("Description saved");
-            });
-            panel = null;
-            render(true);
-        });
-        const preselect = descriptionHint;
-        window.setTimeout(() => {
-            if (!root.contains(area))
-                return;
-            area.focus();
-            if (preselect)
-                area.select();
-        }, 0);
-        return form;
-    }
-    /* Actions */
-    function replaceImage(sel) {
-        const page = store.get().path;
-        imageInput.value = "";
-        imageInput.onchange = null;
-        imageInput.addEventListener("change", () => {
-            const file = imageInput.files?.[0];
-            if (!file)
-                return;
-            const limit = store.get().imageBytes;
-            if (!/^image\/(png|jpeg|gif|webp|avif)$/.test(file.type)) {
-                toast("Choose a PNG, JPEG, GIF, WebP or AVIF picture.", "error");
-                return;
-            }
-            if (file.size > limit) {
-                toast(`This picture is too big. The limit is ${Math.round(limit / (1024 * 1024))} MB.`, "error");
-                return;
-            }
-            busy = "image";
-            render(true);
-            store.dispatch({ type: "save_queued" });
-            api.uploadImage(store.get().project.pid, file).then((uploaded) => {
-                store.dispatch({ type: "save_settled" });
-                const alt = sel.info.alt ?? "";
-                return save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt }).then((ok) => {
-                    if (ok && store.get().path === page) {
-                        canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
-                        replacementDescription = { path: page, element: sel.element };
-                        const s = store.get();
-                        if (s.focus.kind === "selected" && s.focus.selection.element === sel.element) {
-                            openReplacementDescription(s);
-                        }
-                        else {
-                            canvas.reload(sel.element);
-                        }
-                    }
-                    return ok;
-                });
-            }, (error) => {
-                store.dispatch({ type: "save_settled" });
-                toast(error.message, "error", 6000);
-            }).finally(() => {
-                busy = null;
-                render(true);
-            });
-        }, { once: true });
-        imageInput.click();
-    }
-    function openReplacementDescription(s) {
-        if (!replacementDescription)
-            return;
-        if (s.path !== replacementDescription.path) {
-            replacementDescription = null;
-            return;
-        }
-        if (s.focus.kind === "selected" && s.focus.selection.element === replacementDescription.element) {
-            replacementDescription = null;
-            descriptionHint = true;
-            panelError = null;
-            panel = "alt";
-        }
-    }
-    async function removeSection(sel) {
-        const ok = await confirmDialog({
-            title: "Remove this section?",
-            text: "It will be removed from this page. You can bring it back with Undo.",
-            ok: "Remove",
-            danger: true,
-        });
-        if (ok)
-            void save({ op: "remove_section", element: sel.element }, "reload");
-    }
-    /* Rendering */
-    function rowFor(s, sel) {
+    function sectionGroup(sel) {
         const can = sel.can;
+        if (!/[xudc]/.test(can))
+            return [];
+        const items = [];
+        if (can.includes("c"))
+            items.push({ label: "Duplicate", icon: "duplicate", run: () => void edits.duplicateSection(sel) });
+        if (can.includes("x")) {
+            items.push(sel.info.hidden
+                ? { label: "Show on your website", icon: "preview", run: () => void edits.setHidden(sel, false) }
+                : { label: "Hide on your website", icon: "hide", run: () => void edits.setHidden(sel, true) });
+            items.push("separator", { label: "Remove section", icon: "remove", danger: true, run: () => void edits.removeSection(sel) });
+        }
+        const out = [sep()];
+        if (items.length > 0)
+            out.push(button("section", "Section", null, (b) => openMenu(b, items, { label: "Section" }), { menu: true }));
+        if (can.includes("u"))
+            out.push(button("move-up", "Move section up", "move-up", () => void edits.moveSection(sel, "up"), { iconOnly: true, kbd: "Alt+Shift+↑" }));
+        if (can.includes("d"))
+            out.push(button("move-down", "Move section down", "move-down", () => void edits.moveSection(sel, "down"), { iconOnly: true, kbd: "Alt+Shift+↓" }));
+        return out;
+    }
+    function rowFor(s, sel) {
         if (s.editing.active) {
             const f = s.editing.formats;
+            const linkOpen = s.rail.kind === "panel" && s.rail.panel === "text-link";
             return [
                 h("span", { class: "ftb-label", text: "Editing text" }),
-                button("Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold, iconOnly: true, title: "Bold (Cmd+B)" }),
-                button("Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic, iconOnly: true, title: "Italic (Cmd+I)" }),
+                button("bold", "Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold, iconOnly: true, kbd: "Ctrl+B" }),
+                button("italic", "Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic, iconOnly: true, kbd: "Ctrl+I" }),
                 f.link
-                    ? button("Remove link", "unlink", () => canvas.send({ type: "format", command: "unlink", href: null }), { iconOnly: true })
-                    : button("Link", "link", toggle("text-link"), { expanded: panel === "text-link", iconOnly: true, title: "Add a link to the selected words" }),
+                    ? button("unlink", "Remove link", "unlink", () => canvas.send({ type: "format", command: "unlink", href: null }), { iconOnly: true })
+                    : button("text-link", "Link the selected words", "link", () => openPanel("text-link", false, "text-link"), { expanded: linkOpen, iconOnly: true, controls: "ed-rail-panel" }),
                 sep(),
-                button("Cancel", null, () => canvas.send({ type: "finish_text", commit: false }), { title: "Undo your typing (Esc)" }),
-                button("Done", "check", () => canvas.send({ type: "finish_text", commit: true }), { title: "Save the text (Enter)" }),
+                button("cancel", "Cancel", null, () => canvas.send({ type: "finish_text", commit: false }), { kbd: "Esc", tip: "Undo your typing" }),
+                button("done", "Done", "check", () => canvas.send({ type: "finish_text", commit: true }), { kbd: "Enter", tip: "Keep the text" }),
             ];
         }
-        const out = [h("span", { class: "ftb-label", text: labelFor(sel) })];
-        if (can.includes("t")) {
-            out.push(button("Edit text", "edit-text", () => {
-                canvas.iframe.focus();
-                canvas.send({ type: "start_text", element: sel.element });
-            }, { title: "Edit this text" }));
-        }
-        if (can.includes("i")) {
-            out.push(button(busy === "image" ? "Uploading…" : "Replace image", "replace-image", () => replaceImage(sel), { disabled: busy === "image" }));
-            out.push(button("Description", null, toggle("alt"), { expanded: panel === "alt", title: "Describe this image" }));
-        }
-        if (can.includes("l"))
-            out.push(button("Link", "link", toggle("link"), { expanded: panel === "link", title: "Where this link goes" }));
-        if (can.includes("s") && can.includes("t"))
-            out.push(button("Style", "text-style", toggle("text-style"), { expanded: panel === "text-style", title: "Text colour, size and alignment" }));
-        if (can.includes("s"))
-            out.push(button("Background", "background", toggle("box-style"), { expanded: panel === "box-style", title: "Background and spacing" }));
-        const sectionTools = /[xudc]/.test(can);
-        if (sectionTools)
-            out.push(sep());
-        if (can.includes("u"))
-            out.push(button("Move up", "move-up", () => void save({ op: "move_section", element: sel.element, direction: "up" }, "reload-select"), { iconOnly: true }));
-        if (can.includes("d"))
-            out.push(button("Move down", "move-down", () => void save({ op: "move_section", element: sel.element, direction: "down" }, "reload-select"), { iconOnly: true }));
-        if (can.includes("c"))
-            out.push(button("Duplicate", "duplicate", () => void save({ op: "duplicate_section", element: sel.element }, "reload-select").then((ok) => ok && toast("Section duplicated")), { iconOnly: true }));
-        if (can.includes("x")) {
-            const hidden = sel.info.hidden;
-            out.push(button(hidden ? "Show" : "Hide", hidden ? "preview" : "hide", () => {
-                canvas.send({ type: "preview_hidden", element: sel.element, hidden: !hidden });
-                void save({ op: "hide_section", element: sel.element, hidden: !hidden }, "reload-select");
-            }, { iconOnly: true, title: hidden ? "Show this section on your website" : "Hide this section on your website" }));
-            out.push(button("Remove", "remove", () => void removeSection(sel), { iconOnly: true, danger: true, title: "Remove this section" }));
-        }
-        if (sel.hasParent) {
-            out.push(sep());
-            out.push(button("Select parent", "select-parent", () => canvas.send({ type: "select_parent" }), { iconOnly: true, title: "Select the part around this one" }));
+        const { primary, overflow } = actionsFor(sel);
+        const out = [crumb(sel), ...primary.map((id) => actionButton(id, sel, s)), ...sectionGroup(sel)];
+        if (overflow.length > 0) {
+            out.push(button("more", "More", "more", (b) => openMenu(b, overflow.map((id) => ({ label: ACTIONS[id].label, ...(ACTIONS[id].icon ? { icon: ACTIONS[id].icon } : {}), run: () => run(id, sel) })), { label: "More actions" }), { iconOnly: true, menu: true }));
         }
         return out;
     }
-    function panelFor(sel, s) {
-        if (s.editing.active)
-            return panel === "text-link" ? textLinkPanel() : null;
-        switch (panel) {
-            case "text-style": return textStylePanel(sel);
-            case "box-style": return boxStylePanel(sel);
-            case "link": return linkPanel(sel);
-            case "alt": return altPanel(sel);
-            default: return null;
-        }
+    function blockedRow(around) {
+        const note = h("div", { class: "ftb-note" }, icon("info", "icon-sm"), h("span", { text: "This part is added by the website's own code while the page runs, so it can't be changed here." }));
+        if (!around)
+            return [note];
+        return [note, h("div", { class: "ftb-row" }, button("around", "Select the part around it", "select-parent", () => canvas.send({ type: "select_element", element: around })))];
     }
     function keyOf(s) {
         const f = s.focus;
         if (s.mode !== "edit" || s.canvasLoading || f.kind === "none")
             return "none";
         if (f.kind === "blocked")
-            return "blocked";
+            return `blocked:${f.around ?? ""}`;
         const sel = f.selection;
-        return JSON.stringify([sel.element, sel.can, sel.hasParent, sel.info, s.editing, panel, busy, s.pages.length, s.path]);
+        const panel = s.rail.kind === "panel" ? s.rail.panel : "";
+        return JSON.stringify([sel.element, sel.can, sel.kind, sel.name, sel.ancestors, sel.info.href, sel.info.alt, sel.info.hidden, sel.info.bgImage, s.editing, panel, busy, s.anchors.length, s.pages.length, s.path]);
+    }
+    function buttons() {
+        return [...root.querySelectorAll("button.tb-btn:not([disabled])")];
+    }
+    function rove(target) {
+        for (const b of buttons())
+            b.tabIndex = b === target ? 0 : -1;
+        target?.focus();
     }
     function render(force = false) {
         const s = store.get();
         const key = keyOf(s);
         const f = s.focus;
-        const selection = JSON.stringify([s.path, f.kind, f.kind === "selected" ? f.selection.element : null]);
-        const focused = document.activeElement;
-        const fieldFocused = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
-        if (!shouldRenderToolbar({ force, keyChanged: key !== renderedKey, selectionChanged: selection !== renderedSelection, panelChanged: panel !== renderedPanel, fieldFocused })) {
-            position(s);
+        const selectionKey = JSON.stringify([s.path, f.kind, f.kind === "selected" ? f.selection.element : null]);
+        const active = document.activeElement;
+        const focusedKey = active instanceof HTMLElement && root.contains(active) ? active.dataset["key"] ?? null : null;
+        const selectionChanged = selectionKey !== renderedSelection;
+        if (!shouldRenderToolbar({ force, keyChanged: key !== renderedKey, selectionChanged, fieldFocused: false })) {
+            position(s, false);
             return;
         }
-        if (fieldFocused && focused instanceof HTMLElement)
-            focused.blur();
+        renderedKey = key;
+        renderedSelection = selectionKey;
         if (key === "none") {
+            closeMenus();
             root.classList.remove("is-visible");
             root.replaceChildren();
-            renderedKey = key;
-            renderedSelection = selection;
-            renderedPanel = panel;
+            offscreen.hidden = true;
+            candidate = null;
+            if (focusedKey)
+                canvas.surface.focus({ preventScroll: true });
             return;
         }
         if (f.kind === "blocked") {
-            root.replaceChildren(h("div", { class: "ftb-note" }, icon("info", "icon-sm"), h("span", { text: "This part is created by the website's own code, so it can't be edited here." })));
+            root.setAttribute("aria-label", "Part made by the website's code");
+            root.replaceChildren(...blockedRow(f.around));
         }
         else if (f.kind === "selected") {
-            root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, f.selection)), panelFor(f.selection, s) ?? "");
+            root.setAttribute("aria-label", s.editing.active ? "Text editing tools" : `${KIND_LABELS[f.selection.kind]} tools`);
+            root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, f.selection)));
         }
-        position(s);
+        const list = buttons();
+        const restore = focusedKey ? list.find((b) => b.dataset["key"] === focusedKey) : undefined;
+        for (const b of list)
+            b.tabIndex = -1;
+        const first = restore ?? list.find((b) => b.dataset["key"] !== "crumb") ?? list[0];
+        if (first)
+            first.tabIndex = 0;
+        if (restore)
+            restore.focus({ preventScroll: true });
+        else if (focusedKey && first)
+            first.focus({ preventScroll: true });
+        if (selectionChanged)
+            candidate = null;
+        position(s, selectionChanged && root.classList.contains("is-visible"));
         root.classList.add("is-visible");
-        renderedKey = key;
-        renderedSelection = selection;
-        renderedPanel = panel;
     }
-    function position(s) {
+    function position(s, glide) {
         const f = s.focus;
         const rect = f.kind === "selected" ? f.selection.rect : f.kind === "blocked" ? f.rect : null;
-        if (!rect)
+        if (!rect || !root.classList.contains("is-visible") && root.childElementCount === 0)
             return;
-        const frame = canvas.iframe.getBoundingClientRect();
-        const target = { left: frame.left + rect.x, top: frame.top + rect.y, bottom: frame.top + rect.y + rect.height };
-        const offscreen = target.bottom < frame.top + 4 || target.top > frame.bottom - 4;
-        root.style.visibility = offscreen ? "hidden" : "visible";
-        const width = root.offsetWidth;
-        const height = root.offsetHeight;
-        const gap = 10;
-        let top = target.top - height - gap;
-        let placement = "above";
-        if (top < frame.top + 6) {
-            top = target.bottom + gap;
-            placement = "below";
-            if (top + height > Math.min(frame.bottom, window.innerHeight) - 6) {
-                top = Math.max(frame.top + 6, Math.min(target.top + gap, window.innerHeight - height - 6));
-                placement = "inside";
-            }
+        // The slug that names the part hangs under the selection's bottom edge; keep it visible too.
+        const target = canvas.toApp({ ...rect, height: rect.height + 24 });
+        const box = canvas.visibleBox();
+        const obstructions = s.obstructions.map((o) => canvas.toApp(o));
+        const placement = placeToolbar({ target, canvas: box, obstructions, size: { width: root.offsetWidth, height: root.offsetHeight }, previous: candidate });
+        if (placement.kind === "offscreen") {
+            root.classList.add("is-offscreen");
+            const label = f.kind === "selected" ? KIND_LABELS[f.selection.kind] : "The selected part";
+            offscreen.hidden = false;
+            offscreen.dataset["direction"] = placement.direction;
+            must(offscreen, "[data-offscreen-text]").textContent = `${label} is ${placement.direction}`;
+            offscreen.querySelector("use")?.setAttribute("href", `/static/img/icons.svg#i-move-${placement.direction === "above" ? "up" : "down"}`);
+            offscreen.style.left = `${Math.round(box.x + box.width / 2)}px`;
+            offscreen.style.top = placement.direction === "above" ? `${Math.round(box.y + 12)}px` : "";
+            offscreen.style.bottom = placement.direction === "below" ? `${Math.round(window.innerHeight - (box.y + box.height) + 12)}px` : "";
+            return;
         }
-        const left = Math.min(Math.max(target.left, 8), window.innerWidth - width - 8);
-        root.style.transform = "";
-        root.style.left = `${Math.round(left)}px`;
-        root.style.top = `${Math.round(top)}px`;
-        root.dataset["placement"] = placement;
+        offscreen.hidden = true;
+        root.classList.remove("is-offscreen");
+        candidate = placement.candidate;
+        root.dataset["placement"] = placement.candidate;
+        if (glide) {
+            root.classList.add("is-gliding");
+            window.setTimeout(() => root.classList.remove("is-gliding"), 180);
+        }
+        root.style.transform = `translate(${Math.round(placement.x)}px, ${Math.round(placement.y)}px)`;
     }
-    store.subscribe((s, prev) => {
-        if (prev && prev.focus.kind === "selected" && (s.focus.kind !== "selected" || s.focus.selection.element !== prev.focus.selection.element)) {
-            panel = null;
-            panelError = null;
-            descriptionHint = false;
+    offscreen.addEventListener("click", () => {
+        const sel = selection(store.get());
+        if (sel)
+            canvas.send({ type: "reveal", element: sel.element, pulse: false });
+    });
+    root.addEventListener("keydown", (event) => {
+        const list = buttons();
+        const index = list.indexOf(document.activeElement);
+        if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+            if (index < 0)
+                return;
+            rove(list[(index + (event.key === "ArrowRight" ? 1 : -1) + list.length) % list.length]);
         }
-        if (prev && prev.editing.active !== s.editing.active)
-            panel = null;
-        openReplacementDescription(s);
-        render();
+        else if (event.key === "Home")
+            rove(list[0]);
+        else if (event.key === "End")
+            rove(list[list.length - 1]);
+        else if (event.key === "Escape" && !store.get().editing.active)
+            canvas.surface.focus({ preventScroll: true });
+        else
+            return;
+        event.preventDefault();
+        event.stopPropagation();
+    });
+    store.subscribe((s, prev) => {
+        const sel = selection(s);
+        if (sel && pendingPanel && sel.element === pendingPanel.element) {
+            const panel = pendingPanel.panel;
+            pendingPanel = null;
+            if (panelApplies(panel, sel, false))
+                store.dispatch({ type: "open_panel", panel });
+            return;
+        }
+        if ((sel?.element ?? null) !== lastSelection) {
+            lastSelection = sel?.element ?? null;
+            busy = null;
+        }
+        render(prev === null);
     });
     window.addEventListener("resize", () => render(true));
-    document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && panel !== null) {
-            panel = null;
-            render(true);
-        }
-    });
+    return {
+        activatePrimary() {
+            const s = store.get();
+            const sel = selection(s);
+            if (!sel || s.editing.active)
+                return;
+            const first = actionsFor(sel).primary[0];
+            if (first)
+                run(first, sel);
+            else
+                this.focus();
+        },
+        focus() {
+            if (!root.classList.contains("is-visible"))
+                return false;
+            const list = buttons();
+            const target = (panelTrigger ? list.find((b) => b.dataset["key"] === panelTrigger) : undefined) ?? list.find((b) => b.tabIndex === 0) ?? list[0];
+            if (!target)
+                return false;
+            rove(target);
+            return true;
+        },
+    };
 }

@@ -19,7 +19,7 @@ const parseProject = obj({
 export type Project = Parsed<typeof parseProject>;
 
 const pageTitle: Parser<string> = (v) => (v === null || v === undefined ? "" : str(500)(v));
-const parsePage = obj({ path: str(1024), title: pageTitle });
+const parsePage = obj({ path: str(1024), title: pageTitle, description: opt(str(1000)) });
 export type Page = Parsed<typeof parsePage>;
 
 const parseBootstrap = obj({
@@ -172,11 +172,41 @@ export const api = {
     request("POST", `${base(pid)}/edits`, { base_revision: baseRevision, page, edit }, parseEditResult),
   undo: (pid: string, baseRevision: number) => request("POST", `${base(pid)}/undo`, { base_revision: baseRevision }, parseUndoResult),
   redo: (pid: string, baseRevision: number) => request("POST", `${base(pid)}/redo`, { base_revision: baseRevision }, parseUndoResult),
-  uploadImage: (pid: string, file: File) => {
-    const form = new FormData();
-    form.append("file", file, file.name);
-    return request("POST", `${base(pid)}/images`, form, parseUpload);
-  },
+  /** Uploads with XMLHttpRequest, because fetch cannot report upload progress. */
+  uploadImage: (pid: string, file: File, onProgress?: (fraction: number) => void) =>
+    new Promise<Parsed<typeof parseUpload>>((resolve, reject) => {
+      const form = new FormData();
+      form.append("file", file, file.name);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${base(pid)}/images`);
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+      });
+      xhr.addEventListener("error", () => reject(new ApiError(0, "network", "You seem to be offline. Check your connection and try again.")));
+      xhr.addEventListener("load", () => {
+        if (xhr.status === 401) {
+          window.location.assign("/login");
+          reject(new ApiError(401, "signed_out", "Please sign in again."));
+          return;
+        }
+        let json: unknown;
+        try {
+          json = xhr.responseText ? JSON.parse(xhr.responseText) : undefined;
+        } catch {
+          json = undefined;
+        }
+        if (xhr.status < 200 || xhr.status >= 300) {
+          const err = parseErrorBody(json);
+          reject(new ApiError(xhr.status, err?.error ?? "failed", err?.message ?? "Something went wrong. Please try again."));
+          return;
+        }
+        const parsed = parseUpload(json);
+        if (parsed) resolve(parsed);
+        else reject(new ApiError(xhr.status, "bad_response", "Pagehaven sent an unexpected answer. Please reload the page."));
+      });
+      xhr.send(form);
+    }),
   addPage: (pid: string, baseRevision: number, from: string, path: string, title: string) =>
     request("POST", `${base(pid)}/pages`, { base_revision: baseRevision, from, path, title }, parsePagesResult),
   renamePage: (pid: string, baseRevision: number, from: string, to: string) =>

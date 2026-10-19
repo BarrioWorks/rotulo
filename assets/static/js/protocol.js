@@ -3,11 +3,29 @@
  * Both sides check origin and source first, then parse every message with these parsers
  * and drop anything that does not match exactly.
  */
-import { bool, lit, num, obj, opt, str } from "./schema.js";
+import { arr, bool, lit, num, obj, opt, str } from "./schema.js";
 export const CHANNEL = "pagehaven";
 export const ELEMENT_ID = /^[0-9a-z]{1,10}$/;
 export const CAPABILITIES = /^[tilsbxudc]{0,9}$/;
 const TAG = /^[a-z][a-z0-9-]{0,31}$/;
+/** An `id` a link can point at with `#id`. */
+export const ANCHOR_ID = /^[A-Za-z][\w-]{0,63}$/;
+const HEX6 = /^#[0-9a-f]{6}$/;
+/** What the agent thinks the selected element is, from its tag, capabilities and computed style. */
+export const KINDS = ["image", "button", "link", "heading", "menu", "header", "footer", "section", "list-item", "text", "box"];
+export const KIND_LABELS = {
+    image: "Image",
+    button: "Button",
+    link: "Link",
+    heading: "Heading",
+    menu: "Menu",
+    header: "Header",
+    footer: "Footer",
+    section: "Section",
+    "list-item": "List item",
+    text: "Text",
+    box: "Box",
+};
 export const STYLE_KEYS = [
     "color",
     "background-color",
@@ -83,6 +101,7 @@ export const parseRect = obj({
     height: num(0, 1e6),
 });
 const parseFormats = obj({ bold: bool, italic: bool, link: bool });
+const size = num(0, 1e5);
 const parseSelectionInfo = obj({
     href: opt(str(2048)),
     newTab: bool,
@@ -91,7 +110,14 @@ const parseSelectionInfo = obj({
     hidden: bool,
     text: str(200),
     styles: parseStyleSnapshot,
+    /** The computed background is a photo (`background-image: url(...)`). */
+    bgImage: bool,
+    /** For images: the file's own size and the size it is shown at, in CSS px. */
+    image: opt(obj({ naturalWidth: size, naturalHeight: size, width: size, height: size })),
 });
+const kind = lit(...KINDS);
+const name = str(60);
+const parseAncestor = obj({ element: elementId, kind, name });
 const agentMessages = {
     ready: obj({
         type: lit("ready"),
@@ -105,13 +131,23 @@ const agentMessages = {
         element: elementId,
         can: str(9, CAPABILITIES),
         tag: str(32, TAG),
-        hasParent: bool,
+        kind,
+        /** A short human name: a section's first heading, an image's description, a link's text. */
+        name,
+        /** Editable ancestors, nearest first, for the breadcrumb. */
+        ancestors: arr(parseAncestor, 8),
         rect: parseRect,
         info: parseSelectionInfo,
     }),
-    blocked: obj({ type: lit("blocked"), rect: parseRect }),
+    /** A click on something the site's code made. `around` is the nearest editable ancestor. */
+    blocked: obj({ type: lit("blocked"), rect: parseRect, around: opt(elementId) }),
     deselect: obj({ type: lit("deselect") }),
-    viewport: obj({ type: lit("viewport"), scrollY: scroll, rect: opt(parseRect) }),
+    /** Sent every frame that moves. `obstructions` are the site's own fixed or sticky bars. */
+    viewport: obj({ type: lit("viewport"), scrollY: scroll, rect: opt(parseRect), obstructions: arr(parseRect, 4) }),
+    /** The page's own colours, most used first, for the style swatches. */
+    palette: obj({ type: lit("palette"), colors: arr(str(7, HEX6), 10) }),
+    /** Parts of the page a link can jump to. */
+    anchors: obj({ type: lit("anchors"), items: arr(obj({ id: str(64, ANCHOR_ID), name }), 50) }),
     editing: obj({ type: lit("editing"), element: elementId, active: bool, formats: parseFormats }),
     text: obj({ type: lit("text"), element: elementId, html: str(65536) }),
     navigate: obj({ type: lit("navigate"), href: str(2048) }),
@@ -125,7 +161,12 @@ const editorMessages = {
         select: opt(elementId),
     }),
     mode: obj({ type: lit("mode"), mode: lit("edit", "preview") }),
-    select_parent: obj({ type: lit("select_parent") }),
+    /** Keyboard selection: the part around, the first part inside, or the next or previous part. */
+    select_relative: obj({ type: lit("select_relative"), direction: lit("parent", "child", "next", "prev") }),
+    /** Breadcrumb selection. The agent re-checks the id and its capabilities. */
+    select_element: obj({ type: lit("select_element"), element: elementId }),
+    /** Scrolls an element into view, optionally with a one-off pulse after a change. */
+    reveal: obj({ type: lit("reveal"), element: elementId, pulse: bool }),
     deselect: obj({ type: lit("deselect") }),
     start_text: obj({ type: lit("start_text"), element: elementId }),
     finish_text: obj({ type: lit("finish_text"), commit: bool }),
@@ -135,6 +176,8 @@ const editorMessages = {
     preview_alt: obj({ type: lit("preview_alt"), element: elementId, alt: str(1000) }),
     preview_link: obj({ type: lit("preview_link"), element: elementId, href: str(2048), newTab: bool }),
     preview_hidden: obj({ type: lit("preview_hidden"), element: elementId, hidden: bool }),
+    /** Shows a new background photo at once. The agent accepts only URLs on the preview origin. */
+    preview_background: obj({ type: lit("preview_background"), element: elementId, src: str(2048) }),
 };
 function parseWith(table) {
     return (raw) => {
