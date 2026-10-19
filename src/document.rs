@@ -139,7 +139,7 @@ fn is_length(value: &str, min: f64, max: f64, allow_zero: bool) -> bool {
     match unit {
         "px" => n >= min && n <= max,
         "rem" | "em" => n >= min / 16.0 && n <= max / 10.0,
-        "%" => n >= 0.0 && n <= 400.0,
+        "%" => (0.0..=400.0).contains(&n),
         _ => false,
     }
 }

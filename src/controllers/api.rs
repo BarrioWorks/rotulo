@@ -444,7 +444,7 @@ async fn create_edit(
             changes,
         )
         .await?;
-        change_response(&ctx, project.id, &applied).await
+        change_response(ctx, project.id, &applied).await
     })
     .await?;
     Ok(Json(applied))
@@ -465,7 +465,7 @@ async fn history_step(
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, base, |project| async move {
         let applied = drafts::step(&ctx.db, &project, base, step).await?;
-        change_response(&ctx, project.id, &applied).await
+        change_response(ctx, project.id, &applied).await
     })
     .await?;
     Ok(Json(value))
@@ -590,8 +590,8 @@ async fn add_page(
             vec![change],
         )
         .await?;
-        let mut value = change_response(&ctx, project.id, &applied).await?;
-        value["pages"] = json!(page_list(&ctx, &state, &project).await?);
+        let mut value = change_response(ctx, project.id, &applied).await?;
+        value["pages"] = json!(page_list(ctx, &state, &project).await?);
         Ok(value)
     })
     .await?;
@@ -656,8 +656,8 @@ async fn rename_page(
             }
         }
         let applied = drafts::commit(&ctx.db, &project, user_id, body.base_revision, "rename_page", json!({"from": body.from, "to": to}), changes).await?;
-        let mut value = change_response(&ctx, project.id, &applied).await?;
-        value["pages"] = json!(page_list(&ctx, &state, &project).await?);
+        let mut value = change_response(ctx, project.id, &applied).await?;
+        value["pages"] = json!(page_list(ctx, &state, &project).await?);
         Ok(value)
     })
     .await?;
@@ -706,8 +706,8 @@ async fn delete_page(
             changes,
         )
         .await?;
-        let mut value = change_response(&ctx, project.id, &applied).await?;
-        value["pages"] = json!(page_list(&ctx, &state, &project).await?);
+        let mut value = change_response(ctx, project.id, &applied).await?;
+        value["pages"] = json!(page_list(ctx, &state, &project).await?);
         Ok(value)
     })
     .await?;

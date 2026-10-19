@@ -58,7 +58,6 @@ async fn register_page(
     )
 }
 
-
 async fn register(
     State(ctx): State<AppContext>,
     ViewEngine(view): ViewEngine<TeraView>,
@@ -74,7 +73,10 @@ async fn register(
             json!({"error": error, "name": form.name, "email": form.email}),
         )
     };
-    if state.limit(state::REGISTER, &state.settings.client_ip(&headers)).is_err() {
+    if state
+        .limit(state::REGISTER, &state.settings.client_ip(&headers))
+        .is_err()
+    {
         return again(ApiError::RateLimited.to_string());
     }
     match auth::register(&ctx.db, &form.name, &form.email, &form.password).await {

@@ -11,11 +11,14 @@ use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::{error::ApiError, settings::Settings, store::Store};
 
+/// Requests counted per rate and key, with the start of the current window.
+type Counters = HashMap<(&'static str, String), (Instant, u32)>;
+
 pub struct Pagehaven {
     pub settings: Settings,
     pub store: Store,
     jobs: Arc<Semaphore>,
-    limits: Mutex<HashMap<(&'static str, String), (Instant, u32)>>,
+    limits: Mutex<Counters>,
     project_locks: Mutex<HashMap<i64, Arc<tokio::sync::Mutex<()>>>>,
 }
 

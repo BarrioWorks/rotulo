@@ -115,10 +115,19 @@ impl Settings {
 
     /// The visitor's address for rate limits, from the configured proxy header.
     pub fn client_ip(&self, headers: &axum::http::HeaderMap) -> String {
-        let Some(name) = self.client_ip_header.as_deref() else { return "direct".to_owned() };
-        let value = headers.get(name).and_then(|v| v.to_str().ok()).unwrap_or("");
+        let Some(name) = self.client_ip_header.as_deref() else {
+            return "direct".to_owned();
+        };
+        let value = headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
         // With X-Forwarded-For, earlier entries come from the client; the last one from our proxy.
-        let value = if name.eq_ignore_ascii_case("x-forwarded-for") { value.rsplit(',').next().unwrap_or("") } else { value };
+        let value = if name.eq_ignore_ascii_case("x-forwarded-for") {
+            value.rsplit(',').next().unwrap_or("")
+        } else {
+            value
+        };
         value.trim().chars().take(64).collect()
     }
 

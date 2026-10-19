@@ -176,7 +176,7 @@ pub fn slug_base(name: &str) -> String {
     }
     let slug = slug.trim_matches('-').to_owned();
     if slug.len() < 3 || RESERVED.contains(&slug.as_str()) {
-        format!("site-{}", &crate::store::random_token(3))
+        format!("site-{}", crate::store::random_token(3))
     } else {
         slug
     }
