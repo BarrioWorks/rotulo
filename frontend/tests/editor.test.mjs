@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { pageLabel, slugify } from "../../assets/static/js/editor/sidebar.js";
 import { createStore, initialState, pagePath } from "../../assets/static/js/editor/state.js";
-import { relativeHref } from "../../assets/static/js/editor/toolbar.js";
+import { relativeHref, shouldRenderToolbar } from "../../assets/static/js/editor/toolbar.js";
 
 const bootstrap = {
   project: { pid: "p1", name: "Harbor Bakery", slug: "harbor", revision: 3, site_url: "http://harbor.sites.localhost:5150", live_release: null },
@@ -65,4 +65,17 @@ test("scrolling moves the toolbar target with the selection", () => {
   assert.equal(store.get().scrollY, 50);
   store.dispatch({ type: "mode", mode: "preview" });
   assert.equal(store.get().focus.kind, "none");
+});
+
+
+test("toolbar closes panels and changes selection even while a field has focus", () => {
+  const typing = { force: false, keyChanged: true, selectionChanged: false, panelChanged: false, fieldFocused: true };
+  assert.equal(shouldRenderToolbar(typing), false);
+  assert.equal(shouldRenderToolbar({ ...typing, force: true }), true);
+  assert.equal(shouldRenderToolbar({ ...typing, panelChanged: true }), true);
+  assert.equal(shouldRenderToolbar({ ...typing, selectionChanged: true }), true);
+  // A skipped update must still render once the user leaves the field.
+  assert.equal(shouldRenderToolbar({ ...typing, fieldFocused: false }), true);
+  assert.equal(shouldRenderToolbar({ ...typing, fieldFocused: false, keyChanged: false }), false);
+  assert.equal(shouldRenderToolbar({ ...typing, force: true, keyChanged: false }), true);
 });

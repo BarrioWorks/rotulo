@@ -8,6 +8,16 @@ import type { Selection, State, Store } from "./state.js";
 
 type Panel = "text-style" | "box-style" | "link" | "alt" | "text-link" | null;
 
+export function shouldRenderToolbar({ force, keyChanged, selectionChanged, panelChanged, fieldFocused }: {
+  force: boolean;
+  keyChanged: boolean;
+  selectionChanged: boolean;
+  panelChanged: boolean;
+  fieldFocused: boolean;
+}): boolean {
+  return force || selectionChanged || panelChanged || (keyChanged && !fieldFocused);
+}
+
 export interface ToolbarDeps {
   store: Store;
   canvas: Canvas;
@@ -73,6 +83,8 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   const imageInput = must<HTMLInputElement>(document, "[data-image-input]");
   let panel: Panel = null;
   let renderedKey = "";
+  let renderedSelection = "";
+  let renderedPanel: Panel = null;
   let busy: string | null = null;
   let panelError: string | null = null;
 
@@ -427,31 +439,34 @@ export function createToolbar({ store, canvas, change }: ToolbarDeps): void {
   function render(force = false): void {
     const s = store.get();
     const key = keyOf(s);
-    if (!force && key === renderedKey) {
+    const f = s.focus;
+    const selection = JSON.stringify([s.path, f.kind, f.kind === "selected" ? f.selection.element : null]);
+    const focused = document.activeElement;
+    const fieldFocused = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
+    if (!shouldRenderToolbar({ force, keyChanged: key !== renderedKey, selectionChanged: selection !== renderedSelection, panelChanged: panel !== renderedPanel, fieldFocused })) {
       position(s);
       return;
     }
-    renderedKey = key;
-    const f = s.focus;
+    if (fieldFocused && focused instanceof HTMLElement) focused.blur();
     if (key === "none") {
       root.classList.remove("is-visible");
       root.replaceChildren();
+      renderedKey = key;
+      renderedSelection = selection;
+      renderedPanel = panel;
       return;
     }
     if (f.kind === "blocked") {
       root.replaceChildren(h("div", { class: "ftb-note" }, icon("info", "icon-sm"),
         h("span", { text: "This part is created by the website's own code, so it can't be edited here." })));
     } else if (f.kind === "selected") {
-      const focused = document.activeElement;
-      const keepFocus = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
-      if (keepFocus) {
-        position(s);
-        return;
-      }
       root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, f.selection)), panelFor(f.selection, s) ?? "");
     }
     position(s);
     root.classList.add("is-visible");
+    renderedKey = key;
+    renderedSelection = selection;
+    renderedPanel = panel;
   }
 
   function position(s: State): void {

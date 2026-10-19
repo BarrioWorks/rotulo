@@ -2,6 +2,9 @@ import { isSafeHref, isStyleValue } from "../protocol.js";
 import { confirmDialog, h, icon, must, toast } from "../ui.js";
 import { api } from "./api.js";
 import { pageLabel } from "./sidebar.js";
+export function shouldRenderToolbar({ force, keyChanged, selectionChanged, panelChanged, fieldFocused }) {
+    return force || selectionChanged || panelChanged || (keyChanged && !fieldFocused);
+}
 const TEXT_COLORS = ["#1c1b18", "#57534b", "#8a857b", "#ffffff", "#2f5ce0", "#1d7f55", "#c63d32", "#a5660d", "#7c3aed"];
 const BACKGROUNDS = ["#ffffff", "#f8f7f4", "#f1efea", "#1c1b18", "#edf1fd", "#e6f4ec", "#fcebe8", "#fbf1df", "#2f5ce0"];
 const SIZES = ["12px", "14px", "16px", "18px", "20px", "24px", "30px", "36px", "48px", "60px", "72px", "96px"];
@@ -62,6 +65,8 @@ export function createToolbar({ store, canvas, change }) {
     const imageInput = must(document, "[data-image-input]");
     let panel = null;
     let renderedKey = "";
+    let renderedSelection = "";
+    let renderedPanel = null;
     let busy = null;
     let panelError = null;
     root.addEventListener("mousedown", (event) => {
@@ -389,31 +394,35 @@ export function createToolbar({ store, canvas, change }) {
     function render(force = false) {
         const s = store.get();
         const key = keyOf(s);
-        if (!force && key === renderedKey) {
+        const f = s.focus;
+        const selection = JSON.stringify([s.path, f.kind, f.kind === "selected" ? f.selection.element : null]);
+        const focused = document.activeElement;
+        const fieldFocused = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
+        if (!shouldRenderToolbar({ force, keyChanged: key !== renderedKey, selectionChanged: selection !== renderedSelection, panelChanged: panel !== renderedPanel, fieldFocused })) {
             position(s);
             return;
         }
-        renderedKey = key;
-        const f = s.focus;
+        if (fieldFocused && focused instanceof HTMLElement)
+            focused.blur();
         if (key === "none") {
             root.classList.remove("is-visible");
             root.replaceChildren();
+            renderedKey = key;
+            renderedSelection = selection;
+            renderedPanel = panel;
             return;
         }
         if (f.kind === "blocked") {
             root.replaceChildren(h("div", { class: "ftb-note" }, icon("info", "icon-sm"), h("span", { text: "This part is created by the website's own code, so it can't be edited here." })));
         }
         else if (f.kind === "selected") {
-            const focused = document.activeElement;
-            const keepFocus = focused instanceof HTMLElement && root.contains(focused) && focused.matches("input, textarea, select");
-            if (keepFocus) {
-                position(s);
-                return;
-            }
             root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, f.selection)), panelFor(f.selection, s) ?? "");
         }
         position(s);
         root.classList.add("is-visible");
+        renderedKey = key;
+        renderedSelection = selection;
+        renderedPanel = panel;
     }
     function position(s) {
         const f = s.focus;
