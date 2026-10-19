@@ -261,7 +261,7 @@ pub fn classify(path: &str) -> Result<FileKind, Skip> {
     {
         return Err(Skip::ServerCode);
     }
-    if segments.iter().any(|s| *s == "node_modules")
+    if segments.contains(&"node_modules")
         || matches!(
             name,
             "package.json"
