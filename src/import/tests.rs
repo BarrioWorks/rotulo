@@ -751,3 +751,21 @@ fn deeply_nested_pages_are_rejected_before_assigning_ids() {
         assert!(started.elapsed() < std::time::Duration::from_secs(5));
     }
 }
+
+#[test]
+fn unicode_lowercase_collisions_are_rejected_in_archives() {
+    for names in [["Ü.html", "ü.html"], ["K.html", "k.html"]] {
+        let mut one = Item::new(names[0], "<p>one</p>");
+        let mut two = Item::new(names[1], "<p>two</p>");
+        one.flags = 0x800;
+        two.flags = 0x800;
+        let f = Fixture::new(&[page(), one, two]);
+        assert!(
+            matches!(
+                f.import(&Limits::default(), None),
+                Err(ImportError::UnsafePath(_))
+            ),
+            "accepted {names:?}"
+        );
+    }
+}

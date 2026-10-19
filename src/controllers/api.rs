@@ -561,7 +561,11 @@ async fn add_page(
                     .to_owned(),
             ));
         }
-        if drafts::file(&ctx.db, project.id, &path).await?.is_some() {
+        if drafts::files(&ctx.db, project.id)
+            .await?
+            .iter()
+            .any(|f| f.path.to_lowercase() == path.to_lowercase())
+        {
             return Err(ApiError::Invalid(
                 "A page with that name already exists.".to_owned(),
             ));
@@ -646,7 +650,7 @@ async fn rename_page(
         }
         let files = drafts::files(&ctx.db, project.id).await?;
         let source = files.iter().find(|f| f.path == body.from && drafts::is_page(&f.path)).ok_or(ApiError::NotFound)?;
-        if files.iter().any(|f| f.path == to) {
+        if files.iter().any(|f| f.path.to_lowercase() == to.to_lowercase()) {
             return Err(ApiError::Invalid("A page with that name already exists.".to_owned()));
         }
         let mut changes = vec![Change { path: body.from.clone(), after: None }, Change { path: to.clone(), after: Some((source.blob.clone(), source.bytes)) }];

@@ -203,7 +203,7 @@ impl Archive {
             {
                 return Err(bad());
             }
-            if paths.insert(path.to_ascii_lowercase(), directory).is_some() {
+            if paths.insert(path.to_lowercase(), directory).is_some() {
                 return Err(ImportError::UnsafePath(name));
             }
             let mut extras = vec![0; usize::from(u16_at(&h, 30))];

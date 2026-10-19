@@ -8,7 +8,7 @@ Actors: an anonymous visitor, a signed-in user attacking another user, a user up
 |---|---|---|
 | Path traversal, absolute paths, drive letters | The importer builds paths from validated segments only. `..`, `.`, empty segments, `\`, `:`, control characters rejected | `src/import/tests.rs`, `tests/requests/imports.rs` |
 | Symlinks, devices, FIFOs | Unix mode in the central directory must be a regular file or directory | `src/import/tests.rs` |
-| Duplicate or case-colliding paths | Case-folded set of normalized paths | `src/import/tests.rs` |
+| Duplicate or case-colliding paths | Unicode lowercase comparison at archive import and page add/rename. Unicode NFC normalization is not performed, so canonically equivalent spellings can still differ | `src/import/tests.rs` |
 | ZIP bombs, lying sizes, overlapping entries | Declared and actual byte counters per entry and in total, compression-ratio cap, overlap check between entries, CRC-32 | `src/import/tests.rs` |
 | Malformed, encrypted, ZIP64, multi-disk, prefixed archives | Strict EOCD and central-directory parsing, rejected with a message | `src/import/tests.rs` |
 | Nested archives | Never extracted. Skipped with a warning | `src/import/tests.rs` |

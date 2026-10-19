@@ -290,3 +290,24 @@ async fn history_and_release_restore_reject_legacy_deep_pages() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn page_names_cannot_collide_under_unicode_lowercase() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let p = Project::new(&server, &cookie).await;
+        let id = project_id(&ctx, &p.pid).await;
+        let file = pagehaven::drafts::file(&ctx.db, id, "index.html").await.unwrap().unwrap();
+        for existing in ["K.html", "K.html"] {
+            pagehaven::db::exec(&ctx.db, "INSERT INTO draft_files (project_id, path, blob, bytes) VALUES (?, ?, ?, ?)", [id.into(), existing.into(), file.blob.to_string().into(), file.bytes.into()]).await.unwrap();
+            for (route, body) in [
+                ("pages", json!({"base_revision":p.revision,"from":"index.html","path":"k.html","title":"Copy"})),
+                ("pages/rename", json!({"base_revision":p.revision,"from":"about.html","to":"k.html"})),
+            ] {
+                post(&server, &p.api(route), &cookie).json(&body).await.assert_status_unprocessable_entity();
+            }
+            pagehaven::db::exec(&ctx.db, "DELETE FROM draft_files WHERE project_id = ? AND path = ?", [id.into(), existing.into()]).await.unwrap();
+        }
+    }).await;
+}
