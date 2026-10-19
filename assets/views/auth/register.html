@@ -1,0 +1,37 @@
+{% extends "layouts/base.html" %}
+{% block title %}Create your account · Pagehaven{% endblock title %}
+{% block body %}
+<main class="auth">
+  <a class="brand" href="/">
+    <img src="/static/img/logo.svg" alt="" width="28" height="28">
+    <span>Pagehaven</span>
+  </a>
+  <div class="card auth-card">
+    <h1>Create your account</h1>
+    <p class="lead">Import your first website in a minute.</p>
+    {% if error %}
+    <div class="alert alert-error" role="alert" id="form-error">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+    <form method="post" action="/register" data-submit-once>
+      <div class="field">
+        <label class="label" for="name">Your name</label>
+        <input class="input" id="name" name="name" type="text" autocomplete="name" required maxlength="100" value="{{ name | default(value="") }}"{% if not name %} autofocus{% endif %}>
+      </div>
+      <div class="field">
+        <label class="label" for="email">Email</label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" required maxlength="254" value="{{ email | default(value="") }}"{% if error %} aria-describedby="form-error"{% endif %}>
+      </div>
+      <div class="field">
+        <label class="label" for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="200"{% if name %} autofocus{% endif %}>
+        <span class="hint">At least 8 characters.</span>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Create account</button>
+    </form>
+  </div>
+  <p class="auth-alt">Already have an account? <a href="/login">Sign in</a></p>
+</main>
+{% endblock body %}

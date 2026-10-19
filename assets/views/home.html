@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+{% block title %}Pagehaven · Your AI-built website. Yours to edit.{% endblock title %}
+{% block head %}<meta name="description" content="Import your website, make changes visually, and publish it to your own domain. No coding or AI credits required.">{% endblock head %}
+{% block body %}
+<header class="home-header">
+  <a class="brand" href="/">
+    <img src="/static/img/logo.svg" alt="" width="28" height="28">
+    <span>Pagehaven</span>
+  </a>
+  <nav aria-label="Account">
+    <a class="btn btn-ghost" href="/login">Sign in</a>
+    <a class="btn btn-primary" href="/register">Sign up</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-eyebrow"><span>New</span> Works with sites made in Lovable, Bolt, v0 and Claude</div>
+    <h1>Your AI-built website. <em>Yours to edit.</em></h1>
+    <p>Import your website, make changes visually, and publish it to your own domain. No coding or AI credits required.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="/register">Get started, it's free</a>
+      <a class="btn btn-secondary btn-lg" href="/login">Sign in</a>
+    </div>
+  </section>
+
+  <div class="hero-art" aria-hidden="true">
+    <div class="mock-window">
+      <div class="mock-bar"><i></i><i></i><i></i><span class="mock-url">harbor-bakery.pagehaven.site</span></div>
+      <div class="mock-body">
+        <div class="mock-side"><b></b><b class="on"></b><b></b><b></b><b></b><b></b></div>
+        <div class="mock-canvas">
+          <div class="mock-toolbar"><span class="on">B</span><span><i>I</i></span><span>≡</span><span>A</span></div>
+          <div class="mock-title">Warm bread, baked every morning</div>
+          <div class="mock-line"></div>
+          <div class="mock-line short"></div>
+          <div class="mock-img"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="steps" aria-label="How it works">
+    <div class="card step">
+      <div class="step-num"><svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg></div>
+      <h3>1. Import</h3>
+      <p>Download your website as a ZIP from the tool that made it, then drop it into Pagehaven.</p>
+    </div>
+    <div class="card step">
+      <div class="step-num"><svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-pencil"/></svg></div>
+      <h3>2. Edit</h3>
+      <p>Click any text or picture on your page and change it, just like editing a document.</p>
+    </div>
+    <div class="card step">
+      <div class="step-num"><svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-globe"/></svg></div>
+      <h3>3. Publish</h3>
+      <p>Put your website online in one click, at a free address or on your own domain.</p>
+    </div>
+  </section>
+</main>
+<footer class="home-foot">Pagehaven keeps your website yours. Go back to any earlier version at any time.</footer>
+{% endblock body %}

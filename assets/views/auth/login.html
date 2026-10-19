@@ -1,0 +1,32 @@
+{% extends "layouts/base.html" %}
+{% block title %}Sign in · Pagehaven{% endblock title %}
+{% block body %}
+<main class="auth">
+  <a class="brand" href="/">
+    <img src="/static/img/logo.svg" alt="" width="28" height="28">
+    <span>Pagehaven</span>
+  </a>
+  <div class="card auth-card">
+    <h1>Welcome back</h1>
+    <p class="lead">Sign in to edit and publish your websites.</p>
+    {% if error %}
+    <div class="alert alert-error" role="alert" id="form-error">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+    <form method="post" action="/login" data-submit-once>
+      <div class="field">
+        <label class="label" for="email">Email</label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" required maxlength="254" value="{{ email | default(value="") }}"{% if not email %} autofocus{% endif %}{% if error %} aria-describedby="form-error"{% endif %}>
+      </div>
+      <div class="field">
+        <label class="label" for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" autocomplete="current-password" required maxlength="200"{% if email %} autofocus{% endif %}>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Sign in</button>
+    </form>
+  </div>
+  <p class="auth-alt">New to Pagehaven? <a href="/register">Create an account</a></p>
+</main>
+{% endblock body %}
