@@ -289,3 +289,63 @@ async fn unchanged_drafts_cannot_create_duplicate_live_releases() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_assets() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let p = Project::new(&server, &cookie).await;
+        let email = pagehaven::state::Pagehaven::from(&ctx)
+            .settings
+            .abuse_email
+            .clone()
+            .unwrap();
+        for (host, path) in [
+            ("http://unknown.sites.localhost:5150", "/"),
+            (p.site.as_str(), "/"),
+        ] {
+            let response = hosted(&server, host, path).await;
+            assert_site_miss(&response, &email);
+        }
+        p.publish(&server, &cookie).await;
+        let response = hosted(&server, &p.site, "/missing.html").await;
+        assert_site_miss(&response, &email);
+        let head = server
+            .method(axum::http::Method::HEAD, "/missing.html")
+            .add_header("host", p.site.strip_prefix("http://").unwrap())
+            .await;
+        head.assert_status_not_found();
+        head.assert_header("x-content-type-options", "nosniff");
+        assert!(head.as_bytes().is_empty());
+        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let id = project_id(&ctx, &p.pid).await;
+        std::fs::write(
+            state.store.release_dir(id, 1).join("404.html"),
+            "Website's own error page",
+        )
+        .unwrap();
+        let custom = hosted(&server, &p.site, "/missing.html").await;
+        custom.assert_status_not_found();
+        assert_eq!(custom.text(), "Website's own error page");
+    })
+    .await;
+}
+
+fn assert_site_miss(response: &TestResponse, email: &str) {
+    response.assert_status_not_found();
+    response.assert_header("content-type", "text/html; charset=utf-8");
+    response.assert_header("x-content-type-options", "nosniff");
+    response.assert_header("referrer-policy", "strict-origin-when-cross-origin");
+    assert!(!response.headers().contains_key("set-cookie"));
+    let html = response.text();
+    assert!(html.contains("<h1>No website here yet</h1>"));
+    assert!(
+        html.contains("Hosted with Pagehaven"),
+        "expected designed template footer, got {html:?}"
+    );
+    assert!(html.contains("Report a harmful website:"));
+    assert!(html.contains(&format!("mailto:{email}")));
+    assert!(!html.contains("/static/"));
+    assert!(!html.contains("@font-face"));
+}

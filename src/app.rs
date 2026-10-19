@@ -106,8 +106,10 @@ impl Initializer for ViewEngineInitializer {
         "view-engine".to_owned()
     }
 
-    async fn after_routes(&self, router: Router, _ctx: &AppContext) -> Result<Router> {
-        Ok(router.layer(Extension(ViewEngine::from(engines::TeraView::build()?))))
+    async fn after_routes(&self, router: Router, ctx: &AppContext) -> Result<Router> {
+        let view = engines::TeraView::build()?;
+        sites::initialize_not_found(ctx, &view)?;
+        Ok(router.layer(Extension(ViewEngine::from(view))))
     }
 }
 
@@ -155,7 +157,7 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
         Host::Site(_) | Host::Custom(_) => {
             sites::serve(&ctx, &host, &path, request.method() == Method::HEAD).await
         }
-        Host::Invalid => sites::not_found(&state.settings),
+        Host::Invalid => sites::not_found(&ctx),
     }
 }
 
