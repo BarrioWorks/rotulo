@@ -174,7 +174,7 @@
 .dropzone-btn { margin-top: var(--s2); pointer-events: none; }
 .dropzone-limits { margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-2); text-wrap: balance; }
 [data-choose-error] { margin-top: var(--s3); }
-.import-name { margin-top: var(--s7); max-width: 420px; }
+.import-name { margin-bottom: var(--s6); max-width: 420px; }
 [data-help-slot] { margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }
 
 .import-panel { padding: var(--s7); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-float); animation: rise var(--dur-panel) var(--ease-out); }

@@ -17,6 +17,14 @@
   </div>
 
   <section data-step="choose" aria-label="Choose a file">
+    <div class="field import-name">
+      <div class="label-row">
+        <label class="label" for="site-name">Website name</label>
+        <span class="hint">Optional</span>
+      </div>
+      <input class="input" id="site-name" type="text" maxlength="80" aria-describedby="site-name-hint" data-name-input>
+      <span class="hint" id="site-name-hint">Leave it empty to use your home page title. You can change it later.</span>
+    </div>
     <label class="dropzone" data-dropzone>
       <input type="file" accept=".zip,application/zip,application/x-zip-compressed" data-file-input aria-label="Choose your website ZIP file" aria-describedby="drop-limits choose-error">
       <span class="dropzone-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg></span>
@@ -28,14 +36,6 @@
     <div class="alert alert-error" role="alert" id="choose-error" data-choose-error hidden>
       <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
       <span data-choose-error-text></span>
-    </div>
-    <div class="field import-name">
-      <div class="label-row">
-        <label class="label" for="site-name">Website name</label>
-        <span class="hint">Optional</span>
-      </div>
-      <input class="input" id="site-name" type="text" maxlength="80" aria-describedby="site-name-hint" data-name-input>
-      <span class="hint" id="site-name-hint">Leave it empty to use the title of your home page. You can change it later.</span>
     </div>
   </section>
 
