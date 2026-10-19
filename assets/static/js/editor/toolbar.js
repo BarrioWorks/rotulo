@@ -284,8 +284,11 @@ export function createToolbar({ store, canvas, change }) {
             api.uploadImage(store.get().project.pid, file).then((uploaded) => {
                 store.dispatch({ type: "save_settled" });
                 const alt = sel.info.alt ?? "";
-                canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
-                return save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt });
+                return save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt }).then((ok) => {
+                    if (ok)
+                        canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
+                    return ok;
+                });
             }, (error) => {
                 store.dispatch({ type: "save_settled" });
                 toast(error.message, "error", 6000);
