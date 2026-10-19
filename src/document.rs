@@ -477,7 +477,7 @@ impl Document {
                 .tree
                 .orphan(new_element(
                     "script",
-                    &[("src", agent_src), ("data-pagehaven", "agent")],
+                    &[("type", "module"), ("src", agent_src), ("data-pagehaven", "agent")],
                 ))
                 .id();
             self.html
