@@ -19,6 +19,7 @@ axum = { version = "0.8", features = ["multipart"] }
 axum-extra = { version = "0.10", features = ["cookie"] }
 base64 = "0.22"
 chrono = "0.4"
+cookie = "0.18"
 ego-tree = "0.10"
 flate2 = "1"
 html5ever = "0.36"
@@ -46,6 +47,7 @@ required-features = []
 
 [dev-dependencies]
 loco-rs = { workspace = true, features = ["testing"] }
+axum-test = "17.3"
 serial_test = "3.1"
 tower = { version = "0.5", features = ["util"] }
 

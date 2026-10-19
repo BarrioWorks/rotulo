@@ -43,7 +43,7 @@ settings:
   data_dir: <%= get_env(name="PAGEHAVEN_DATA_DIR", default="target/test-data") %>
   secret: <%= get_env(name="PAGEHAVEN_SECRET", default="development-only-secret-not-for-production-use") %>
   secure_cookies: false
-  dns_over_https: https://cloudflare-dns.com/dns-query
+  dns_over_https: <%= get_env(name="PAGEHAVEN_DOH", default="http://127.0.0.1:5399/dns-query") %>
   server_ipv4: 127.0.0.1
   limits:
     upload_bytes: 26214400

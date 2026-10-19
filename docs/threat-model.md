@@ -19,6 +19,7 @@ Actors: an anonymous visitor, a signed-in user attacking another user, a user up
 | CPU or memory exhaustion | Global semaphore on imports and publishes, blocking work off the async runtime, streamed inflate | measured in `docs/verification.md` |
 | Imported JavaScript reading app cookies or storage | Draft previews and published sites live on a different site from the app. No cookies are ever set on those hosts | `tests/preview.rs` |
 | Imported JavaScript driving the editor | The toolbar is in the app page. Messages are checked for origin, window and schema. Message-driven edits go through the same server validation and only reach this project's draft. Publishing cannot be triggered by a message | `frontend` tests, `tests/editing.rs` |
+| Preview token reused for a newer project | Project and release ids are `AUTOINCREMENT`, so an id is never reused after a deletion | `migration/src/m20261019_000001_initial.rs` |
 | Preview URL leak | HMAC token in the hostname, expires after 12 hours, `Referrer-Policy: no-referrer` on preview responses | `tests/preview.rs` |
 | Preview framed by another site | `frame-ancestors` names only the app origin | `tests/preview.rs` |
 | Local network access from a preview | Preview CSP allows `'self'` and `https:` only, so plain-HTTP intranet services are blocked. Browsers also enforce Private Network Access | `tests/preview.rs` |

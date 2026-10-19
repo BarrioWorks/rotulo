@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Visit us | Harbor Bakery</title>
+  <meta name="description" content="Find Harbor Bakery on Wharf Lane in Port Ellery. Opening hours, directions and pre-orders.">
+  <meta name="theme-color" content="#fdf8f1">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="fonts/Lato-Bold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">
+        <img src="images/logo.svg" alt="" width="36" height="36">
+        <span>Harbor Bakery</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span class="nav-toggle-bars"></span>
+        <span class="visually-hidden">Menu</span>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="menu.html">Menu</a></li>
+          <li><a href="about.html">Our story</a></li>
+          <li><a href="contact.html" aria-current="page">Visit us</a></li>
+          <li class="nav-cta"><a href="contact.html#order">Order ahead</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <p class="eyebrow">Visit us</p>
+        <h1>Find us by the water</h1>
+        <p class="lead">We are at the bottom of Wharf Lane, next to the ferry ticket office. Look for the blue door and follow the smell of toast.</p>
+      </div>
+    </section>
+
+    <section id="order">
+      <div class="container contact-grid">
+        <div class="contact-card">
+          <h2>Harbor Bakery</h2>
+          <address>
+            14 Wharf Lane<br>
+            Port Ellery, ME 04011
+          </address>
+          <p><a href="tel:+15550142290">(555) 014-2290</a><br><a href="mailto:hello@harborbakery.example">hello@harborbakery.example</a></p>
+            <table class="hours">
+              <tr><th scope="row">Tuesday to Friday</th><td>7:00 to 15:00</td></tr>
+              <tr><th scope="row">Saturday and Sunday</th><td>7:00 to 14:00</td></tr>
+              <tr><th scope="row">Monday</th><td>Closed</td></tr>
+            </table>
+          <p>Street parking on Wharf Lane, and bike racks right outside the door.</p>
+        </div>
+        <form class="contact-form" action="#" method="post">
+          <h2>Pre-order or ask us anything</h2>
+          <div class="form-row">
+            <div class="field">
+              <label for="name">Your name</label>
+              <input id="name" name="name" type="text" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="topic">What is it about?</label>
+              <select id="topic" name="topic">
+                <option>Reserve bread</option>
+                <option>Weekend box</option>
+                <option>Celebration cake</option>
+                <option>Something else</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="date">Pickup day</label>
+              <input id="date" name="date" type="date">
+            </div>
+          </div>
+          <div class="field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Two country loaves and a box of morning buns, please"></textarea>
+          </div>
+          <button class="button" type="submit">Send message</button>
+          <p class="form-note">We reply within one working day. For same-day orders, please call.</p>
+        </form>
+      </div>
+    </section>
+
+    <section class="section-alt" id="faq">
+      <div class="container">
+        <div class="section-head centered">
+          <p class="eyebrow">Good to know</p>
+          <h2>Questions we hear a lot</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Do you have gluten-free options?</summary>
+            <p>We bake a gluten-free almond cake and buckwheat cookies daily, but our kitchen handles a lot of wheat flour, so we cannot promise they are free of traces.</p>
+          </details>
+          <details>
+            <summary>Can I order a celebration cake?</summary>
+            <p>Yes. We need five days&rsquo; notice for cakes. Send us a message with the date, the number of guests and any flavours you love.</p>
+          </details>
+          <details>
+            <summary>Are dogs welcome?</summary>
+            <p>Very. There is a water bowl by the door and a jar of biscuits behind the counter.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="index.html">
+            <img src="images/logo.svg" alt="" width="36" height="36">
+            <span>Harbor Bakery</span>
+          </a>
+          <p>Slow-fermented bread, butter-rich pastry and properly made coffee, baked by the water since 2009.</p>
+        </div>
+        <div>
+          <h2>Visit</h2>
+          <address>
+            14 Wharf Lane<br>
+            Port Ellery, ME 04011
+          </address>
+        </div>
+        <div>
+          <h2>Hours</h2>
+          <ul>
+            <li>Tue to Fri, 7am to 3pm</li>
+            <li>Sat and Sun, 7am to 2pm</li>
+            <li>Closed Mondays</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Say hello</h2>
+          <ul>
+            <li><a href="tel:+15550142290">(555) 014-2290</a></li>
+            <li><a href="mailto:hello@harborbakery.example">hello@harborbakery.example</a></li>
+            <li><a href="https://instagram.com/harborbakery.example" rel="noopener">Instagram</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="year">2026</span> Harbor Bakery. Baked with care in Port Ellery.</p>
+        <p><a href="menu.html">Menu</a> &middot; <a href="about.html">Our story</a> &middot; <a href="contact.html">Contact</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

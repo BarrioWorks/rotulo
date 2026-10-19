@@ -172,7 +172,7 @@ hero_harbour() {
   soft black "$d/glow.png" -fill '#fff6e2' -draw 'circle 120,92 120,200' -blur 0x46
   soft black "$d/sun.png" -fill '#fffaf0' -draw 'circle 120,92 120,118' -blur 0x5
   layer -fill '#7fb3bd' -draw 'path "M 0,560 L 0,470 Q 140,420 300,470 Q 420,500 560,450 Q 700,400 860,470 Q 930,500 960,500 L 960,560 Z"' -blur 0x2 "$d/hills.png"
-  layer -fill '#5f9aa6' -draw 'path "M 900,560 L 900,500 Q 1100,440 1300,490 Q 1450,520 1600,470 L 1600,560 Z"' -blur 0x2 "$d/hills2.png"
+  layer -fill '#5f9aa6' -draw 'path "M 760,560 L 760,556 Q 860,500 1000,488 Q 1150,470 1300,490 Q 1450,520 1600,470 L 1600,560 Z"' -blur 0x2 "$d/hills2.png"
   magick -size ${W}x340 gradient:'#4f97a3-#1f5866' "$d/sea-fill.png"
   magick -size ${W}x${H} xc:none "$d/sea-fill.png" -geometry +0+560 -composite "$d/sea.png"
   layer -fill none -stroke 'rgba(255,244,214,0.8)' -strokewidth 6 \

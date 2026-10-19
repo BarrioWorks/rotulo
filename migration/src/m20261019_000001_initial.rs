@@ -25,7 +25,7 @@ impl MigrationTrait for Migration {
                 );
                 CREATE INDEX sessions_user ON sessions(user_id);
                 CREATE TABLE projects (
-                    id INTEGER PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     pid TEXT NOT NULL UNIQUE,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 80),
@@ -83,7 +83,7 @@ impl MigrationTrait for Migration {
                     CHECK ((after_blob IS NULL) = (after_bytes IS NULL))
                 ) WITHOUT ROWID;
                 CREATE TABLE releases (
-                    id INTEGER PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
                     number INTEGER NOT NULL CHECK (number >= 1),
                     draft_revision INTEGER NOT NULL,
@@ -98,6 +98,8 @@ impl MigrationTrait for Migration {
                     path TEXT NOT NULL,
                     blob TEXT NOT NULL,
                     bytes INTEGER NOT NULL,
+                    draft_blob TEXT NOT NULL,
+                    draft_bytes INTEGER NOT NULL,
                     PRIMARY KEY (release_id, path)
                 ) WITHOUT ROWID;
                 CREATE TABLE domains (
