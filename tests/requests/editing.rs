@@ -220,3 +220,73 @@ async fn pages_can_be_added_renamed_and_deleted_but_the_home_page_is_protected()
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn page_writes_reject_excessive_depth() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let p = Project::new(&server, &cookie).await;
+        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let id = project_id(&ctx, &p.pid).await;
+        let source = format!("{}<p>text</p>{}", "<div>".repeat(500), "</div>".repeat(500));
+        let mut document = pagehaven::document::Document::parse(&source);
+        document.assign_ids();
+        let source = document.serialize();
+        let target = element(&source, "p");
+        let blob = state.store.put_bytes(source.as_bytes()).unwrap();
+        pagehaven::db::exec(&ctx.db, "UPDATE draft_files SET blob = ?, bytes = ? WHERE project_id = ? AND path = 'index.html'", [blob.to_string().into(), (source.len() as i64).into(), id.into()]).await.unwrap();
+        post(&server, &p.api("edits"), &cookie).json(&json!({"base_revision":p.revision,"page":"index.html","edit":{"op":"set_text","element":target,"html":format!("{}text{}", "<b>".repeat(20), "</b>".repeat(20))}})).await.assert_status_unprocessable_entity();
+
+        let deep = format!("{}text{}", "<div>".repeat(513), "</div>".repeat(513));
+        let blob = state.store.put_bytes(deep.as_bytes()).unwrap();
+        pagehaven::db::exec(&ctx.db, "UPDATE draft_files SET blob = ?, bytes = ? WHERE project_id = ? AND path = 'about.html'", [blob.to_string().into(), (deep.len() as i64).into(), id.into()]).await.unwrap();
+        post(&server, &p.api("pages"), &cookie).json(&json!({"base_revision":p.revision,"from":"about.html","path":"copy.html","title":"Copy"})).await.assert_status_unprocessable_entity();
+        post(&server, &p.api("pages/rename"), &cookie).json(&json!({"base_revision":p.revision,"from":"about.html","to":"renamed.html"})).await.assert_status_unprocessable_entity();
+    }).await;
+}
+
+#[tokio::test]
+#[serial_test::serial]
+async fn history_and_release_restore_reject_legacy_deep_pages() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let mut p = Project::new(&server, &cookie).await;
+        p.publish(&server, &cookie).await;
+        let html = p.html(&server, "index.html").await;
+        p.edit(
+            &server,
+            &cookie,
+            "index.html",
+            json!({"op":"set_text","element":element(&html,"h1"),"html":"Changed"}),
+        )
+        .await;
+        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let deep = format!("{}text{}", "<div>".repeat(513), "</div>".repeat(513));
+        let blob = state.store.put_bytes(deep.as_bytes()).unwrap();
+        pagehaven::db::exec(
+            &ctx.db,
+            "UPDATE release_files SET draft_blob = ?, draft_bytes = ? WHERE path = 'index.html'",
+            [blob.to_string().into(), (deep.len() as i64).into()],
+        )
+        .await
+        .unwrap();
+        post(&server, &p.api("releases/1/restore"), &cookie)
+            .json(&json!({"base_revision":p.revision}))
+            .await
+            .assert_status_unprocessable_entity();
+        pagehaven::db::exec(
+            &ctx.db,
+            "UPDATE edit_files SET before_blob = ?, before_bytes = ? WHERE path = 'index.html'",
+            [blob.to_string().into(), (deep.len() as i64).into()],
+        )
+        .await
+        .unwrap();
+        post(&server, &p.api("undo"), &cookie)
+            .json(&json!({"base_revision":p.revision}))
+            .await
+            .assert_status_unprocessable_entity();
+        assert!(p.html(&server, "index.html").await.contains("Changed"));
+    })
+    .await;
+}

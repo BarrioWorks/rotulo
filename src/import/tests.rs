@@ -737,3 +737,17 @@ fn a_page_built_by_javascript_imports_with_a_warning() {
         .unwrap();
     assert!(written.report.warnings.is_empty());
 }
+
+#[test]
+fn deeply_nested_pages_are_rejected_before_assigning_ids() {
+    for depth in [513, 100_000] {
+        let started = std::time::Instant::now();
+        let html = format!("{}text{}", "<div>".repeat(depth), "</div>".repeat(depth));
+        let f = Fixture::new(&[Item::new("index.html", html.as_bytes())]);
+        let error = f.import(&Limits::default(), None).unwrap_err().to_string();
+        assert_eq!(error, "index.html is nested too deeply to edit safely. Export the website again or simplify that page.");
+        assert_eq!(fs::read_dir(&f.staging).unwrap().count(), 0);
+        eprintln!("rejected import depth={depth}: {:?}", started.elapsed());
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
+    }
+}

@@ -202,7 +202,7 @@ pub async fn thumbnail(ctx: &AppContext, state: &Pagehaven, project_id: i64) -> 
         .await
         .ok()??;
     let html = String::from_utf8_lossy(&state.store.read(&index.blob).ok()?).into_owned();
-    let candidates = Document::parse(&html).representative_images();
+    let candidates = Document::parse_checked(&html).ok()?.representative_images();
     for src in candidates {
         let Some(path) = crate::import::references::resolve("index.html", &src) else {
             continue;

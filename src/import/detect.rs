@@ -87,6 +87,8 @@ pub fn detect(
         let Ok(html) = std::str::from_utf8(&bytes) else {
             continue;
         };
+        crate::document::Document::parse_checked(html)
+            .map_err(|_| ImportError::NestedTooDeeply(format!("{prefix}index.html")))?;
         let references = html_references(html);
         let mut built = !bare_module(html);
         let mut needs_build = !built;

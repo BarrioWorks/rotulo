@@ -53,7 +53,7 @@ async fn page_list(
         .filter(|f| drafts::is_page(&f.path))
     {
         let html = String::from_utf8_lossy(&state.store.read(&file.blob)?).into_owned();
-        let document = Document::parse(&html);
+        let document = Document::parse_checked(&html)?;
         pages.push(json!({"path": file.path, "title": document.title(), "description": document.description()}));
     }
     pages.sort_by_key(|p| {
@@ -364,6 +364,7 @@ async fn read_page(
 }
 
 fn store_page(state: &Pagehaven, path: &str, document: &Document) -> ApiResult<Change> {
+    document.validate_depth()?;
     let bytes = document.serialize().into_bytes();
     let len = bytes.len() as i64;
     Ok(Change {
@@ -430,7 +431,7 @@ async fn create_edit(
             (edit, summary)
         };
         let page = {
-            let mut document = Document::parse(&html);
+            let mut document = Document::parse_checked(&html)?;
             document.apply(&edit)?;
             store_page(&state, &body.page, &document)?
         };
@@ -465,7 +466,8 @@ async fn history_step(
 ) -> ApiResult<Json<Value>> {
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, base, |project| async move {
-        let applied = drafts::step(&ctx.db, &project, base, step).await?;
+        let applied =
+            drafts::step(&ctx.db, &Pagehaven::from(ctx).store, &project, base, step).await?;
         change_response(ctx, project.id, &applied).await
     })
     .await?;
@@ -573,7 +575,7 @@ async fn add_page(
         }
         let html = read_page(ctx, &state, &project, &body.from).await?;
         let change = {
-            let mut document = Document::parse(&html);
+            let mut document = Document::parse_checked(&html)?;
             let description = document.description().unwrap_or_default();
             document.apply(&PageEdit::SetPageMeta {
                 title: body.title.clone(),
@@ -649,7 +651,8 @@ async fn rename_page(
         }
         let mut changes = vec![Change { path: body.from.clone(), after: None }, Change { path: to.clone(), after: Some((source.blob.clone(), source.bytes)) }];
         for page in files.iter().filter(|f| drafts::is_page(&f.path)) {
-            let mut document = Document::parse(&String::from_utf8_lossy(&state.store.read(&page.blob)?));
+            let mut document = Document::parse_checked(&String::from_utf8_lossy(&state.store.read(&page.blob)?))?;
+            document.validate_depth()?;
             let own_path = if page.path == body.from { to.as_str() } else { page.path.as_str() };
             if document.rewrite_hrefs(|href| relink(own_path, href, &body.from, &to)) {
                 changes.retain(|c| c.path != own_path);

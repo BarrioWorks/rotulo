@@ -333,6 +333,18 @@ pub struct Document {
     html: Html,
 }
 
+#[derive(Default)]
+struct NodeFacts {
+    sealed: bool,
+    opaque: bool,
+    chrome: bool,
+    hidden_text: bool,
+    has_text: bool,
+    phrasing: bool,
+    script: bool,
+    single_wrapper: bool,
+}
+
 fn qual(name: &str) -> QualName {
     QualName::new(None, ns!(), LocalName::from(name))
 }
@@ -367,6 +379,108 @@ impl Document {
         Self {
             html: Html::parse_document(source),
         }
+    }
+
+    /// Stops a hostile page before the HTML parser builds an unbounded open-element stack.
+    pub fn parse_checked(source: &str) -> Result<Self, EditError> {
+        use html5ever::tendril::TendrilSink;
+        let mut parser = html5ever::parse_document(
+            scraper::HtmlTreeSink::new(Html::new_document()),
+            Default::default(),
+        );
+        let mut seen = 0;
+        let mut start = 0;
+        while start < source.len() {
+            let end = source.floor_char_boundary((start + 1024).min(source.len()));
+            parser.process(source[start..end].into());
+            let html = parser.tokenizer.sink.sink.0.borrow();
+            let count = html.tree.nodes().len();
+            for node in html.tree.nodes().rev().take(count - seen) {
+                if std::iter::once(node)
+                    .chain(node.ancestors())
+                    .filter(|n| n.value().is_element())
+                    .take(513)
+                    .count()
+                    > 512
+                {
+                    return Err(EditError::Invalid("This page is nested too deeply to edit safely. Export the website again or simplify that page."));
+                }
+            }
+            seen = count;
+            start = end;
+        }
+        let document = Self {
+            html: parser.finish(),
+        };
+        document.validate_depth()?;
+        Ok(document)
+    }
+
+    /// Counts element depth without using the call stack, including parser-inserted elements.
+    pub fn validate_depth(&self) -> Result<(), EditError> {
+        let mut stack = vec![(self.html.tree.root(), 0)];
+        while let Some((node, depth)) = stack.pop() {
+            let depth = depth + usize::from(node.value().is_element());
+            if depth > 512 {
+                return Err(EditError::Invalid("This page is nested too deeply to edit safely. Export the website again or simplify that page."));
+            }
+            stack.extend(node.children().map(|child| (child, depth)));
+        }
+        Ok(())
+    }
+
+    fn node_facts(&self) -> HashMap<NodeId, NodeFacts> {
+        let mut facts: HashMap<NodeId, NodeFacts> = HashMap::new();
+        let nodes: Vec<_> = self.html.tree.root().descendants().collect();
+        for node in &nodes {
+            let name = self.name(node.id());
+            let parent = node.parent().and_then(|p| facts.get(&p.id()));
+            let sealed = SEALED.contains(&name)
+                || name == "head"
+                || parent.is_some_and(|p| p.sealed)
+                || node.parent().is_some_and(|p| self.name(p.id()) == "svg");
+            let opaque = OPAQUE_INLINE.contains(&name) || parent.is_some_and(|p| p.opaque);
+            let chrome =
+                matches!(name, "header" | "nav" | "footer") || parent.is_some_and(|p| p.chrome);
+            let hidden_text = matches!(name, "script" | "noscript" | "style" | "template")
+                || parent.is_some_and(|p| p.hidden_text);
+            let single_wrapper = node
+                .children()
+                .filter_map(|c| c.value().as_element())
+                .filter(|e| !NOT_SECTIONS.contains(&e.name()) || e.name() == "main")
+                .count()
+                == 1;
+            facts.insert(
+                node.id(),
+                NodeFacts {
+                    sealed,
+                    opaque,
+                    chrome,
+                    hidden_text,
+                    single_wrapper,
+                    ..NodeFacts::default()
+                },
+            );
+        }
+        for node in nodes.into_iter().rev() {
+            let mut has_text = node.value().as_text().is_some_and(|t| !t.trim().is_empty())
+                && !facts[&node.id()].opaque;
+            let mut phrasing = true;
+            let mut script = self.name(node.id()) == "script";
+            for child in node.children() {
+                let child_facts = &facts[&child.id()];
+                has_text |= child_facts.has_text;
+                script |= child_facts.script;
+                if child.value().is_element() && !OPAQUE_INLINE.contains(&self.name(child.id())) {
+                    phrasing &= PHRASING.contains(&self.name(child.id())) && child_facts.phrasing;
+                }
+            }
+            let f = facts.get_mut(&node.id()).expect("visited node");
+            f.has_text = has_text;
+            f.phrasing = phrasing;
+            f.script = script;
+        }
+        facts
     }
 
     pub fn serialize(&self) -> String {
@@ -448,10 +562,39 @@ impl Document {
 
     /// The form served to the editor preview: every element says what may be done with it.
     pub fn annotate_for_editor(&mut self, agent_src: &str) {
-        let ids: Vec<NodeId> = self
+        let facts = self.node_facts();
+        let mut sections = HashMap::new();
+        let mut neighbors = HashMap::new();
+        for node in self.html.tree.root().descendants() {
+            let children = self.element_children(node.id());
+            for (i, child) in children.iter().enumerate() {
+                let parent_is_container = matches!(self.name(node.id()), "body" | "main");
+                let wrapper = node
+                    .parent()
+                    .is_some_and(|p| matches!(self.name(p.id()), "body" | "main"))
+                    && facts[&node.parent().expect("parent").id()].single_wrapper;
+                sections.insert(
+                    *child,
+                    !NOT_SECTIONS.contains(&self.name(*child))
+                        && self
+                            .element(*child)
+                            .is_some_and(|e| e.attr(ID_ATTR).is_some())
+                        && (parent_is_container || wrapper),
+                );
+                neighbors.insert(
+                    *child,
+                    (
+                        i.checked_sub(1).map(|j| children[j]),
+                        children.get(i + 1).copied(),
+                    ),
+                );
+            }
+        }
+        let ids: Vec<_> = self
             .html
             .tree
-            .nodes()
+            .root()
+            .descendants()
             .filter(|n| {
                 n.value()
                     .as_element()
@@ -460,7 +603,25 @@ impl Document {
             .map(|n| n.id())
             .collect();
         for id in ids {
-            let can = self.capabilities_of(id).encode();
+            let f = &facts[&id];
+            let name = self.name(id);
+            let section = sections.get(&id).copied().unwrap_or(false);
+            let (previous, next) = neighbors.get(&id).copied().unwrap_or_default();
+            let can = if f.sealed {
+                Capabilities::default()
+            } else {
+                Capabilities {
+                    text: TEXT_BLOCKS.contains(&name) && f.has_text && f.phrasing,
+                    image: name == "img",
+                    link: name == "a",
+                    style: !matches!(name, "body" | "br" | "wbr" | "source" | "track" | "svg"),
+                    section,
+                    move_up: section && previous.is_some_and(|n| sections[&n]),
+                    move_down: section && next.is_some_and(|n| sections[&n]),
+                    duplicate: section && !f.script,
+                }
+            }
+            .encode();
             self.with_element(id, |element| set_attr(element, CAN_ATTR, &can));
         }
         if let Some(head) = self.head() {
@@ -719,19 +880,11 @@ impl Document {
         let Some(body) = self.body().and_then(|b| self.html.tree.get(b)) else {
             return false;
         };
-        let hidden = |n: ego_tree::NodeRef<'_, Node>| {
-            n.ancestors().any(|a| {
-                a.value().as_element().is_some_and(|e| {
-                    matches!(e.name(), "script" | "noscript" | "style" | "template")
-                })
-            })
-        };
-        let has_script = body
-            .descendants()
-            .any(|n| n.value().as_element().is_some_and(|e| e.name() == "script"));
-        let has_text = body
-            .descendants()
-            .any(|n| n.value().as_text().is_some_and(|t| !t.trim().is_empty()) && !hidden(n));
+        let facts = self.node_facts();
+        let has_script = facts[&body.id()].script;
+        let has_text = body.descendants().any(|n| {
+            n.value().as_text().is_some_and(|t| !t.trim().is_empty()) && !facts[&n.id()].hidden_text
+        });
         has_script && !has_text
     }
 
@@ -763,6 +916,7 @@ impl Document {
         };
         let mut content = Vec::new();
         let mut chrome = Vec::new();
+        let facts = self.node_facts();
         for node in body.descendants() {
             let Some(src) = node
                 .value()
@@ -772,11 +926,7 @@ impl Document {
             else {
                 continue;
             };
-            let in_chrome = node.ancestors().any(|a| {
-                a.value()
-                    .as_element()
-                    .is_some_and(|e| matches!(e.name(), "header" | "nav" | "footer"))
-            });
+            let in_chrome = facts[&node.id()].chrome;
             if in_chrome {
                 chrome.push(src.to_owned())
             } else {
@@ -811,7 +961,8 @@ impl Document {
 
     pub fn apply(&mut self, edit: &PageEdit) -> Result<(), EditError> {
         if let PageEdit::SetPageMeta { title, description } = edit {
-            return self.set_meta(title, description);
+            self.set_meta(title, description)?;
+            return self.validate_depth();
         }
         let element = edit.element().expect("element edits name an element");
         let id = self.find(element).ok_or(EditError::NotFound)?;
@@ -927,7 +1078,8 @@ impl Document {
                 Ok(())
             }
             PageEdit::SetPageMeta { .. } => unreachable!("handled above"),
-        }
+        }?;
+        self.validate_depth()
     }
 
     fn set_meta(&mut self, title: &str, description: &str) -> Result<(), EditError> {
@@ -1092,6 +1244,7 @@ impl Document {
             .skip(1)
             .filter_map(|d| Some((d.value().as_element()?.attr(ID_ATTR)?.to_owned(), d.id())))
             .collect();
+        Self::parse_checked(markup)?;
         let fragment = Html::parse_fragment(markup);
         let root = fragment
             .tree
@@ -1409,6 +1562,81 @@ mod tests {
             .unwrap()
             .id();
         ElementId(doc.element(id).unwrap().attr(ID_ATTR).unwrap().to_owned())
+    }
+
+    #[test]
+    fn checked_parser_counts_dom_depth_and_preserves_html_parsing() {
+        let source = format!("{}text{}", "<div>".repeat(510), "</div>".repeat(510));
+        assert!(Document::parse_checked(&source).is_ok());
+        let source = format!("{}text{}", "<div>".repeat(511), "</div>".repeat(511));
+        assert!(Document::parse_checked(&source).is_err());
+        for source in [
+            format!("<ul>{}</ul>", "<li>item".repeat(1000)),
+            format!("<script>{}</script><p>ok</p>", "<div>".repeat(1000)),
+            format!("<p>{}é🙂</p>", "a".repeat(1019)),
+        ] {
+            assert_eq!(
+                Document::parse_checked(&source).unwrap().serialize(),
+                Document::parse(&source).serialize()
+            );
+        }
+    }
+
+    #[test]
+    fn annotation_timing_and_capabilities() {
+        let depth = 500;
+        let source = format!("{}text{}", "<div>".repeat(depth), "</div>".repeat(depth));
+        let started = std::time::Instant::now();
+        let mut document = Document::parse(&source);
+        document.assign_ids();
+        let annotation = std::time::Instant::now();
+        document.annotate_for_editor("/agent.js");
+        let annotation_elapsed = annotation.elapsed();
+        let out = document.serialize();
+        eprintln!(
+            "depth={depth}: annotation={annotation_elapsed:?}, render={:?}",
+            started.elapsed()
+        );
+        assert_eq!(out.matches("data-ph-can=").count(), depth + 1);
+        assert!(annotation_elapsed < std::time::Duration::from_secs(2));
+    }
+
+    #[test]
+    fn annotation_matches_individual_capabilities() {
+        let mut sources = vec![PAGE.to_owned(), "<main><div><p>a<svg><text>icon</text></svg></p><p><picture><span>hidden</span></picture></p></div></main><select><option>x</option></select>".to_owned()];
+        let mut directories = vec![std::path::PathBuf::from("fixtures/sites")];
+        while let Some(directory) = directories.pop() {
+            for entry in std::fs::read_dir(directory).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    directories.push(path);
+                } else if path.extension().is_some_and(|e| e == "html") {
+                    sources.push(std::fs::read_to_string(path).unwrap());
+                }
+            }
+        }
+        for source in sources {
+            let mut document = Document::parse(&source);
+            document.assign_ids();
+            let expected: Vec<_> = document
+                .html
+                .tree
+                .nodes()
+                .filter(|n| {
+                    n.value()
+                        .as_element()
+                        .is_some_and(|e| e.attr(ID_ATTR).is_some())
+                })
+                .map(|n| (n.id(), document.capabilities_of(n.id()).encode()))
+                .collect();
+            document.annotate_for_editor("/agent.js");
+            for (id, can) in expected {
+                assert_eq!(
+                    document.element(id).unwrap().attr(CAN_ATTR),
+                    Some(can.as_str())
+                );
+            }
+        }
     }
 
     #[test]

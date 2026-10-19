@@ -79,6 +79,10 @@ pub enum ImportError {
     SourceOnly,
     #[error("We couldn't find a website in this ZIP. It needs an index.html file at the top level or in a dist or build folder.")]
     NoWebsite,
+    #[error(
+        "{0} is nested too deeply to edit safely. Export the website again or simplify that page."
+    )]
+    NestedTooDeeply(String),
     #[error("Some website files are missing: {}", missing_message(.0))]
     MissingFiles(Vec<MissingReference>),
     #[error("We couldn't save the website files. Please try again.")]
@@ -170,7 +174,11 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
                 continue;
             };
             if kind == policy::FileKind::Html {
-                let mut document = Document::parse(text.trim_start_matches('\u{feff}'));
+                let mut document = Document::parse_checked(text.trim_start_matches('\u{feff}'))
+                    .map_err(|_| ImportError::NestedTooDeeply(path.clone()))?;
+                document
+                    .validate_depth()
+                    .map_err(|_| ImportError::NestedTooDeeply(path.clone()))?;
                 document.assign_ids();
                 if path == "index.html" {
                     title = document.title();

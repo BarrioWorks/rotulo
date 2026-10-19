@@ -78,6 +78,7 @@ pub fn validate(store: &Store, files: &[DraftFile]) -> Result<(), ApiError> {
     let present: std::collections::HashSet<&str> = files.iter().map(|f| f.path.as_str()).collect();
     for file in files.iter().filter(|f| drafts::is_page(&f.path)) {
         let html = String::from_utf8_lossy(&store.read(&file.blob)?).into_owned();
+        Document::parse_checked(&html)?;
         for reference in crate::import::references::html_references(&html) {
             use crate::import::references::RefKind;
             if !matches!(reference.kind, RefKind::Script | RefKind::Stylesheet) {
@@ -104,7 +105,7 @@ fn build(store: &Store, files: &[DraftFile], target: &Path) -> Result<Vec<Built>
         for file in files {
             let published = if drafts::is_page(&file.path) {
                 let mut document =
-                    Document::parse(&String::from_utf8_lossy(&store.read(&file.blob)?));
+                    Document::parse_checked(&String::from_utf8_lossy(&store.read(&file.blob)?))?;
                 document.strip_editor_markup();
                 let bytes = document.serialize().into_bytes();
                 let len = bytes.len() as i64;
@@ -336,6 +337,20 @@ pub async fn restore(
             ),
         );
     }
+    let store = state.store.clone();
+    let pages: Vec<_> = wanted
+        .iter()
+        .filter(|(path, _)| drafts::is_page(path))
+        .map(|(_, (blob, _))| blob.clone())
+        .collect();
+    tokio::task::spawn_blocking(move || -> Result<(), ApiError> {
+        for blob in pages {
+            Document::parse_checked(&String::from_utf8_lossy(&store.read(&blob)?))?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(ApiError::internal)??;
     let mut changes: Vec<Change> = drafts::files(db, project.id)
         .await?
         .into_iter()
