@@ -46,6 +46,7 @@ export function createSaver(store) {
                             history: result.history,
                             draftChanged: result.draft_changed_since_publish,
                             log: options.log ?? "edit",
+                            page: options.page ?? store.get().path,
                             at: Date.now(),
                         });
                     }
@@ -55,7 +56,13 @@ export function createSaver(store) {
                     return result;
                 }
                 catch (error) {
-                    const failure = error instanceof ApiError ? error : new ApiError(0, "failed", "Something went wrong. Please try again.");
+                    if (!(error instanceof ApiError)) {
+                        // A bug, not the network: report it once instead of retrying forever.
+                        store.dispatch({ type: "save_failed", message: "Something went wrong. Please try again." });
+                        toast("Something went wrong. Please try again.", { kind: "error" });
+                        return null;
+                    }
+                    const failure = error;
                     if (failure.status === 0) {
                         store.dispatch({ type: "save_offline" });
                         await waitForRetry(attempt);

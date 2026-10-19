@@ -33,6 +33,7 @@ function saved(store, { undo = null, redo = null, draftChanged = true, log = "ed
     history: { can_undo: undo !== null, can_redo: redo !== null, undo_label: undo, redo_label: redo },
     draftChanged,
     log,
+    page: "index.html",
     at: 1,
   });
 }
@@ -83,7 +84,7 @@ test("saves are counted, and a failure keeps its message until the next save lan
   store.dispatch({ type: "save_queued" });
   store.dispatch({ type: "save_queued" });
   assert.equal(store.get().saves.pending, 2);
-  store.dispatch({ type: "save_ok", revision: 4, history: { ...bootstrap.history, can_undo: true }, draftChanged: true, log: "edit", at: 1 });
+  store.dispatch({ type: "save_ok", revision: 4, history: { ...bootstrap.history, can_undo: true }, draftChanged: true, log: "edit", page: "index.html", at: 1 });
   store.dispatch({ type: "save_failed", message: "Not saved" });
   let s = store.get();
   assert.equal(s.saves.pending, 0);
@@ -100,7 +101,7 @@ test("an offline save waits in the queue and the pill says so", () => {
   store.dispatch({ type: "save_queued" });
   store.dispatch({ type: "save_offline" });
   assert.deepEqual(statusPill(store.get(), true), { tone: "warning", text: "Offline · 1 change waiting", busy: false });
-  store.dispatch({ type: "save_ok", revision: 4, history: bootstrap.history, draftChanged: true, log: "edit", at: 1 });
+  store.dispatch({ type: "save_ok", revision: 4, history: bootstrap.history, draftChanged: true, log: "edit", page: "index.html", at: 1 });
   assert.equal(store.get().saves.problem, null);
 });
 
@@ -254,4 +255,12 @@ test("swatches get plain colour names", () => {
   assert.equal(colorName("#000000"), "black");
   assert.equal(colorName("#fed136"), "yellow");
   assert.equal(colorName("#212529"), "dark grey");
+});
+
+test("a change is listed under the page it was made on, even after switching pages", () => {
+  const store = createStore(initialState(bootstrap, 0));
+  store.dispatch({ type: "save_queued" });
+  store.dispatch({ type: "open_page", path: "index.html" });
+  store.dispatch({ type: "save_ok", revision: 4, history: { ...bootstrap.history, can_undo: true, undo_label: "image change" }, draftChanged: true, log: "edit", page: "about.html", at: 1 });
+  assert.deepEqual(changeSummary(store.get()), [{ page: "Our story", labels: ["Image change"] }]);
 });

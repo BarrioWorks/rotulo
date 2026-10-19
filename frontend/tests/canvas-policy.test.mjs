@@ -13,12 +13,6 @@ test("text needs a parent-started session for that element", () => {
   assert.equal(acceptsCanvasMessage({ ...idle, textElement: "a", mode: "preview" }, text), false);
 });
 
-test("iframe shortcuts cannot drive idle history", () => {
-  const shortcut = { type: "shortcut", action: "undo" };
-  assert.equal(acceptsCanvasMessage(idle, shortcut), false);
-  assert.equal(acceptsCanvasMessage({ ...idle, textElement: "a" }, shortcut), true);
-});
-
 test("an editing report cannot create a text session", () => {
   const editing = { type: "editing", element: "a", active: true, formats: { bold: false, italic: false, link: false } };
   assert.equal(acceptsCanvasMessage(idle, editing), false);

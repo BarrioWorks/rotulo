@@ -21,10 +21,11 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
   const fileInput = document.querySelector<HTMLInputElement>("[data-image-input]");
 
   /** Saves one edit. `reload` reloads the canvas after it lands, keeping the selection when asked. */
-  function save(edit: Edit, after: { reload?: boolean; select?: boolean; pulse?: boolean; onRejected?: (message: string) => void; toastRejection?: boolean } = {}): Promise<boolean> {
-    const page = store.get().path;
+  function save(edit: Edit, after: { page?: string; reload?: boolean; select?: boolean; pulse?: boolean; onRejected?: (message: string) => void; toastRejection?: boolean } = {}): Promise<boolean> {
+    const page = after.page ?? store.get().path;
     const element = "element" in edit ? edit.element : null;
     return change((base) => api.edit(store.get().project.pid, base, page, edit), {
+      page,
       toastRejection: after.toastRejection ?? true,
       onRejected: (error) => {
         after.onRejected?.(error.message);
@@ -98,7 +99,7 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     const uploaded = await upload(file, onProgress);
     if (!uploaded) return false;
     const alt = sel.info.alt ?? "";
-    const ok = await save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt });
+    const ok = await save({ op: "set_image", element: sel.element, upload: uploaded.upload, alt }, { page });
     if (ok && store.get().path === page) {
       canvas.send({ type: "preview_image", element: sel.element, src: uploaded.url, alt });
       announce("Picture replaced");
@@ -110,7 +111,7 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     const page = store.get().path;
     const uploaded = await upload(file, onProgress);
     if (!uploaded) return false;
-    const ok = await save({ op: "set_background_image", element: sel.element, upload: uploaded.upload });
+    const ok = await save({ op: "set_background_image", element: sel.element, upload: uploaded.upload }, { page });
     if (ok && store.get().path === page) {
       canvas.send({ type: "preview_background", element: sel.element, src: uploaded.url });
       undoToast("Background photo replaced");
@@ -118,29 +119,50 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     return ok;
   }
 
-  async function moveSection(sel: Selection, direction: "up" | "down"): Promise<void> {
-    if (await save({ op: "move_section", element: sel.element, direction }, { reload: true, select: true, pulse: true })) {
-      undoToast(direction === "up" ? "Section moved up" : "Section moved down");
+  /** Section actions in flight, by element, so a double click does not move or copy twice. */
+  const sectionBusy = new Set<string>();
+
+  async function once(sel: Selection, run: () => Promise<void>): Promise<void> {
+    if (sectionBusy.has(sel.element)) return;
+    sectionBusy.add(sel.element);
+    try {
+      await run();
+    } finally {
+      sectionBusy.delete(sel.element);
     }
   }
 
-  async function duplicateSection(sel: Selection): Promise<void> {
-    if (await save({ op: "duplicate_section", element: sel.element }, { reload: true, select: true, pulse: true })) {
-      undoToast("Section duplicated. The copy is right below it.");
-    }
+  function moveSection(sel: Selection, direction: "up" | "down"): Promise<void> {
+    return once(sel, async () => {
+      if (await save({ op: "move_section", element: sel.element, direction }, { reload: true, select: true, pulse: true })) {
+        undoToast(direction === "up" ? "Section moved up" : "Section moved down");
+      }
+    });
   }
 
-  async function setHidden(sel: Selection, hidden: boolean): Promise<void> {
-    canvas.send({ type: "preview_hidden", element: sel.element, hidden });
-    if (await save({ op: "hide_section", element: sel.element, hidden })) {
-      undoToast(hidden ? "Section hidden on your website" : "Section shown on your website");
-    }
+  function duplicateSection(sel: Selection): Promise<void> {
+    return once(sel, async () => {
+      if (await save({ op: "duplicate_section", element: sel.element }, { reload: true, select: true, pulse: true })) {
+        undoToast("Section duplicated. The copy is right below it.");
+      }
+    });
   }
 
-  async function removeSection(sel: Selection): Promise<void> {
-    if (await save({ op: "remove_section", element: sel.element }, { reload: true })) {
-      undoToast("Section removed")?.focus();
-    }
+  function setHidden(sel: Selection, hidden: boolean): Promise<void> {
+    return once(sel, async () => {
+      canvas.send({ type: "preview_hidden", element: sel.element, hidden });
+      if (await save({ op: "hide_section", element: sel.element, hidden })) {
+        undoToast(hidden ? "Section hidden on your website" : "Section shown on your website");
+      }
+    });
+  }
+
+  function removeSection(sel: Selection): Promise<void> {
+    return once(sel, async () => {
+      if (await save({ op: "remove_section", element: sel.element }, { reload: true })) {
+        undoToast("Section removed")?.focus();
+      }
+    });
   }
 
   return { undo, save, setStyle, chooseImage, checkImage, replaceImage, replaceBackground, moveSection, duplicateSection, setHidden, removeSection, undoToast };

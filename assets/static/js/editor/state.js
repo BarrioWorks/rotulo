@@ -145,7 +145,7 @@ export function reduce(state, action) {
             return { ...state, saves: { ...state.saves, pending: state.saves.pending + 1 } };
         case "save_ok": {
             const draftChanged = action.draftChanged;
-            const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, state.path) : [];
+            const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
             return {
                 ...state,
                 saves: { pending: Math.max(0, state.saves.pending - 1), problem: null, savedAt: action.at },

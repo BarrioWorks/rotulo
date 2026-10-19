@@ -93,7 +93,7 @@ export type Action =
   | { type: "open_panel"; panel: Panel; replaced?: boolean }
   | { type: "close_panel" }
   | { type: "save_queued" }
-  | { type: "save_ok"; revision: number; history: History; draftChanged: boolean; log: SaveLog; at: number }
+  | { type: "save_ok"; revision: number; history: History; draftChanged: boolean; log: SaveLog; page: string; at: number }
   | { type: "save_settled" }
   | { type: "save_offline" }
   | { type: "save_failed"; message: string }
@@ -252,7 +252,7 @@ export function reduce(state: State, action: Action): State {
       return { ...state, saves: { ...state.saves, pending: state.saves.pending + 1 } };
     case "save_ok": {
       const draftChanged = action.draftChanged;
-      const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, state.path) : [];
+      const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
       return {
         ...state,
         saves: { pending: Math.max(0, state.saves.pending - 1), problem: null, savedAt: action.at },

@@ -87,20 +87,63 @@ export function createCanvas(store, handlers) {
         else
             surface.classList.remove("is-loading");
     }
+    /** Frames whose next load event is one the editor asked for. */
+    const expectedLoads = new WeakSet();
+    function watchLoads(frame) {
+        frame.addEventListener("load", () => {
+            if (expectedLoads.has(frame)) {
+                expectedLoads.delete(frame);
+                window.setTimeout(() => {
+                    if (pending === frame && awaitingReady) {
+                        window.clearTimeout(slowTimer);
+                        swap();
+                        surface.classList.add("is-loading");
+                        loadingText.textContent = "This page can't be edited. It may not be a web page.";
+                    }
+                }, 4000);
+            }
+            else if (frame === active && !awaitingReady) {
+                // The page moved itself (a script or a refresh). Go back to the page the editor chose.
+                textSession = null;
+                restore = { scrollY: null, select: null, pulse: false };
+                store.dispatch({ type: "canvas_loading" });
+                void navigate(expectedPath);
+            }
+        });
+    }
+    watchLoads(active);
+    /** Resolves once an open text session has been committed, so nothing typed is lost. */
+    let textFinished = null;
+    function finishText() {
+        if (!textSession)
+            return Promise.resolve();
+        return new Promise((resolve) => {
+            const done = () => {
+                window.clearTimeout(timer);
+                textFinished = null;
+                resolve();
+            };
+            const timer = window.setTimeout(done, 800);
+            textFinished = done;
+            send({ type: "finish_text", commit: true });
+        });
+    }
     async function navigate(path, suffix = "") {
+        await finishText();
+        if (Date.now() - store.get().bootstrappedAt > PREVIEW_MAX_AGE_MS)
+            await handlers.refreshPreview();
         expectedPath = path;
         awaitingReady = true;
         textSession = null;
-        if (Date.now() - store.get().bootstrappedAt > PREVIEW_MAX_AGE_MS)
-            await handlers.refreshPreview();
         window.clearTimeout(slowTimer);
         loadingText.textContent = "Opening your page…";
         slowTimer = window.setTimeout(() => {
             loadingText.textContent = "This page is taking a while to open…";
         }, 8000);
         setLoadingVeil(true);
-        pending?.remove();
-        if (!active.getAttribute("src")) {
+        if (pending && pending !== active)
+            pending.remove();
+        if (pending === active || !active.getAttribute("src")) {
             pending = active;
         }
         else {
@@ -108,20 +151,11 @@ export function createCanvas(store, handlers) {
             pending.classList.add("is-pending");
             pending.tabIndex = -1;
             sizeIframe(pending);
+            watchLoads(pending);
             active.after(pending);
         }
-        const loading = pending;
-        loading.addEventListener("load", () => {
-            window.setTimeout(() => {
-                if (pending === loading && awaitingReady) {
-                    window.clearTimeout(slowTimer);
-                    swap();
-                    surface.classList.add("is-loading");
-                    loadingText.textContent = "This page can't be edited. It may not be a web page.";
-                }
-            }, 4000);
-        }, { once: true });
-        loading.src = url(path) + suffix;
+        expectedLoads.add(pending);
+        pending.src = url(path) + suffix;
     }
     /** Shows the frame that just became ready and drops the old one. */
     function swap() {
@@ -222,14 +256,17 @@ export function createCanvas(store, handlers) {
                 if (!message.active)
                     textSession = null;
                 store.dispatch({ type: "editing", active: message.active, formats: message.formats });
-                if (!message.active)
+                if (!message.active) {
+                    textFinished?.();
                     reclaimFocus();
+                }
                 break;
             case "text":
                 if (textSession)
                     handlers.onText(message.element, message.html, textSession.path);
                 textSession = null;
                 store.dispatch({ type: "editing", active: false, formats: { bold: false, italic: false, link: false } });
+                textFinished?.();
                 reclaimFocus();
                 break;
             case "navigate": {
@@ -242,9 +279,6 @@ export function createCanvas(store, handlers) {
                 }
                 break;
             }
-            case "shortcut":
-                handlers.onShortcut(message.action);
-                break;
         }
     });
     zoomButton.addEventListener("click", () => {
@@ -304,6 +338,7 @@ export function createCanvas(store, handlers) {
             void navigate(s.path);
         },
         send,
+        finishText,
         toApp(rect) {
             const r = active.getBoundingClientRect();
             return { x: r.left + rect.x * layout.scale, y: r.top + rect.y * layout.scale, width: rect.width * layout.scale, height: rect.height * layout.scale };

@@ -173,7 +173,6 @@ const agentMessages = {
   editing: obj({ type: lit("editing"), element: elementId, active: bool, formats: parseFormats }),
   text: obj({ type: lit("text"), element: elementId, html: str(65536) }),
   navigate: obj({ type: lit("navigate"), href: str(2048) }),
-  shortcut: obj({ type: lit("shortcut"), action: lit("undo", "redo") }),
 } as const;
 
 const editorMessages = {

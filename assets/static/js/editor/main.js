@@ -71,7 +71,11 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
             if (publishing.closeReview())
                 return;
             const s = store.get();
-            if (s.rail.kind === "panel") {
+            if (s.editing.active && canvas) {
+                canvas.send({ type: "finish_text", commit: false });
+                canvas.surface.focus({ preventScroll: true });
+            }
+            else if (s.rail.kind === "panel") {
                 store.dispatch({ type: "close_panel" });
                 canvas?.surface.focus({ preventScroll: true });
             }
@@ -155,7 +159,7 @@ async function main() {
         const s = store.get();
         if (action === "undo" ? !s.history.can_undo : !s.history.can_redo)
             return;
-        canvas?.send({ type: "finish_text", commit: true });
+        await canvas?.finishText();
         const label = action === "undo" ? s.history.undo_label : s.history.redo_label;
         const result = await change((base) => (action === "undo" ? api.undo(pid, base) : api.redo(pid, base)), { log: action });
         if (!result)
@@ -193,11 +197,9 @@ async function main() {
     canvas = createCanvas(store, {
         onText(element, html, page) {
             void change((base) => api.edit(pid, base, page, { op: "set_text", element, html }), {
+                page,
                 onRejected: () => canvas?.reload(element),
             });
-        },
-        onShortcut(action) {
-            void history(action);
         },
         async refreshPreview() {
             await refresh();

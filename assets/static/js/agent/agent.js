@@ -550,7 +550,8 @@ function stopText() {
     schedule();
     return current;
 }
-function commitText() {
+/** Saves the typing. `reselect` re-reports the element so the toolbar shows its new state. */
+function commitText(reselect = true) {
     const current = editing;
     if (!current)
         return;
@@ -558,7 +559,7 @@ function commitText() {
     if (html !== current.original)
         post({ type: "text", element: current.id, html: html.slice(0, 65536) });
     stopText();
-    if (selected === current.el)
+    if (reselect && selected === current.el)
         select(current.el, false);
 }
 function cancelText() {
@@ -664,7 +665,7 @@ function handle(message) {
         }
         case "deselect":
             if (editing)
-                commitText();
+                commitText(false);
             selected = null;
             blocked = null;
             schedule();
@@ -753,7 +754,7 @@ function setMode(next) {
     if (next === mode)
         return;
     if (editing)
-        commitText();
+        commitText(false);
     mode = next;
     previewSheet.disabled = mode !== "preview";
     hovered = null;
@@ -870,8 +871,6 @@ window.addEventListener("submit", (event) => {
     event.preventDefault();
 }, true);
 window.addEventListener("keydown", (event) => {
-    const key = event.key.toLowerCase();
-    const mod = event.metaKey || event.ctrlKey;
     if (editing) {
         event.stopImmediatePropagation();
         if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
@@ -886,10 +885,6 @@ window.addEventListener("keydown", (event) => {
         else if (event.key === "Escape") {
             event.preventDefault();
             cancelText();
-        }
-        else if (mod && (key === "z" || key === "y")) {
-            event.preventDefault();
-            post({ type: "shortcut", action: key === "y" || event.shiftKey ? "redo" : "undo" });
         }
         return;
     }

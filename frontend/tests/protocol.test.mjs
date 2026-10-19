@@ -64,9 +64,8 @@ test("strings are length-capped", () => {
   assert.equal(parseAgentMessage({ ...select, info: { ...info, text: "x".repeat(201) } }), undefined);
 });
 
-test("shortcut messages only carry undo or redo", () => {
-  assert.deepEqual(parseAgentMessage(envelope({ type: "shortcut", action: "redo" })), { type: "shortcut", action: "redo" });
-  assert.equal(parseAgentMessage(envelope({ type: "shortcut", action: "publish" })), undefined);
+test("the page cannot ask for undo or redo; inside a text editor those keys stay native", () => {
+  assert.equal(parseAgentMessage(envelope({ type: "shortcut", action: "undo" })), undefined);
 });
 
 test("the agent accepts init with optional scroll and selection", () => {

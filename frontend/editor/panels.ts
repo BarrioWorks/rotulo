@@ -298,8 +298,10 @@ function linkPanel(ctx: PanelContext, sel: Selection): HTMLElement {
     submitLabel: "Save link",
     onSubmit(href, newTab, showError) {
       const { store, canvas, change } = ctx;
+      const page = store.get().path;
       canvas.send({ type: "preview_link", element: sel.element, href, newTab: kindIsWeb(href) && newTab });
-      void change((base) => api.edit(store.get().project.pid, base, store.get().path, { op: "set_link", element: sel.element, href, new_tab: kindIsWeb(href) && newTab }), {
+      void change((base) => api.edit(store.get().project.pid, base, page, { op: "set_link", element: sel.element, href, new_tab: kindIsWeb(href) && newTab }), {
+        page,
         toastRejection: false,
         onRejected: (error) => {
           showError(error.message);
@@ -450,7 +452,7 @@ function pagePanel(ctx: PanelContext): HTMLElement {
     const titleValue = title.value.trim();
     const descriptionValue = description.value.trim();
     const page = ctx.store.get().path;
-    const result = await ctx.change((base) => api.edit(ctx.store.get().project.pid, base, page, { op: "set_page_meta", title: titleValue, description: descriptionValue }));
+    const result = await ctx.change((base) => api.edit(ctx.store.get().project.pid, base, page, { op: "set_page_meta", title: titleValue, description: descriptionValue }), { page });
     if (result) {
       ctx.store.dispatch({ type: "page_meta", title: titleValue, description: descriptionValue });
       announce("Page settings saved");

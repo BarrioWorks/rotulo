@@ -79,17 +79,23 @@ export function createToolbar({ store, canvas, edits }) {
         }
         store.dispatch({ type: "open_panel", panel, replaced });
     }
-    async function withFile(action, run) {
+    /** Uploads for one element at a time; the progress shows only while that element is selected. */
+    async function withFile(action, element, run) {
+        if (busy?.element === element)
+            return false;
         const file = await edits.chooseImage();
         if (!file)
             return false;
-        busy = { action, percent: 0 };
+        busy = { action, percent: 0, element };
         render(true);
         const ok = await run(file, (fraction) => {
-            busy = { action, percent: Math.round(fraction * 100) };
+            if (busy?.element !== element)
+                return;
+            busy = { action, percent: Math.round(fraction * 100), element };
             render(true);
         });
-        busy = null;
+        if (busy?.element === element)
+            busy = null;
         render(true);
         return ok;
     }
@@ -105,14 +111,14 @@ export function createToolbar({ store, canvas, edits }) {
                 canvas.send({ type: "start_text", element: sel.element });
                 break;
             case "replace-image":
-                void withFile(id, (file, progress) => edits.replaceImage(sel, file, progress)).then((ok) => {
+                void withFile(id, sel.element, (file, progress) => edits.replaceImage(sel, file, progress)).then((ok) => {
                     const s = store.get();
                     if (ok && selection(s)?.element === sel.element)
                         openPanel("image", true, id);
                 });
                 break;
             case "bg-photo":
-                void withFile(id, (file, progress) => edits.replaceBackground(sel, file, progress));
+                void withFile(id, sel.element, (file, progress) => edits.replaceBackground(sel, file, progress));
                 break;
             case "parent-link": {
                 const link = sel.ancestors.slice(0, 3).find((a) => a.kind === "link" || a.kind === "button");
@@ -154,7 +160,7 @@ export function createToolbar({ store, canvas, edits }) {
     function actionButton(id, sel, s) {
         const spec = ACTIONS[id];
         const open = s.rail.kind === "panel" && spec.panel !== undefined && s.rail.panel === spec.panel;
-        const uploading = busy?.action === id;
+        const uploading = busy?.action === id && busy.element === sel.element;
         const label = uploading ? `Uploading ${busy?.percent ?? 0}%` : spec.label;
         const opts = { disabled: uploading };
         if (spec.panel) {
@@ -247,7 +253,7 @@ export function createToolbar({ store, canvas, edits }) {
             return `blocked:${f.around ?? ""}`;
         const sel = f.selection;
         const panel = s.rail.kind === "panel" ? s.rail.panel : "";
-        return JSON.stringify([sel.element, sel.can, sel.kind, sel.name, sel.ancestors, sel.info.href, sel.info.alt, sel.info.hidden, sel.info.bgImage, s.editing, panel, busy, s.anchors.length, s.pages.length, s.path]);
+        return JSON.stringify([sel.element, sel.can, sel.kind, sel.name, sel.ancestors, sel.info.href, sel.info.alt, sel.info.hidden, sel.info.bgImage, s.editing, panel, busy?.element === sel.element ? busy : null, s.anchors.length, s.pages.length, s.path]);
     }
     function buttons() {
         return [...root.querySelectorAll("button.tb-btn:not([disabled])")];
@@ -271,6 +277,8 @@ export function createToolbar({ store, canvas, edits }) {
         }
         renderedKey = key;
         renderedSelection = selectionKey;
+        if (selectionChanged)
+            closeMenus();
         if (key === "none") {
             closeMenus();
             root.classList.remove("is-visible");
@@ -363,16 +371,14 @@ export function createToolbar({ store, canvas, edits }) {
     });
     store.subscribe((s, prev) => {
         const sel = selection(s);
-        if (sel && pendingPanel && sel.element === pendingPanel.element) {
-            const panel = pendingPanel.panel;
-            pendingPanel = null;
-            if (panelApplies(panel, sel, false))
-                store.dispatch({ type: "open_panel", panel });
-            return;
-        }
         if ((sel?.element ?? null) !== lastSelection) {
             lastSelection = sel?.element ?? null;
-            busy = null;
+            const wanted = pendingPanel;
+            pendingPanel = null;
+            if (sel && wanted?.element === sel.element && panelApplies(wanted.panel, sel, false)) {
+                store.dispatch({ type: "open_panel", panel: wanted.panel });
+                return;
+            }
         }
         render(prev === null);
     });
