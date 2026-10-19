@@ -303,7 +303,7 @@ async fn editor(
 ) -> Result<Response> {
     let project = match projects::owned(&ctx.db, &user, &pid).await {
         Ok(project) => project,
-        Err(ApiError::NotFound) => return not_found_page(&view),
+        Err(ApiError::NotFound) => return not_found_page(&view, Some(&user)),
         Err(error) => return Err(internal(error)),
     };
     format::render().view(
@@ -313,8 +313,19 @@ async fn editor(
     )
 }
 
-pub fn not_found_page(view: &TeraView) -> Result<Response> {
-    let mut response = format::render().view(view, "errors/not_found.html", json!({}))?;
+pub async fn not_found(
+    ViewEngine(view): ViewEngine<TeraView>,
+    MaybeUser(user): MaybeUser,
+) -> Result<Response> {
+    not_found_page(&view, user.as_ref())
+}
+
+fn not_found_page(view: &TeraView, user: Option<&auth::User>) -> Result<Response> {
+    let mut response = format::render().view(
+        view,
+        "errors/not_found.html",
+        json!({"user": user.map(user_json)}),
+    )?;
     *response.status_mut() = axum::http::StatusCode::NOT_FOUND;
     Ok(response)
 }

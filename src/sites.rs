@@ -4,7 +4,11 @@ use axum::{
     http::{header, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
 };
-use loco_rs::app::AppContext;
+use loco_rs::{
+    app::AppContext,
+    controller::views::{engines::TeraView, ViewRenderer},
+};
+use serde_json::json;
 
 use crate::{db, hosts::Host, import::policy::FileKind, paths, preview::respond, state::Pagehaven};
 
@@ -60,7 +64,7 @@ async fn serve_inner(
         .await
         .map_err(std::io::Error::other)?
     else {
-        return Ok(not_found(&state.settings));
+        return Ok(not_found(ctx));
     };
     let Some(path) = paths::from_request(uri_path) else {
         return Ok(respond(
@@ -95,32 +99,56 @@ async fn serve_inner(
     }
     match tokio::fs::read(root.join("404.html")).await {
         Ok(bytes) => Ok(respond(StatusCode::NOT_FOUND, FileKind::Html.mime(), bytes)),
-        Err(_) => Ok(respond(
-            StatusCode::NOT_FOUND,
-            "text/html; charset=utf-8",
-            page(PAGE_NOT_FOUND, &state.settings),
-        )),
+        Err(_) => Ok(missing_page(ctx)),
     }
 }
 
-pub fn not_found(settings: &crate::settings::Settings) -> Response {
+/// The two misses on a website host: no live website at all, or no such page on a live one.
+#[derive(Clone)]
+struct NotFoundPages {
+    site: String,
+    page: String,
+}
+
+/// Render once at startup; website hosts do not use the app's view extractors.
+pub fn initialize_not_found(ctx: &AppContext, view: &TeraView) -> loco_rs::Result<()> {
+    let state = Pagehaven::from(ctx);
+    let email = state.settings.abuse_email.as_deref().filter(|e| {
+        !e.is_empty()
+            && e.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b"@.-_+".contains(&b))
+    });
+    let render = |missing_page: bool| {
+        view.render(
+            "errors/site_not_found.html",
+            json!({"abuse_email": email, "missing_page": missing_page}),
+        )
+    };
+    ctx.shared_store.insert(NotFoundPages {
+        site: render(false)?,
+        page: render(true)?,
+    });
+    Ok(())
+}
+
+fn pages(ctx: &AppContext) -> NotFoundPages {
+    ctx.shared_store
+        .get::<NotFoundPages>()
+        .expect("site not-found pages are initialized with the view engine")
+}
+
+pub fn not_found(ctx: &AppContext) -> Response {
     respond(
         StatusCode::NOT_FOUND,
         "text/html; charset=utf-8",
-        page(SITE_NOT_FOUND, settings),
+        pages(ctx).site,
     )
 }
 
-/// Pagehaven's own page on a website host, with the address for reporting harmful websites.
-fn page(body: &str, settings: &crate::settings::Settings) -> String {
-    let report = settings
-        .abuse_email
-        .as_deref()
-        .filter(|e| !e.is_empty() && e.bytes().all(|b| b.is_ascii_alphanumeric() || b"@.-_+".contains(&b)))
-        .map(|e| format!("<p style=\"font-size:13px;color:#77746d\">Report a harmful website: <a href=\"mailto:{e}\">{e}</a></p>"))
-        .unwrap_or_default();
-    body.replace("</main>", &format!("{report}</main>"))
+fn missing_page(ctx: &AppContext) -> Response {
+    respond(
+        StatusCode::NOT_FOUND,
+        "text/html; charset=utf-8",
+        pages(ctx).page,
+    )
 }
-
-const PAGE_NOT_FOUND: &str = "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Page not found</title><body style=\"font:16px/1.5 system-ui,sans-serif;color:#2b2a27;background:#faf9f6;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"text-align:center\"><h1 style=\"font-size:22px\">Page not found</h1><p><a href=\"/\">Go to the home page</a></p></main>";
-const SITE_NOT_FOUND: &str = "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>No website here yet</title><body style=\"font:16px/1.5 system-ui,sans-serif;color:#2b2a27;background:#faf9f6;display:grid;place-items:center;min-height:100vh;margin:0\"><main style=\"text-align:center;max-width:28rem;padding:2rem\"><h1 style=\"font-size:22px\">No website here yet</h1><p>This address isn't connected to a published Pagehaven website.</p></main>";
