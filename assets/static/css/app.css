@@ -197,6 +197,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-kerning: normal;
+  font-synthesis: none; /* one upright Newsreader weight ships; never fake its bold or italic */
 }
 
 img, svg { display: block; max-width: 100%; }
@@ -241,7 +242,6 @@ code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 .t-label { font-size: var(--fs-label); line-height: var(--lh-label); font-weight: var(--fw-label); }
 .t-meta { font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-3); }
 .t-micro { font-size: var(--fs-micro); line-height: var(--lh-micro); font-weight: var(--fw-micro); letter-spacing: var(--ls-micro); }
-.t-overline { font-size: var(--fs-micro); line-height: var(--lh-micro); font-weight: var(--fw-micro); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); }
 
 /* Utilities */
 

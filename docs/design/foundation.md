@@ -30,6 +30,7 @@ The split costs the editor nothing. The browser downloads a face only when visib
 ## How the fonts load
 
 - Both files live in `assets/static/fonts/` with their SIL OFL 1.1 licence texts (`OFL-SchibstedGrotesk.txt`, `OFL-Newsreader.txt`). They come from the app's own origin, so the CSP stays `font-src 'self'`.
+- `body` sets `font-synthesis: none`. Only upright faces ship, so an `<em>` or a heavier weight renders upright at the shipped weight instead of a browser-faked slant or bold. To emphasise text, use weight within Schibsted's 400 to 700 range, or ask the owner to approve an italic file.
 - `layouts/base.html` preloads only the Schibsted file. Newsreader is small and off the editor path, so it loads on demand.
 - Both use `font-display: swap`. The fallback faces (`Schibsted Grotesk Fallback` on Arial or Liberation Sans, `Newsreader Fallback` on Times New Roman or Liberation Serif) carry `size-adjust` and ascent and descent overrides, so text keeps its width and line height when the web font arrives.
 - `scripts/design/build_fonts.sh` rebuilds both files from the upstream variable fonts and prints the fallback overrides through `scripts/design/fallback_metrics.py`. fontTools runs from a throwaway virtualenv. It is a build tool, not an app dependency.
