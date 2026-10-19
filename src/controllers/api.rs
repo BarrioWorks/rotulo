@@ -227,15 +227,16 @@ async fn create_import(
     }
     let kept = state.store.keep_archive(&archive, &pid, &archive_sha)?;
     let now = db::now();
+    let slug = projects::unique_slug(&ctx.db, user.id, &display_name).await?;
     let tx = ctx.db.begin().await?;
-    let slug = projects::unique_slug(&tx, user.id, &display_name).await?;
     projects::claim_slug(&tx, user.id, &slug).await?;
     let project_id = db::insert(
         &tx,
         "INSERT INTO projects (pid, user_id, name, slug, revision, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
         [pid.as_str().into(), user.id.into(), display_name.as_str().into(), slug.as_str().into(), now.into(), now.into()],
     )
-    .await?;
+    .await
+    .map_err(projects::slug_write_error)?;
     let content_bytes: u64 = site.files.iter().map(|f| f.bytes).sum();
     db::exec(
         &tx,
