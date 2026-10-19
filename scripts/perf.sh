@@ -31,7 +31,7 @@ for ZIP in "$@"; do
     publishes+=("${out#* }")
     files=$(python3 -I -c "import json,sys;print(json.load(open(sys.argv[1]))['release']['file_count'])" "$DIR/out")
     # Delete the project so the per-user project limit never interferes with the runs.
-    sqlite3 "$DIR/db.sqlite" "DELETE FROM projects WHERE pid = '$pid'"
+    sqlite3 "$DIR/db.sqlite" "PRAGMA foreign_keys = ON; DELETE FROM projects WHERE pid = '$pid'"
   done
   stats() { printf '%s\n' "$@" | sort -n | awk '{a[NR]=$1} END {printf "median %.0f ms, range %.0f to %.0f ms, n=%d", a[int((NR+1)/2)]*1000, a[1]*1000, a[NR]*1000, NR}'; }
   echo "$(basename "$ZIP") ($files files)"
@@ -40,3 +40,4 @@ for ZIP in "$@"; do
 done
 echo "after: $(rss)"
 echo "errors: $errors"
+[ "$errors" = 0 ] || grep -i error "$DIR/server.log" | tail -5
