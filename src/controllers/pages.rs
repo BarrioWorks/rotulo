@@ -217,6 +217,27 @@ pub async fn thumbnail(ctx: &AppContext, state: &Pagehaven, project_id: i64) -> 
     None
 }
 
+/// The address an owner types, without the scheme: "harbor.sites.example".
+fn site_host(origin: &str) -> String {
+    origin
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .to_owned()
+}
+
+/// "2000" becomes "2,000" for copy such as "up to 2,000 files".
+fn thousands(n: u64) -> String {
+    let digits = n.to_string();
+    let mut out = String::new();
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
+}
+
 async fn dashboard(
     State(ctx): State<AppContext>,
     ViewEngine(view): ViewEngine<TeraView>,
@@ -244,6 +265,7 @@ async fn dashboard(
             "updated_at": chrono::DateTime::from_timestamp(project.updated_at, 0).map(|t| t.to_rfc3339()),
             "updated_human": ago(project.updated_at),
             "site_url": state.settings.site_origin(&project.slug),
+            "site_host": site_host(&state.settings.site_origin(&project.slug)),
             "domains": domains.iter().filter(|d| d.status == "verified").map(|d| d.hostname.clone()).collect::<Vec<_>>(),
             "thumbnail_url": thumbnail(&ctx, &state, project.id).await,
             "page_count": pages,
@@ -268,7 +290,7 @@ async fn new_project(
         "projects/new.html",
         json!({
             "user": user_json(&user),
-            "limits": {"upload_mb": limits.upload_bytes / 1_048_576, "content_mb": limits.content_bytes / 1_048_576, "file_count": limits.file_count},
+            "limits": {"upload_mb": limits.upload_bytes / 1_048_576, "content_mb": limits.content_bytes / 1_048_576, "file_count": limits.file_count, "file_count_text": thousands(limits.file_count as u64)},
         }),
     )
 }
@@ -306,4 +328,21 @@ pub fn routes() -> Routes {
         .add("/projects", get(dashboard))
         .add("/projects/new", get(new_project))
         .add("/projects/{pid}", get(editor))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{site_host, thousands};
+
+    #[test]
+    fn copy_helpers() {
+        assert_eq!(thousands(2000), "2,000");
+        assert_eq!(thousands(999), "999");
+        assert_eq!(thousands(1_234_567), "1,234,567");
+        assert_eq!(
+            site_host("http://harbor.sites.localhost:5150"),
+            "harbor.sites.localhost:5150"
+        );
+        assert_eq!(site_host("https://harbor.example"), "harbor.example");
+    }
 }

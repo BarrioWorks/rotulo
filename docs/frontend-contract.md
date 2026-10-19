@@ -20,12 +20,12 @@ All pages extend `layouts/base.html`. Static files are under `/static/` (`assets
 | `auth/register.html` | `GET/POST /register` | `error: string?`, `name`, `email` (refill on error) |
 | `auth/login.html` | `GET/POST /login` | `error: string?`, `email` |
 | `projects/index.html` | `GET /projects` | `user {name, email}`, `projects: [Project]`, `can_create: bool`, `limit: int` |
-| `projects/new.html` | `GET /projects/new` | `user`, `limits {upload_mb, content_mb, file_count}` |
+| `projects/new.html` | `GET /projects/new` | `user`, `limits {upload_mb, content_mb, file_count, file_count_text}` (`file_count_text` is the count written for people, "2,000") |
 | `projects/editor.html` | `GET /projects/{pid}` | `user`, `project {pid, name}` |
 | `errors/not_found.html` | 404 on the app host | `{}` |
 | `errors/site_not_found.html` | unknown site host or no live release | `{}` (no app styles, it is served on the user-content host) |
 
-`Project` in the dashboard: `{pid, name, slug, status: "draft"|"published"|"changes"|"offline", updated_at (ISO 8601), updated_human ("5 minutes ago"), site_url (string, always the managed address, even before publishing), live: bool, domains: [hostname], thumbnail_url: string?, page_count}`. `thumbnail_url` is an image on the preview host. Use it in `<img>` only.
+`Project` in the dashboard: `{pid, name, slug, status: "draft"|"published"|"changes"|"offline", updated_at (ISO 8601), updated_human ("5 minutes ago"), site_url (string, always the managed address, even before publishing), site_host (site_url without the scheme, for display), live: bool, domains: [hostname], thumbnail_url: string?, page_count}`. `thumbnail_url` is an image on the preview host. Use it in `<img>` only.
 
 `status` is `draft` before the first release, `published` when the draft matches the live release, `changes` when it differs from the live release, or `offline` when suspended or taken offline after having a release. `live` is false while suspended. Status uses database metadata comparisons, without reading file bodies. There is no project-list JSON endpoint.
 
