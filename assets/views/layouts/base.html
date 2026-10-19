@@ -8,6 +8,7 @@
   <title>{% block title %}Pagehaven{% endblock title %}</title>
   <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/app.css">
+  {% block styles %}<link rel="stylesheet" href="/static/css/screens.css">{% endblock styles %}
   <script type="module" src="/static/js/app.js"></script>
   {% block head %}{% endblock head %}
 </head>
