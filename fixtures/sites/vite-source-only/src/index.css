@@ -1,0 +1,38 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #0b3140;
+  background: #f2fbfd;
+}
+
+body {
+  margin: 0;
+}
+
+.hero {
+  padding: 96px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, #bdeaf3, #f2fbfd);
+}
+
+.button {
+  display: inline-block;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: #0e7490;
+  color: white;
+  text-decoration: none;
+}
+
+.classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 64px 24px;
+}
+
+.ages {
+  color: #0e7490;
+  font-weight: 600;
+}
