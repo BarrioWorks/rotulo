@@ -1641,7 +1641,7 @@ mod tests {
         let html = doc.serialize();
         assert!(
             html.contains(
-                r#"<head><script src="/__pagehaven/agent.js" data-pagehaven="agent"></script>"#
+                r#"<head><script type="module" src="/__pagehaven/agent.js" data-pagehaven="agent"></script>"#
             ),
             "{html}"
         );
