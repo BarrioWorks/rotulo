@@ -711,3 +711,21 @@ fn a_symlink_is_named_as_a_shortcut_in_the_message() {
         .unwrap_err();
     assert!(error.to_string().contains("shortcut"), "{error}");
 }
+#[test]
+fn a_page_built_by_javascript_imports_with_a_warning() {
+    let spa = Fixture::new(&[
+        Item::new(
+            "index.html",
+            r#"<title>App</title><div id="root"></div><noscript>Enable JavaScript</noscript><script type="module" src="app.js"></script>"#,
+        ),
+        Item::new("app.js", "document.body.append('hi')"),
+    ])
+    .import(&Limits::default(), None)
+    .unwrap();
+    assert_eq!(spa.report.warnings.len(), 1);
+    assert!(spa.report.warnings[0].contains("JavaScript"));
+    let written = Fixture::new(&[page(), Item::new("a.js", "1")])
+        .import(&Limits::default(), None)
+        .unwrap();
+    assert!(written.report.warnings.is_empty());
+}

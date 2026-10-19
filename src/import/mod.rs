@@ -174,6 +174,9 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
                 document.assign_ids();
                 if path == "index.html" {
                     title = document.title();
+                    if document.is_built_by_script() {
+                        report.warnings.push("This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.".to_owned());
+                    }
                 }
                 let html = document.serialize();
                 // Serialization is bounded too: assigning IDs can enlarge the page.

@@ -714,6 +714,27 @@ impl Document {
         (!text.is_empty()).then_some(text)
     }
 
+    /// True when the body shows no text of its own and runs a script, as a single-page app does.
+    pub fn is_built_by_script(&self) -> bool {
+        let Some(body) = self.body().and_then(|b| self.html.tree.get(b)) else {
+            return false;
+        };
+        let hidden = |n: ego_tree::NodeRef<'_, Node>| {
+            n.ancestors().any(|a| {
+                a.value().as_element().is_some_and(|e| {
+                    matches!(e.name(), "script" | "noscript" | "style" | "template")
+                })
+            })
+        };
+        let has_script = body
+            .descendants()
+            .any(|n| n.value().as_element().is_some_and(|e| e.name() == "script"));
+        let has_text = body
+            .descendants()
+            .any(|n| n.value().as_text().is_some_and(|t| !t.trim().is_empty()) && !hidden(n));
+        has_script && !has_text
+    }
+
     pub fn description(&self) -> Option<String> {
         let head = self.head()?;
         self.html.tree.get(head)?.children().find_map(|c| {
