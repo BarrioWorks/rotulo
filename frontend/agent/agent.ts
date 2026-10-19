@@ -28,7 +28,7 @@ interface Editing {
   range: Range | null;
 }
 
-const ACCENT = "#2f5ce0";
+const ACCENT = "#0A86D6";
 const appOrigin = typeof PAGEHAVEN_APP_ORIGIN === "string" ? PAGEHAVEN_APP_ORIGIN : "";
 const parentWindow = window.parent;
 
@@ -53,12 +53,12 @@ sheet.replaceSync(`
   :host { all: initial; }
   .box { position: fixed; box-sizing: border-box; pointer-events: none; border-radius: 3px; transition: top 60ms linear, left 60ms linear, width 60ms linear, height 60ms linear; }
   .hover { border: 1.5px solid ${ACCENT}99; }
-  .hover.blocked { border-style: dashed; border-color: #8a857b; }
+  .hover.blocked { border-style: dashed; border-color: #8C8B85; }
   .select { border: 2px solid ${ACCENT}; box-shadow: 0 0 0 4px ${ACCENT}1f; }
   .select.editing { border-color: ${ACCENT}; box-shadow: 0 0 0 4px ${ACCENT}33; background: transparent; }
-  .blocked-box { border: 2px dashed #8a857b; background: rgba(138, 133, 123, 0.08); }
-  .hidden-veil { background: repeating-linear-gradient(135deg, rgba(248, 247, 244, 0.72) 0 10px, rgba(240, 238, 233, 0.78) 10px 20px); border: 1px dashed #b5afa4; border-radius: 0; transition: none; }
-  .badge { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #22201c; color: #fff; font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; letter-spacing: 0; }
+  .blocked-box { border: 2px dashed #8C8B85; background: rgba(140, 139, 133, 0.08); }
+  .hidden-veil { background: repeating-linear-gradient(135deg, rgba(244, 243, 239, 0.72) 0 10px, rgba(233, 232, 227, 0.78) 10px 20px); border: 1px dashed #8C8B85; border-radius: 0; transition: none; }
+  .badge { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 3px; background: #16161A; color: #fff; font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; letter-spacing: 0; }
 `);
 shadow.adoptedStyleSheets = [sheet];
 for (const [prop, value] of [
