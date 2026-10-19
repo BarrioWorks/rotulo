@@ -2,91 +2,133 @@
 {% block title %}Your websites · Pagehaven{% endblock title %}
 {% block body %}
 {% include "partials/app_header.html" %}
-<main id="main" class="page">
-  {% if projects | length > 0 %}
+<main id="main" class="page dash">
+  {% set count = projects | length %}
   <div class="page-head">
     <div>
       <h1>Your websites</h1>
-      <p>{{ projects | length }} {% if projects | length == 1 %}website{% else %}websites{% endif %}. Click one to edit it.</p>
+      {% if count > 0 %}
+      <p>{{ count }} of {{ limit }} websites. Open one to change it.</p>
+      {% endif %}
     </div>
-    {% if can_create %}
+    {% if can_create and count > 0 %}
     <a class="btn btn-primary btn-lg" href="/projects/new">
       <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-      Import website
+      Import a website
     </a>
-    {% else %}
-    <span class="btn btn-primary btn-lg" aria-disabled="true">Import website</span>
     {% endif %}
   </div>
 
   {% if not can_create %}
-  <div class="alert alert-info limit-note page-limit" role="note">
+  <div class="alert alert-warn limit-note" role="note">
     <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-info"/></svg>
-    <span>You have reached the limit of {{ limit }} websites for your account.</span>
+    <p>You have {{ limit }} websites, the most one account can hold. To import another, delete one you no longer need: open its <span class="nowrap"><svg class="icon icon-sm inline-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg> More</span> menu and choose Delete website.</p>
   </div>
   {% endif %}
 
+  {% if count > 0 %}
   <ul class="site-grid" role="list">
     {% for p in projects %}
-    <li class="card site-card">
-      <a class="site-thumb" href="/projects/{{ p.pid }}" data-tone="{{ p.name | length % 4 }}" tabindex="-1" aria-hidden="true">
+    <li class="site" data-site data-pid="{{ p.pid }}" data-name="{{ p.name }}" data-live="{% if p.live %}true{% else %}false{% endif %}" data-address="{{ p.site_host }}">
+      <div class="site-thumb" data-tone="{{ p.name | length % 4 }}">
         {% if p.thumbnail_url %}
         <img src="{{ p.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-thumb>
         {% endif %}
         <div class="placeholder-thumb"{% if p.thumbnail_url %} hidden{% endif %}><span>{% if p.name %}{{ p.name[0] | upper }}{% else %}W{% endif %}</span></div>
-      </a>
-      <div class="site-body">
-        <div class="row-between">
-          <a class="site-title truncate" href="/projects/{{ p.pid }}">{{ p.name }}</a>
-          {% if p.status == "published" %}<span class="pill pill-published">Published</span>{% elif p.status == "changes" %}<span class="pill pill-changes">Unpublished changes</span>{% elif p.status == "offline" %}<span class="pill pill-offline">Offline</span>{% else %}<span class="pill pill-draft">Draft</span>{% endif %}
+      </div>
+      <div class="site-caption">
+        <div class="site-head">
+          <h2 class="site-name"><a class="site-link" href="/projects/{{ p.pid }}">{{ p.name }}<span class="visually-hidden">, open in the editor</span></a></h2>
+          <details class="site-more" data-menu>
+            <summary class="btn btn-ghost btn-icon btn-sm" aria-label="More for {{ p.name }}" title="More">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg>
+            </summary>
+            <div class="menu">
+              {% if p.live %}
+              <a class="menu-item" href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
+                View website<span class="visually-hidden"> (opens in a new tab)</span>
+              </a>
+              {% endif %}
+              <a class="menu-item" href="/projects/{{ p.pid }}">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit"/></svg>
+                Open editor
+              </a>
+              <div class="menu-sep" data-delete-only hidden></div>
+              <button class="menu-item danger" type="button" data-delete data-delete-only hidden>
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-remove"/></svg>
+                Delete website…
+              </button>
+            </div>
+          </details>
         </div>
-        <div class="site-meta">
-          <time datetime="{{ p.updated_at }}">Edited {{ p.updated_human }}</time> · {{ p.page_count }} {% if p.page_count == 1 %}page{% else %}pages{% endif %}
-        </div>
+        <p class="site-state">
+          {% if p.status == "published" %}<span class="pill pill-published">Published</span>{% elif p.status == "changes" %}<span class="pill pill-changes">Changes not published</span>{% elif p.status == "offline" %}<span class="pill pill-offline">Offline</span>{% else %}<span class="pill pill-draft">Not published yet</span>{% endif %}
+          <span class="site-meta"><time datetime="{{ p.updated_at }}">Edited {{ p.updated_human }}</time> · {{ p.page_count }} {% if p.page_count == 1 %}page{% else %}pages{% endif %}</span>
+        </p>
         {% if p.live or p.domains | length > 0 %}
-        <div class="site-links">
+        <ul class="site-links" role="list">
           {% if p.live %}
-          <a href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
+          <li><a href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
             <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-domain"/></svg>
-            <span>{{ p.site_url | replace(from="https://", to="") | replace(from="http://", to="") }}</span>
-          </a>
+            <span>{{ p.site_host }}</span><span class="visually-hidden"> (opens in a new tab)</span>
+          </a></li>
           {% endif %}
           {% for d in p.domains %}
-          <a href="https://{{ d }}" target="_blank" rel="noopener noreferrer">
+          <li><a href="https://{{ d }}" target="_blank" rel="noopener noreferrer">
             <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-link"/></svg>
-            <span>{{ d }}</span>
-          </a>
+            <span>{{ d }}</span><span class="visually-hidden"> (opens in a new tab)</span>
+          </a></li>
           {% endfor %}
-        </div>
+        </ul>
+        {% elif p.status == "offline" %}
+        <p class="site-note">Visitors can't see this website right now.</p>
         {% endif %}
-        <div class="site-actions">
-          <a class="btn btn-secondary btn-sm" href="/projects/{{ p.pid }}">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit"/></svg>
-            Edit
-          </a>
-          {% if p.live %}
-          <a class="btn btn-ghost btn-sm" href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
-            View website
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
-          </a>
-          {% endif %}
-        </div>
       </div>
     </li>
     {% endfor %}
   </ul>
+
+  <dialog class="modal delete-dialog" data-delete-dialog aria-labelledby="delete-title" aria-describedby="delete-consequence">
+    <form method="dialog" data-delete-form novalidate>
+      <div class="modal-body">
+        <h2 id="delete-title">Delete <span data-delete-name></span>?</h2>
+        <div id="delete-consequence">
+          <p class="delete-warning" data-delete-live>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
+            <span><strong data-delete-address></strong> goes offline right away. Visitors will see a "No website here yet" page.</span>
+          </p>
+          <p>Its pages, pictures and every saved version are deleted too. You can't undo this.</p>
+        </div>
+        <div class="field">
+          <label class="label" for="delete-confirm">To confirm, type <strong data-delete-name></strong></label>
+          <input class="input" id="delete-confirm" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200" data-delete-input aria-describedby="delete-error">
+          <p class="field-error" id="delete-error" data-delete-error hidden></p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-delete-cancel>Keep website</button>
+        <button class="btn btn-danger" type="submit" data-delete-submit>Delete website</button>
+      </div>
+    </form>
+  </dialog>
   {% else %}
-  <section class="empty">
-    <h2>Bring in your first website</h2>
-    <p>Export your website as a ZIP from Lovable, Bolt, v0, Claude or any other tool, and import it here. You can then edit it and publish it.</p>
-    {% if can_create %}
-    <a class="btn btn-primary btn-lg" href="/projects/new">
-      <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-      Import website
-    </a>
-    {% else %}
-    <p class="small subtle">You have reached the limit of {{ limit }} websites for your account.</p>
-    {% endif %}
+  <section class="first-run" aria-labelledby="first-run-title">
+    <div class="first-run-sheet crop">
+      <h2 id="first-run-title">Your first website goes here</h2>
+      <ol class="first-run-steps">
+        <li><span><strong>Get a ZIP of your website</strong> from the tool or person that made it.</span></li>
+        <li><span><strong>Import it here.</strong> Pagehaven checks every file. Nothing goes online yet.</span></li>
+        <li><span><strong>Click any text or picture to change it,</strong> then publish when you're happy.</span></li>
+      </ol>
+      {% if can_create %}
+      <a class="btn btn-primary btn-lg" href="/projects/new">
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
+        Import a website
+      </a>
+      {% endif %}
+    </div>
+    {% include "partials/export_help.html" %}
   </section>
   {% endif %}
 </main>

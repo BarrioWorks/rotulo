@@ -185,7 +185,7 @@ async fn dashboard_distinguishes_draft_published_changes_and_offline() {
         assert!(get(&server, "/projects", &cookie)
             .await
             .text()
-            .contains(&badge("Draft")));
+            .contains(&badge("Not published yet")));
         p.publish(&server, &cookie).await;
         assert!(get(&server, "/projects", &cookie)
             .await
@@ -202,7 +202,7 @@ async fn dashboard_distinguishes_draft_published_changes_and_offline() {
         assert!(get(&server, "/projects", &cookie)
             .await
             .text()
-            .contains(&badge("Unpublished changes")));
+            .contains(&badge("Changes not published")));
         p.change(&server, &cookie, "undo", json!({})).await;
         assert!(get(&server, "/projects", &cookie)
             .await
