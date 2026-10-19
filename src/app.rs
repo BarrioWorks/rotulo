@@ -70,10 +70,14 @@ impl Hooks for App {
     }
 
     async fn after_routes(router: Router, ctx: &AppContext) -> Result<Router> {
-        Ok(router.layer(axum::middleware::from_fn_with_state(
-            ctx.clone(),
-            route_by_host,
-        )))
+        Ok(router
+            .fallback_service(
+                axum::routing::get(controllers::pages::not_found).with_state(ctx.clone()),
+            )
+            .layer(axum::middleware::from_fn_with_state(
+                ctx.clone(),
+                route_by_host,
+            )))
     }
 
     async fn connect_workers(_ctx: &AppContext, _queue: &Queue) -> Result<()> {

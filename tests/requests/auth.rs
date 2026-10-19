@@ -116,3 +116,31 @@ async fn home_shows_the_configured_sites_domain_without_a_port() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn unknown_app_urls_render_the_not_found_template_with_security_headers() {
+    request_with_create_db::<App, _, _>(|server, _ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        for cookie in ["", cookie.as_str()] {
+            let response = get(&server, "/nope", cookie).await;
+            response.assert_status_not_found();
+            response.assert_header("x-content-type-options", "nosniff");
+            assert!(response.headers().contains_key("content-security-policy"));
+            assert!(
+                response.text().contains("We couldn't find that page"),
+                "expected the app not-found heading, got {:?}",
+                response.text()
+            );
+        }
+        let preview = hosted(&server, "invalid.preview.localhost:5150", "/nope").await;
+        preview.assert_status_not_found();
+        assert!(!preview.text().contains("We couldn't find that page"));
+        let site = hosted(&server, "unknown.sites.localhost:5150", "/nope").await;
+        site.assert_status_not_found();
+        assert!(!site.text().contains("We couldn't find that page"));
+        let response = post(&server, "/nope", "").await;
+        assert!(matches!(response.status_code().as_u16(), 404 | 405));
+    })
+    .await;
+}
