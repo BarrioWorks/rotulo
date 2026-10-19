@@ -9,7 +9,7 @@ colors:
   surface-active: "#efede8"
   ink: "#1c1b18"
   ink-2: "#57534b"
-  ink-3: "#8a857b"
+  ink-3: "#6f6a61"
   line: "rgba(40, 34, 24, 0.09)"
   line-strong: "rgba(40, 34, 24, 0.16)"
   haven-blue: "#2f5ce0"
@@ -18,9 +18,9 @@ colors:
   haven-blue-soft: "#edf1fd"
   haven-blue-text: "#2448b8"
   on-accent: "#ffffff"
-  live-green: "#1d7f55"
+  live-green: "#18734c"
   live-green-soft: "#e6f4ec"
-  pending-amber: "#a5660d"
+  pending-amber: "#94590b"
   pending-amber-soft: "#fbf1df"
   alert-red: "#c63d32"
   alert-red-hover: "#ad3329"
@@ -196,7 +196,7 @@ A warm neutral world with a single confident blue and three quiet status colors.
 
 App pages center in a 1160 px column with 24 px gutters (16 px under 520 px). The import page narrows to 760 px. Auth pages center a 400 px card vertically. The landing page centers a 920 px hero and a three-column step row that stacks under 760 px.
 
-The editor is a CSS grid: a 284 px sidebar and the canvas, under a 56 px top bar split into the same 284 px left cell, a centered tool cluster and a right cluster with save status and Publish. The canvas sits 16 px inside a sunken backdrop. Under 900 px the editor is replaced by a "needs a bigger screen" message; under 1100 px the Edit and Preview labels collapse to icons.
+The editor is a CSS grid: a 248 px sidebar (`--side`) and the canvas, under a 56 px top bar split into the same left cell, a centered tool cluster and a right cluster (at least 372 px, so the centre never shifts when "View website" appears) with save status and Publish. The canvas sits 12 px inside a sunken backdrop. These numbers are load-bearing: at a 1280 px window they leave the owner's site 1008 px, past Bootstrap's 992 px desktop breakpoint, so the editor shows the same layout visitors see on a laptop. Under 900 px the editor is replaced by a "needs a bigger screen" message; under 1000 px the Edit and Preview labels collapse to icons.
 
 Spacing follows the 4 px based scale `s1` to `s10`. Groups are tight (6 to 8 px between label and input, 12 px between fields in the sidebar), sections separate at 24 to 32 px.
 
@@ -209,7 +209,8 @@ Depth is ambient and warm. Shadows are layered, low opacity and tinted with the 
 - **Resting card** (`0 1px 2px rgba(28,24,16,.05), 0 2px 6px rgba(28,24,16,.04)`): cards, selected segmented control.
 - **Raised** (`0 1px 2px rgba(28,24,16,.05), 0 6px 18px rgba(28,24,16,.07)`): card hover, the editor canvas.
 - **Floating** (`0 2px 4px rgba(28,24,16,.04), 0 12px 32px rgba(28,24,16,.1), 0 24px 64px rgba(28,24,16,.06)`): menus, dialogs, the floating toolbar, toasts.
-- **Focus ring** (`0 0 0 3px rgba(47,92,224,.28)`): every focusable control.
+- **Focus ring** (`0 0 0 2px surface, 0 0 0 4px haven-blue`): every focusable control. A white gap and a solid blue band, so it passes 3:1 on paper, white and blue buttons alike.
+- **Soft focus** (`0 0 0 3px rgba(47,92,224,.2)`): text inputs and the dropzone, where the blue border is already the indicator.
 
 ### Named Rules
 **The Paper-Not-Glass Rule.** Surfaces are opaque paper. The only blur is the sticky app header, so content scrolling under it stays legible.
@@ -227,6 +228,7 @@ Gently rounded rectangles throughout: 8 px for small controls and list rows, 10 
 - **Ghost:** transparent, Ink 2 text, warm 5 percent wash on hover; `aria-pressed` shows a 7 percent wash.
 - **Danger / Danger ghost:** Alert Red fill, or red text that gains a red mist on hover.
 - **Hover / Focus:** 120 ms color change; 0.5 px press; focus is the blue ring.
+- **Publish:** the top-bar Publish button is filled blue only while there are unpublished changes or nothing is live; once the live version matches the draft it rests as a secondary button. The sidebar Publish button is always secondary.
 
 ### Pills
 - **Style:** 22 px pill, 12 px semibold, colored dot. Draft is warm gray, Published is green, Pending is amber.
@@ -261,6 +263,8 @@ Dark warm ink pills at the bottom center, 13.5 px text, rising in over 180 ms. E
 - **Do** give every control hover, focus, pressed and disabled states, using the focus ring.
 - **Do** take icons from `/static/img/icons.svg` at 1.7 px stroke.
 - **Do** write labels in plain words: website, page, address, version, publish.
+- **Do** keep quiet text at Ink 3 or darker; it is the lightest gray that passes 4.5:1 on every surface.
+- **Do** theme the browser surfaces: text selection, caret and native control accents use Haven Blue.
 
 ### Don't:
 - **Don't** add a second accent hue or decorate with Haven Blue.
