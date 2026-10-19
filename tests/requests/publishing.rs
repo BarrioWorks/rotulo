@@ -306,11 +306,11 @@ async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_
             (p.site.as_str(), "/"),
         ] {
             let response = hosted(&server, host, path).await;
-            assert_site_miss(&response, &email);
+            assert_site_miss(&response, &email, "No website here yet");
         }
         p.publish(&server, &cookie).await;
         let response = hosted(&server, &p.site, "/missing.html").await;
-        assert_site_miss(&response, &email);
+        assert_site_miss(&response, &email, "Page not found");
         let head = server
             .method(axum::http::Method::HEAD, "/missing.html")
             .add_header("host", p.site.strip_prefix("http://").unwrap())
@@ -332,14 +332,14 @@ async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_
     .await;
 }
 
-fn assert_site_miss(response: &TestResponse, email: &str) {
+fn assert_site_miss(response: &TestResponse, email: &str, heading: &str) {
     response.assert_status_not_found();
     response.assert_header("content-type", "text/html; charset=utf-8");
     response.assert_header("x-content-type-options", "nosniff");
     response.assert_header("referrer-policy", "strict-origin-when-cross-origin");
     assert!(!response.headers().contains_key("set-cookie"));
     let html = response.text();
-    assert!(html.contains("<h1>No website here yet</h1>"));
+    assert!(html.contains(&format!("<h1>{heading}</h1>")), "{html}");
     assert!(
         html.contains("Hosted with Pagehaven"),
         "expected designed template footer, got {html:?}"

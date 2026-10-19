@@ -99,12 +99,16 @@ async fn serve_inner(
     }
     match tokio::fs::read(root.join("404.html")).await {
         Ok(bytes) => Ok(respond(StatusCode::NOT_FOUND, FileKind::Html.mime(), bytes)),
-        Err(_) => Ok(not_found(ctx)),
+        Err(_) => Ok(missing_page(ctx)),
     }
 }
 
+/// The two misses on a website host: no live website at all, or no such page on a live one.
 #[derive(Clone)]
-struct NotFoundPage(String);
+struct NotFoundPages {
+    site: String,
+    page: String,
+}
 
 /// Render once at startup; website hosts do not use the app's view extractors.
 pub fn initialize_not_found(ctx: &AppContext, view: &TeraView) -> loco_rs::Result<()> {
@@ -114,15 +118,37 @@ pub fn initialize_not_found(ctx: &AppContext, view: &TeraView) -> loco_rs::Resul
             && e.bytes()
                 .all(|b| b.is_ascii_alphanumeric() || b"@.-_+".contains(&b))
     });
-    let html = view.render("errors/site_not_found.html", json!({"abuse_email": email}))?;
-    ctx.shared_store.insert(NotFoundPage(html));
+    let render = |missing_page: bool| {
+        view.render(
+            "errors/site_not_found.html",
+            json!({"abuse_email": email, "missing_page": missing_page}),
+        )
+    };
+    ctx.shared_store.insert(NotFoundPages {
+        site: render(false)?,
+        page: render(true)?,
+    });
     Ok(())
 }
 
+fn pages(ctx: &AppContext) -> NotFoundPages {
+    ctx.shared_store
+        .get::<NotFoundPages>()
+        .expect("site not-found pages are initialized with the view engine")
+}
+
 pub fn not_found(ctx: &AppContext) -> Response {
-    let page = ctx
-        .shared_store
-        .get::<NotFoundPage>()
-        .expect("site not-found page is initialized with the view engine");
-    respond(StatusCode::NOT_FOUND, "text/html; charset=utf-8", page.0)
+    respond(
+        StatusCode::NOT_FOUND,
+        "text/html; charset=utf-8",
+        pages(ctx).site,
+    )
+}
+
+fn missing_page(ctx: &AppContext) -> Response {
+    respond(
+        StatusCode::NOT_FOUND,
+        "text/html; charset=utf-8",
+        pages(ctx).page,
+    )
 }
