@@ -114,7 +114,7 @@
     </button>
 
     <div class="canvas-foot">
-      <p class="canvas-hint" data-canvas-hint aria-live="polite"></p>
+      <p class="canvas-hint" data-canvas-hint><span data-canvas-hint-text></span> <button class="link-btn" type="button" data-show-editable>Show what I can edit</button></p>
 
     </div>
   </main>
@@ -166,7 +166,8 @@
     </div><div data-settings-content="pages" hidden><button class="btn btn-secondary" type="button" data-settings-pages>Manage pages</button><button class="btn btn-ghost" type="button" data-page-meta>Page title and description</button></div><div data-settings-content="assets" hidden><button class="btn btn-secondary" type="button" data-settings-images>Browse page images</button></div><div data-settings-content="publishing" hidden><button class="btn btn-primary" type="button" data-settings-publish>Review and publish</button></div><div data-settings-content="versions" hidden data-settings-versions></div>
     <section class="settings-group" data-settings-content="domains" hidden data-domain-section aria-labelledby="domain-title">
       <h3 class="settings-heading" id="domain-title">Your own domain</h3>
-      <p class="hint">Use an address you own, like www.yourbusiness.com.</p>
+      <p class="hint" data-domains-intro>Use an address you own, like www.yourbusiness.com.</p>
+      <p class="hint" data-domains-disabled hidden>Custom domains are disabled on this Pagehaven host. Your Pagehaven address still works.</p>
       <div class="domain-list" data-domain-list></div>
       <form class="domain-form" data-domain-form>
         <label class="visually-hidden" for="domain-input">Domain name</label>

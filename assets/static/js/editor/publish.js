@@ -34,6 +34,56 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
     const manageReview = document.querySelector("[data-manage-review]");
     const manageHistory = document.querySelector("[data-manage-history]");
     const manageAddress = document.querySelector("[data-manage-address]");
+    const liveSheet = h("section", { class: "live-sheet", attrs: { role: "dialog", "aria-labelledby": "live-sheet-title", tabindex: "-1" } });
+    liveSheet.hidden = true;
+    document.body.append(liveSheet);
+    function closeLive() {
+        if (liveSheet.hidden)
+            return;
+        liveSheet.hidden = true;
+        document.querySelector('[data-action="publish"]')?.focus({ preventScroll: true });
+    }
+    function placeLive() {
+        const island = document.querySelector(".ed-top-right")?.getBoundingClientRect();
+        const bounds = canvas.visibleBox();
+        const top = Math.max(bounds.y + 8, (island?.bottom ?? 52) + 8);
+        liveSheet.style.top = `${top}px`;
+        liveSheet.style.right = `${Math.max(8, window.innerWidth - (island?.right ?? window.innerWidth - 8))}px`;
+        liveSheet.style.maxHeight = `${Math.max(0, bounds.y + bounds.height - top - 8)}px`;
+    }
+    function showLive(count) {
+        const s = store.get();
+        const close = h("button", { class: "btn live-close", text: "Close", attrs: { type: "button", "aria-label": "Close live confirmation" } });
+        close.addEventListener("click", closeLive);
+        const copy = h("button", { class: "btn live-action", text: "Copy address", attrs: { type: "button" } });
+        copy.addEventListener("click", async () => {
+            if (await copyText(s.project.site_url)) {
+                copy.textContent = "Address copied";
+                announce("Address copied");
+            }
+        });
+        liveSheet.replaceChildren(close, h("h2", { text: `${s.project.name} is live.`, attrs: { id: "live-sheet-title" } }), h("p", { text: count ? `${plainList(count, "change", "changes")} published. Visitors see ${count === 1 ? "it" : "them"} now.` : "Your website is published. Visitors see it now." }), h("code", { class: "live-address", text: s.project.site_url }), h("div", { class: "live-actions" }, h("a", { class: "btn live-action", text: "View website", attrs: { href: s.project.site_url, target: "_blank", rel: "noopener noreferrer" } }), copy));
+        liveSheet.hidden = false;
+        placeLive();
+        liveSheet.focus({ preventScroll: true });
+        announce(`${s.project.name} is live. ${count ? plainList(count, "change", "changes") + " published. " : ""}Visitors see it now.`);
+    }
+    document.addEventListener("keydown", (event) => {
+        if (!liveSheet.hidden && event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            closeLive();
+        }
+    });
+    document.addEventListener("click", (event) => {
+        if (!liveSheet.hidden && event.target instanceof Node && !liveSheet.contains(event.target))
+            closeLive();
+    }, true);
+    // Pointer events inside the cross-origin canvas arrive through the existing selection state.
+    store.subscribe((s, prev) => { if (prev && s.focus !== prev.focus)
+        closeLive(); });
+    window.addEventListener("blur", () => { if (document.activeElement instanceof HTMLIFrameElement)
+        closeLive(); });
     let publishing = false;
     let publishError = null;
     let popTrigger = null;
@@ -74,7 +124,11 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         publicationFeedback("Publishing…");
         renderAll();
         let rejection = null;
-        const result = await change((base) => api.publish(pid(), base), {
+        let publishedCount = 0;
+        const result = await change((base) => {
+            publishedCount = store.get().changes.length;
+            return api.publish(pid(), base);
+        }, {
             toastRejection: false,
             onRejected: (e) => {
                 rejection = e;
@@ -98,8 +152,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         store.dispatch({ type: "project", project: { ...store.get().project, site_url: result.site_url } });
         closeReview();
         publicationFeedback(`Published at ${new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`);
-        announce(`Published. Visitors now see version ${result.release.number}.`);
-        toast(`Published. Visitors now see version ${result.release.number}.`, { action: { label: "View website", run: viewWebsite } });
+        showLive(publishedCount);
     }
     /* Review: what changes, where it is published, and the one button that does it */
     function review(s, where) {
@@ -124,9 +177,27 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         const title = (text) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title", tabindex: "-1" } : {} });
         const liveLine = live ? h("p", { class: "pub-meta", text: `Visitors see version ${live.number}, published ${dateTime(live.created_at).replace(/^Today/, "today").replace(/^Yesterday/, "yesterday")}.` }) : null;
         const addressRow = h("p", { class: "pub-address" }, icon("domain", "icon-sm"), h("a", { text: address, attrs: { href: s.project.site_url, target: "_blank", rel: "noopener noreferrer" } }));
-        const summary = changeSummary(s);
-        const changesList = summary.length > 0
-            ? h("ul", { class: "pub-changes", attrs: { "aria-label": "Changes that are not published" } }, ...summary.map((row) => h("li", {}, h("span", { class: "pub-page", text: row.page }), h("span", { class: "pub-labels", text: row.labels.join(", ") }))))
+        const changesList = s.changes.length > 0
+            ? h("ul", { class: "pub-changes", attrs: { "aria-label": "Changes that are not published" } }, ...s.changes.slice(-8).reverse().map((change) => {
+                const page = s.pages.find((p) => p.path === change.page);
+                const content = [h("span", { class: "pub-page", text: page ? pageLabel(page, s.project.name, s.pages) : change.page }), h("span", { class: "pub-labels", text: change.label })];
+                if (!change.element)
+                    return h("li", {}, ...content);
+                const element = change.element;
+                const row = h("button", { class: "pub-change", attrs: { type: "button", "aria-label": `${change.label} on ${page ? pageLabel(page, s.project.name, s.pages) : change.page}` } }, ...content);
+                row.addEventListener("click", () => {
+                    closeReview(false);
+                    store.dispatch({ type: "mode", mode: "edit" });
+                    if (store.get().path !== change.page || store.get().canvasLoading)
+                        canvas.open(change.page, element);
+                    else {
+                        canvas.send({ type: "select_element", element });
+                        canvas.send({ type: "reveal", element, pulse: true });
+                    }
+                    canvas.surface.focus({ preventScroll: true });
+                });
+                return h("li", {}, row);
+            }))
             : null;
         const more = s.changes.length > 8 ? h("p", { class: "pub-meta", text: `and ${s.changes.length - 8} more` }) : null;
         const publishButton = (label) => {
@@ -200,7 +271,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         const x = window.innerWidth - right - pop.offsetWidth;
         let height = bounds.y + bounds.height - top - 8;
         const s = store.get();
-        if (s.focus.kind === "selected") {
+        if (historySheet.hidden && s.focus.kind === "selected") {
             const selected = canvas.toApp(s.focus.selection.rect);
             const caption = document.querySelector("[data-toolbar].is-visible:not(.is-offscreen)");
             const avoid = [selected, ...(caption ? [caption.getBoundingClientRect()] : [])];
@@ -273,6 +344,8 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
     window.addEventListener("resize", () => {
         if (!pop.hidden)
             placeReview();
+        if (!liveSheet.hidden)
+            placeLive();
     });
     /* Version history */
     async function publishAgain(release) {
@@ -466,7 +539,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         domainError.hidden = true;
         domainInput.removeAttribute("aria-invalid");
         const hostname = domainInput.value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-        if (!hostname)
+        if (!hostname || !store.get().customDomains)
             return;
         try {
             const { domain } = await api.addDomain(pid(), hostname);
@@ -517,7 +590,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
             closeSettings();
         }
     });
-    must(settings, "[data-settings-shortcuts]").addEventListener("click", () => must(document, '[data-dialog="shortcuts"]').show());
+    must(settings, "[data-settings-shortcuts]").addEventListener("click", () => must(document, '[data-dialog="shortcuts"]').showModal());
     must(settings, "[data-settings-pages]").addEventListener("click", () => must(document, "[data-page-switcher]").click());
     must(settings, "[data-settings-images]").addEventListener("click", () => must(document, "[data-open-images]").click());
     must(settings, "[data-page-meta]").addEventListener("click", () => store.dispatch({ type: "open_panel", panel: "page" }));
@@ -532,8 +605,10 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
             closeReview(false);
         if (changed(s, prev, "project", "draftChanged", "changes", "releases", "saves", "pages"))
             renderAll();
-        if (!s.customDomains)
-            domainSection.hidden = true;
+        domainForm.hidden = !s.customDomains;
+        must(domainSection, "[data-domains-intro]").hidden = !s.customDomains;
+        must(domainSection, "[data-domains-disabled]").hidden = s.customDomains;
+        domainList.hidden = !s.customDomains;
         if (changed(s, prev, "domains", "dns"))
             domainList.replaceChildren(...(s.domains ?? []).map((d) => domainCard(d, s.dns)));
         if (changed(s, prev, "project")) {

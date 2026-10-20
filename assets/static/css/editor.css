@@ -484,3 +484,29 @@ dialog[data-dialog="page"][open] { z-index: 60; }
 @media (max-width: 899px), (pointer: coarse) {
   .studio-bottom .tb-btn[data-key="link"] > span { max-width: 84px; }
 }
+
+/* Discovery and publish outcomes stay over the canvas without moving its controls. */
+.canvas-hint { position: relative; white-space: normal; overflow: visible; max-width: calc(100vw - 32px); pointer-events: auto; }
+.canvas-hint [data-canvas-hint-text] { position: absolute; left: 0; bottom: calc(100% + 4px); width: max-content; max-width: calc(100vw - 32px); padding: 6px 10px; border-radius: 8px; background: var(--surface); }
+.canvas-hint [data-canvas-hint-text]:empty { display: none; }
+.canvas-hint button { min-height: 28px; }
+.pub-change { display: grid; gap: var(--s0); width: 100%; padding: 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; }
+.pub-change:hover { background: var(--select-soft); }
+.pub-change:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.studio-history .sheet-body { max-height: none; overflow: visible; }
+.ed-settings footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.dns-value { padding: 10px; max-height: 100px; overflow: auto; white-space: pre; overflow-wrap: anywhere; word-break: normal; border: 1px solid var(--rule); border-radius: var(--radius-control); }
+.dns-table { table-layout: fixed; width: 100%; }
+.live-sheet { position: fixed; z-index: 55; width: 380px; max-width: calc(100vw - 16px); padding: 24px; overflow: auto; border-radius: 14px; background: #3730BD; color: #fff; box-shadow: 0 12px 32px rgb(0 0 0 / 18%); animation: live-appear 200ms var(--ease-out); transform-origin: top right; }
+.live-sheet[hidden] { display: none; }
+.live-sheet h2 { margin: 12px 0; color: #fff; font-size: 24px; line-height: 1.2; letter-spacing: -0.03em; }
+.live-sheet p { margin: 0 0 20px; color: #fff; }
+.live-close { display: flex; margin-left: auto; }
+.live-sheet .btn { background: transparent; color: #fff; border: 1px solid #fff; }
+.live-sheet .btn:hover { background: rgb(255 255 255 / 15%); }
+.live-sheet :focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.live-address { display: block; padding: 12px 0; font-family: var(--font-mono); overflow-wrap: anywhere; color: #fff; }
+.live-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+@keyframes live-appear { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .live-sheet { animation: live-fade 160ms ease-out; } }
+@keyframes live-fade { from { opacity: 0; } to { opacity: 1; } }

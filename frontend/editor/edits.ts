@@ -105,6 +105,7 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     const element = "element" in edit ? edit.element : null;
     return change((base) => api.edit(store.get().project.pid, base, page, edit), {
       page,
+      element,
       recover: editRecovery,
       toastRejection: after.toastRejection ?? true,
       onRejected: (error) => {
