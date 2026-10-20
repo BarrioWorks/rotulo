@@ -13,7 +13,7 @@ npm ci                       # TypeScript compiler, the only npm dependency
 scripts/dev-server.sh        # builds and starts http://127.0.0.1:5150, data in /tmp/pagehaven-dev
 ```
 
-Open http://127.0.0.1:5150, sign up, and import `fixtures/zips/harbor-bakery.zip`. Draft previews run on `*.preview.localhost:5150` and published websites on `<address>.sites.localhost:5150`. Chrome and Firefox resolve `*.localhost` to this machine without any setup.
+Open http://127.0.0.1:5150, sign up, and import `fixtures/zips/startbootstrap-agency.zip` (a real Bootstrap template) or `fixtures/zips/landwind.zip` (Tailwind). Draft previews run on `*.preview.localhost:5150` and published websites on `<address>.sites.localhost:5150`. Chrome and Firefox resolve `*.localhost` to this machine without any setup.
 
 After changing TypeScript in `frontend/`, run `npm run build` and commit the output in `assets/static/js/`.
 
@@ -36,6 +36,7 @@ scripts/perf.sh 7 fixtures/zips/harbor-bakery.zip   # import and publish timings
 - `docs/threat-model.md`: threats and where each is handled and tested.
 - `docs/frontend-contract.md`: templates, JSON API, preview messages.
 - `docs/verification.md`: test results, security review, performance numbers, browser checks.
+- `docs/design/README.md`: the redesign: direction, type and icons, design system, before and after, accessibility. `DESIGN.md` holds the tokens and components.
 - `docs/demo-script.md`: the investor demonstration, step by step.
 - `docs/deployment.md`: deployment requirements and checklist.
 

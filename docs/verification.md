@@ -10,7 +10,7 @@ What was checked, how, and what is still open. Dates are 2026-10-19 and 2026-10-
 |---|---|---|
 | Rust unit tests | 80 | ZIP reader and hostile archives, file policy, reference resolution, the page editing model and its sanitizer, link and style validation, nesting depth, rate limiter bounds |
 | Rust request tests | 32 | Sign-up and sessions, CSRF, cross-user access, imports and limits, editing and stale tabs, preview isolation headers, publishing, rollback, operator takedown and reinstatement, custom domains and the TLS ask endpoint, deletion, 404 pages |
-| Frontend tests | 85 | Preview message parsing and caps, parent-side message gating, toolbar placement, canvas fit maths, status wording, save queue retries, dashboard and import logic, overlay colours matching the app's tokens |
+| Frontend tests | 94 | Preview message parsing and caps, parent-side message gating, toolbar placement, canvas fit maths, status wording, save queue retries, dashboard and import logic, overlay colours matching the app's tokens |
 
 `scripts/smoke.sh` drives the whole journey over HTTP against a running server: register, import, preview, edit, stale-tab refusal, publish, live site, no editor markup on the live site, stylesheet MIME type, undo, republish, rollback. It passes for `startbootstrap-agency.zip`, `landwind.zip` and `harbor-bakery.zip`.
 
@@ -55,7 +55,7 @@ All in Chromium through the T3 Code preview browser. Reports: `docs/demo-qa.md` 
 - A replaced portfolio photo keeps the card's original 4:3 frame after publishing.
 - The source-only ZIP shows the exact required message.
 - Keyboard-only editing, visible focus, the 640 px layout (1280 px at 200% zoom), the dashboard delete flow and the console were checked. Reduced motion was checked by reading the CSS only.
-- Final-QA problems still being fixed at the time of writing are listed in `docs/demo-qa.md`.
+- The problems the final QA run found were fixed and re-checked in the browser; see "Fixed after this run" in `docs/demo-qa.md`.
 
 ## Not verified
 

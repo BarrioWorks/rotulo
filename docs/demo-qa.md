@@ -102,3 +102,18 @@ Ordered by how much they would hurt the investor demo.
 - Custom domain verification against real DNS (pending is the expected outcome locally).
 - Console output for the import page after an upload, and for the published site in its own tab.
 - Multiple tabs editing the same site ("Changed in another tab").
+
+## Fixed after this run
+
+Each was reproduced in the browser, fixed, and checked again (screenshots `docs/design/screens/final/fix-*.png`):
+
+- The toolbar fits inside the phone frame and the canvas: actions that don't fit move into More instead of spilling or clipping.
+- Edit text selects the existing words of headings, buttons and short text, so typing replaces them.
+- The status line keeps "Saved" next to the publication state ("Saved · Not published yet").
+- The image panel shows the restored picture's size after Undo.
+- "Change the main heading" failed after a rollback when the preview address rotated in between; each canvas frame now keeps the address it was loaded from.
+- The section toolbar no longer says "Section" twice, warning toasts use the warning icon, the Images list shows folders, and the sidebar no longer jumps when Start here closes.
+- After a text edit, a pointer resting on the canvas caused 60 viewport messages a second and a toolbar flipping between two places; the page now reports only changes (measured: 60 a second before, none after).
+- The demo uses a real CC0 studio photo for the banner, and the script uses the product's rollback wording.
+
+Still open: undo reloads the page behind the scenes (no flash; scroll and selection kept); Esc on Version history also clears the selection; on a section selected from the bottom of the hero, the toolbar partly covers its label.
