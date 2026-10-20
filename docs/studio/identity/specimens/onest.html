@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Onest specimen</title>
+<link rel="stylesheet" href="../tokens.css"><link rel="stylesheet" href="../studio.css">
+<style>@font-face { font-family: "Onest Spec"; src: url(/fonts/onest-latin.woff2) format("woff2"); font-weight: 100 900; font-display: block; }
+
+section, .face { font-family: var(--font-ui); }
+body { background: var(--ws-ground); width: 1280px; }
+.head { display: flex; align-items: baseline; gap: 16px; padding: 18px 24px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.head h1 { margin: 0; font: 600 22px/1.2 var(--font-ui); letter-spacing: -0.015em; }
+.head p { margin: 0; font: 400 12px/1.4 var(--font-ui); color: var(--ink-3); }
+.head a { color: var(--accent); }
+.stage { position: relative; height: 560px; background: #222 url(/img/replacement-banner.jpg) center/cover; }
+.stage.light { height: 300px; background: #FFF; }
+.fake { position: absolute; left: 120px; right: 120px; top: 120px; display: grid; gap: 14px; }
+.fake i { display: block; height: 14px; border-radius: 3px; background: #ECECEF; }
+.fake i:first-child { width: 60%; height: 38px; background: #1F2937; }
+.bar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+.bar .right { display: flex; gap: 8px; }
+.switcher { position: absolute; top: 64px; left: 12px; }
+.settings { position: absolute; top: 76px; right: 24px; }
+.ladder { padding: 16px 24px 24px; display: grid; gap: 10px; background: #FFF; }
+.lad { display: grid; grid-template-columns: 110px auto 1fr; align-items: center; gap: 20px; }
+.lad .px { font: 500 11px/1 ui-monospace, monospace; color: var(--ink-3); }
+.lad .chip { display: inline-flex; align-items: center; height: auto; min-height: 28px; padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+.metrics { font: 400 12px/1.4 var(--font-ui); color: var(--ink-2); }
+</style></head>
+<body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="undo-2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /> <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" /></symbol><symbol id="redo-2" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5" /> <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13" /></symbol><symbol id="monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" /> <line x1="8" x2="16" y1="21" y2="21" /> <line x1="12" x2="12" y1="17" y2="21" /></symbol><symbol id="smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol><symbol id="chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol><symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="M12 5v14" /></symbol><symbol id="ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></symbol><symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol><symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="image-up" viewBox="0 0 24 24"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21" /> <path d="m14 19.5 3-3 3 3" /> <path d="M17 22v-5.5" /> <circle cx="9" cy="9" r="2" /></symbol><symbol id="circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /> <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol><symbol id="type" viewBox="0 0 24 24"><path d="M12 4v16" /> <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" /> <path d="M9 20h6" /></symbol><symbol id="pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /> <circle cx="12" cy="12" r="3" /></symbol></svg><div class="face" style="--font-ui: 'Onest Spec', system-ui"><div class="head"><h1>Onest</h1><p>Dmitri Voloshin for Simpals · SIL Open Font License 1.1 (<a href="https://github.com/simpals/onest/blob/main/OFL.txt">licence</a>) · latin variable woff2 33.8 KB</p>
+<p class="metrics" data-metrics="Onest Spec"></p></div>
+<div class="stage">
+<div class="bar">
+  <div class="capsule glass-2"><button class="tb-btn crumb"><span class="site">Agency</span><span class="slash">/</span><span class="page">Home</span><svg class="icon icon-16" aria-hidden="true"><use href="#chevron-down"/></svg></button></div>
+  <div class="capsule glass-2">
+    <button class="tb-btn icon-only" aria-label="Undo"><svg class="icon " aria-hidden="true"><use href="#undo-2"/></svg></button><button class="tb-btn icon-only" aria-label="Redo" disabled><svg class="icon " aria-hidden="true"><use href="#redo-2"/></svg></button>
+    <span class="tb-sep"></span>
+    <div class="seg"><button aria-pressed="true">Edit</button><button aria-pressed="false">Preview</button></div>
+    <span class="tb-sep"></span>
+    <div class="seg icons"><button aria-pressed="true" aria-label="Computer"><svg class="icon " aria-hidden="true"><use href="#monitor"/></svg></button><button aria-pressed="false" aria-label="Phone"><svg class="icon " aria-hidden="true"><use href="#smartphone"/></svg></button></div>
+  </div>
+  <div class="right">
+    <div class="capsule glass-2"><button class="tb-btn icon-only" aria-label="Website settings"><svg class="icon " aria-hidden="true"><use href="#settings"/></svg></button></div>
+    <div class="capsule glass-2"><span class="status"><span class="dot"></span>Saved · <b>2 changes</b> not published</span><button class="btn-publish">Publish</button></div>
+  </div>
+</div>
+<div class="panel glass-2 switcher">
+  <div class="search"><svg class="icon icon-16" aria-hidden="true"><use href="#search"/></svg>Find a page<kbd>Ctrl K</kbd></div>
+  <div class="row tall is-current"><span class="thumb" style="background-image:url(/img/replacement-banner.jpg)"></span><span class="grow">Home<span class="row-meta">Edited 2 hours ago</span></span><svg class="icon check" aria-hidden="true"><use href="#check"/></svg></div>
+  <div class="row tall is-hover"><span class="thumb"></span><span class="grow">Services<span class="row-meta">Edited yesterday</span></span><svg class="icon icon-16" aria-hidden="true"><use href="#ellipsis"/></svg></div>
+  <div class="row tall"><span class="thumb"></span><span class="grow">Portfolio<span class="row-meta">12 pictures</span></span></div>
+  <div class="row tall"><span class="thumb"></span><span class="grow">About us<span class="row-meta">Edited 3 Oct</span></span></div>
+  <hr>
+  <div class="row add"><svg class="icon icon-16" aria-hidden="true"><use href="#plus"/></svg>Add a page</div>
+</div>
+<div class="sheet glass-3 settings">
+  <h2>Website settings</h2>
+  <p class="lead">Changes here apply to every page.</p>
+  <div class="tabs"><span class="on">General</span><span>Pages</span><span>Domains</span><span>Versions</span></div>
+  <div class="field"><label>Website name</label><div class="input focus">Agency</div><span class="hint">Shown in the browser tab and in search results.</span></div>
+  <div class="switch-row"><span class="grow"><b style="font-weight:500;font-size:var(--fs-control)">Show in search engines</b><span class="hint">Google and Bing can list this website.</span></span><span class="switch"></span></div>
+</div></div>
+<div class="stage light"><div class="fake"><i></i><i></i><i style="width:80%"></i><i style="width:70%"></i></div>
+<div class="bar">
+  <div class="capsule glass-2"><button class="tb-btn crumb"><span class="site">Agency</span><span class="slash">/</span><span class="page">Home</span><svg class="icon icon-16" aria-hidden="true"><use href="#chevron-down"/></svg></button></div>
+  <div class="capsule glass-2">
+    <button class="tb-btn icon-only" aria-label="Undo"><svg class="icon " aria-hidden="true"><use href="#undo-2"/></svg></button><button class="tb-btn icon-only" aria-label="Redo" disabled><svg class="icon " aria-hidden="true"><use href="#redo-2"/></svg></button>
+    <span class="tb-sep"></span>
+    <div class="seg"><button aria-pressed="true">Edit</button><button aria-pressed="false">Preview</button></div>
+    <span class="tb-sep"></span>
+    <div class="seg icons"><button aria-pressed="true" aria-label="Computer"><svg class="icon " aria-hidden="true"><use href="#monitor"/></svg></button><button aria-pressed="false" aria-label="Phone"><svg class="icon " aria-hidden="true"><use href="#smartphone"/></svg></button></div>
+  </div>
+  <div class="right">
+    <div class="capsule glass-2"><button class="tb-btn icon-only" aria-label="Website settings"><svg class="icon " aria-hidden="true"><use href="#settings"/></svg></button></div>
+    <div class="capsule glass-2"><span class="status"><span class="dot"></span>Saved · <b>2 changes</b> not published</span><button class="btn-publish">Publish</button></div>
+  </div>
+</div></div>
+<div class="ladder"><div class="lad"><span class="px">11 px · 500</span>
+          <span class="chip glass-2" style="font-size:11px;font-weight:500">Saved · 2 changes not published</span>
+          <span style="font-size:11px;font-weight:500">Il1 0O rn m g 1280 × 800 · 125%</span></div>
+<div class="lad"><span class="px">12 px · 400</span>
+          <span class="chip glass-2" style="font-size:12px;font-weight:400">Saved · 2 changes not published</span>
+          <span style="font-size:12px;font-weight:400">Il1 0O rn m g 1280 × 800 · 125%</span></div>
+<div class="lad"><span class="px">13 px · 500</span>
+          <span class="chip glass-2" style="font-size:13px;font-weight:500">Saved · 2 changes not published</span>
+          <span style="font-size:13px;font-weight:500">Il1 0O rn m g 1280 × 800 · 125%</span></div>
+<div class="lad"><span class="px">15 px · 400</span>
+          <span class="chip glass-2" style="font-size:15px;font-weight:400">Saved · 2 changes not published</span>
+          <span style="font-size:15px;font-weight:400">Il1 0O rn m g 1280 × 800 · 125%</span></div>
+<div class="lad"><span class="px">22 px · 600</span>
+          <span class="chip glass-2" style="font-size:22px;font-weight:600">Saved · 2 changes not published</span>
+          <span style="font-size:22px;font-weight:600">Il1 0O rn m g 1280 × 800 · 125%</span></div></div></div><script>
+document.fonts.ready.then(() => {
+  const c = document.createElement("canvas").getContext("2d");
+  for (const el of document.querySelectorAll("[data-metrics]")) {
+    const fam = el.dataset.metrics;
+    c.font = `500 100px "${fam}"`;
+    const x = c.measureText("x").actualBoundingBoxAscent, H = c.measureText("H").actualBoundingBoxAscent;
+    c.font = `500 13px "${fam}"`;
+    const w = c.measureText("Saved · 2 changes not published").width;
+    el.textContent = `x-height ${(x / 100).toFixed(3)} em · cap ${(H / 100).toFixed(3)} em · x/cap ${(x / H).toFixed(2)} · status line at 13 px/500: ${w.toFixed(0)} px wide · loaded: ${document.fonts.check(`500 13px "${fam}"`)}`;
+  }
+});
+</script></body></html>

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pagehaven Studio identity board</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="studio.css">
+<style>
+@font-face { font-family: "Onest"; src: url(/fonts/onest-latin.woff2) format("woff2"); font-weight: 100 900; font-display: block; }
+body { width: 1280px; background: var(--ws-ground); }
+
+/* In situ: the owner's site edge to edge, chrome floating over it */
+.situ { position: relative; height: 760px; overflow: hidden; background: #FFF; }
+.situ iframe, .situ .photo { position: absolute; left: 0; width: 1280px; height: 2400px; border: 0; }
+.situ .photo { height: 760px; top: 0; background: center/cover; }
+.bar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; }
+.bar .right { display: flex; gap: 8px; }
+.switcher { position: absolute; top: 64px; left: 12px; z-index: 2; }
+.situ .tip { position: absolute; top: 66px; left: 524px; z-index: 2; }
+.fit { position: absolute; right: 12px; bottom: 12px; z-index: 2; }
+.fit .capsule { height: 36px; padding: 2px; }
+.fit .tb-btn { height: 32px; min-width: 32px; }
+.toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 2; display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px 0 14px; border-radius: var(--r-capsule); background: var(--tip); color: var(--on-tip); font: 500 var(--fs-control)/1 var(--font-ui); box-shadow: 0 8px 24px -6px rgba(17, 17, 28, 0.4); }
+.toast .icon { color: #7FD6A4; }
+.toast a { color: #FFF; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,.4); }
+.toast .tb-btn { height: 28px; color: var(--on-tip); padding: 0 10px; background: rgba(255,255,255,.12); }
+.dock .capsule { gap: 0; }
+.dock .tb-btn { color: var(--ink); }
+.label-caption { position: absolute; right: 16px; top: 72px; z-index: 2; font: 500 11px/1 var(--font-ui); color: var(--ink-2); background: var(--surface); padding: 4px 8px; border-radius: 999px; box-shadow: var(--glass-2-edge-out); }
+
+/* Board */
+.board { padding: 40px 48px 56px; display: grid; gap: 40px; }
+.board h1 { margin: 0; font: var(--fw-display) 3.25rem/var(--lh-display) var(--font-ui); letter-spacing: var(--ls-display); }
+.board h1 + p { margin: 10px 0 0; max-width: 64ch; color: var(--ink-2); font-size: var(--fs-body); }
+.board h2 { margin: 0 0 14px; font: 600 var(--fs-control)/1 var(--font-ui); color: var(--ink-2); }
+.grid { display: grid; gap: 16px; }
+.c2 { grid-template-columns: 1fr 1fr; } .c3 { grid-template-columns: repeat(3, 1fr); } .c4 { grid-template-columns: repeat(4, 1fr); }
+.card { background: var(--surface); border-radius: var(--r-panel); padding: 16px; box-shadow: 0 0 0 1px var(--rule); }
+.sw { display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: center; padding: 6px 0; }
+.sw i { grid-row: span 2; width: 44px; height: 44px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(17,17,28,.08); }
+.sw b { font: 600 var(--fs-control)/1.2 var(--font-ui); }
+.sw span { font: 400 var(--fs-meta)/1.3 var(--font-ui); color: var(--ink-3); }
+.type-row { display: grid; grid-template-columns: 150px 1fr; align-items: baseline; gap: 16px; padding: 8px 0; border-top: 1px solid var(--rule); }
+.type-row:first-of-type { border-top: 0; }
+.type-row small { font: 400 var(--fs-meta)/1.3 var(--font-ui); color: var(--ink-3); }
+.mat { position: relative; height: 230px; border-radius: var(--r-panel); overflow: hidden; background: linear-gradient(90deg, #FFF 0 33%, transparent 33% 66%, #000 66%), url(/img/replacement-banner.jpg) center/cover; }
+.mat .glass-2, .mat .glass-3 { position: absolute; left: 24px; right: 24px; }
+.mat .l2 { top: 28px; height: 44px; display: flex; align-items: center; justify-content: space-around; border-radius: 999px; font: 500 var(--fs-control)/1 var(--font-ui); }
+.mat .l3 { top: 92px; height: 110px; border-radius: var(--r-sheet); padding: 16px 20px; }
+.mat .l3 b { font: 600 15px/1.3 var(--font-ui); display: block; }
+.mat .l3 span { font: 400 12px/1.4 var(--font-ui); color: var(--ink-3); }
+.mat-cap { margin-top: 10px; font: 400 var(--fs-meta)/1.45 var(--font-ui); color: var(--ink-2); }
+.mat-cap code { font: 400 11px/1.4 var(--font-mono); color: var(--ink); }
+.shape-demo { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+.shape-demo > div { display: grid; gap: 8px; justify-items: start; font: 400 var(--fs-meta)/1.3 var(--font-ui); color: var(--ink-3); }
+.shape { background: var(--surface); box-shadow: var(--glass-2-edge-out), var(--glass-2-shadow); }
+.icons-row { display: flex; gap: 22px; align-items: flex-end; }
+.icons-row > div { min-width: 70px; display: grid; justify-items: center; gap: 8px; font: 400 var(--fs-meta)/1.3 var(--font-ui); color: var(--ink-3); text-align: center; }
+.tgt { display: grid; place-items: center; border-radius: 999px; background: var(--hover); color: var(--ink); outline: 1px dashed rgba(55,48,189,.45); outline-offset: 0; }
+.states { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; }
+.state { position: relative; height: 120px; border-radius: 10px; overflow: hidden; background: #FFF; box-shadow: 0 0 0 1px var(--rule); }
+.state.photo { background: url(/img/replacement-banner.jpg) 30% 60%/600px; }
+.state .tgt-el { position: absolute; left: 18px; right: 18px; top: 52px; height: 30px; display: flex; align-items: center; padding: 0 6px; font: 700 15px/1 Georgia, serif; color: #1F2937; }
+.state.photo .tgt-el { color: #FFF; }
+.state .sel-chip { left: 18px; top: 46px; transform: none; }
+.state-name { margin-top: 6px; font: 500 var(--fs-meta)/1.2 var(--font-ui); color: var(--ink-2); text-align: center; }
+.caret { display: inline-block; width: 1.5px; height: 18px; margin-left: 1px; background: var(--accent); vertical-align: middle; }
+table { width: 100%; border-collapse: collapse; font: 400 var(--fs-meta)/1.4 var(--font-ui); }
+th { text-align: left; font-weight: 600; color: var(--ink-2); padding: 0 8px 6px 0; }
+td { padding: 6px 8px 6px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+td code { font: 400 11px/1.4 var(--font-mono); }
+.curve { display: flex; gap: 14px; margin-top: 12px; }
+.curve figure { margin: 0; display: grid; gap: 4px; font: 400 11px/1.3 var(--font-ui); color: var(--ink-3); }
+.curve svg { width: 96px; height: 96px; background: var(--surface-sunk); border-radius: 8px; }
+</style>
+</head>
+<body>
+<!-- sprite --><svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="undo-2" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /> <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" /></symbol><symbol id="redo-2" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5" /> <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13" /></symbol><symbol id="monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" /> <line x1="8" x2="16" y1="21" y2="21" /> <line x1="12" x2="12" y1="17" y2="21" /></symbol><symbol id="smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /> <circle cx="12" cy="12" r="3" /></symbol><symbol id="search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34" /> <circle cx="11" cy="11" r="8" /></symbol><symbol id="chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol><symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol><symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="M12 5v14" /></symbol><symbol id="ellipsis" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></symbol><symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol><symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /> <path d="M2 12h20" /></symbol><symbol id="image-up" viewBox="0 0 24 24"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.814.014L6 21" /> <path d="m14 19.5 3-3 3 3" /> <path d="M17 22v-5.5" /> <circle cx="9" cy="9" r="2" /></symbol><symbol id="circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m16 9-5.5 5.5L8 12" /></symbol><symbol id="triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /> <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></symbol><symbol id="type" viewBox="0 0 24 24"><path d="M12 4v16" /> <path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2" /> <path d="M9 20h6" /></symbol><symbol id="pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /> <path d="m15 5 4 4" /></symbol><symbol id="eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /> <circle cx="12" cy="12" r="3" /></symbol></svg><!-- /sprite -->
+
+<section class="situ" id="situ">
+  <iframe id="site" title="Agency template, published copy" src="http://agency.sites.localhost:5150/" scrolling="no"></iframe>
+
+  <div class="bar">
+    <div class="capsule glass-2"><button class="tb-btn crumb" aria-expanded="true"><span class="site">Agency</span><span class="slash">/</span><span class="page">Home</span><svg class="icon icon-16"><use href="#chevron-down"/></svg></button></div>
+    <div class="capsule glass-2">
+      <button class="tb-btn icon-only is-hover" aria-label="Undo"><svg class="icon"><use href="#undo-2"/></svg></button><button class="tb-btn icon-only" aria-label="Redo" disabled><svg class="icon"><use href="#redo-2"/></svg></button>
+      <span class="tb-sep"></span>
+      <div class="seg"><button aria-pressed="true">Edit</button><button aria-pressed="false">Preview</button></div>
+      <span class="tb-sep"></span>
+      <div class="seg icons"><button aria-pressed="true" aria-label="Computer"><svg class="icon"><use href="#monitor"/></svg></button><button aria-pressed="false" aria-label="Phone"><svg class="icon"><use href="#smartphone"/></svg></button></div>
+    </div>
+    <div class="right">
+      <div class="capsule glass-2"><button class="tb-btn icon-only" aria-label="Website settings"><svg class="icon"><use href="#settings"/></svg></button></div>
+      <div class="capsule glass-2"><span class="status"><span class="dot"></span>Saved · <b>2 changes</b> not published</span><button class="btn-publish">Publish</button></div>
+    </div>
+  </div>
+  <span class="tip">Undo <kbd>Ctrl Z</kbd></span>
+
+  <div class="panel glass-2 switcher">
+    <div class="search"><svg class="icon icon-16"><use href="#search"/></svg>Find a page<kbd>Ctrl K</kbd></div>
+    <div class="row tall is-current"><span class="thumb" style="background-image:url(/img/replacement-banner.jpg)"></span><span class="grow">Home<span class="row-meta">Edited 2 hours ago</span></span><svg class="icon check"><use href="#check"/></svg></div>
+    <div class="row tall is-hover"><span class="thumb"></span><span class="grow">Services<span class="row-meta">Edited yesterday</span></span><svg class="icon icon-16"><use href="#ellipsis"/></svg></div>
+    <div class="row tall"><span class="thumb"></span><span class="grow">Portfolio<span class="row-meta">12 pictures</span></span></div>
+    <hr>
+    <div class="row add"><svg class="icon icon-16"><use href="#plus"/></svg>Add a page</div>
+  </div>
+
+  <div class="sel-hover" id="hover"></div>
+  <div class="sel-ring" id="ring"></div>
+  <span class="sel-chip" id="chip">Heading</span>
+  <div class="dock" id="dock"><div class="capsule glass-2"><button class="tb-btn">Edit text</button><button class="tb-btn">Style</button><button class="tb-btn">Link</button><span class="tb-sep"></span><button class="tb-btn icon-only" aria-label="More"><svg class="icon"><use href="#ellipsis"/></svg></button></div></div>
+
+  <div class="fit"><div class="capsule glass-2"><button class="tb-btn">Fit</button><button class="tb-btn">100%</button></div></div>
+  <div class="toast"><svg class="icon icon-16"><use href="#circle-check"/></svg><span>Published to <a>agency.pagehaven.site</a></span><button class="tb-btn">View</button></div>
+</section>
+
+<main class="board">
+  <header>
+    <h1>Pagehaven Studio</h1>
+    <p>The owner's site fills the window. Pagehaven floats over it in a few small capsules of light glass, speaks in one plain face, and keeps a single ultramarine for whatever you are touching and for Publish.</p>
+  </header>
+
+  <section>
+    <h2>Colour. One accent, quiet neutrals, status words that carry their own colour.</h2>
+    <div class="grid c4">
+      <div class="card">
+        <div class="sw"><i style="background:var(--accent)"></i><b>Haven Ultramarine #3730BD</b><span>9.05 on white · white text 9.05 · ring worst case 3.01</span></div>
+        <div class="sw"><i style="background:var(--accent-hover)"></i><b>Hover #2E28A3</b><span>white text 10.78</span></div>
+        <div class="sw"><i style="background:var(--accent-soft)"></i><b>Soft #E7E6FA</b><span>accent text on it 7.37</span></div>
+      </div>
+      <div class="card">
+        <div class="sw"><i style="background:var(--ws-ground)"></i><b>Workspace #E8E8EC</b><span>behind the page</span></div>
+        <div class="sw"><i style="background:var(--surface)"></i><b>Surface #FAFAFB</b><span>opaque panels, every fallback</span></div>
+        <div class="sw"><i style="background:var(--ink)"></i><b>Ink #17171C</b><span>17.1 on surface · 10.7 on glass over black</span></div>
+      </div>
+      <div class="card">
+        <div class="sw"><i style="background:var(--ink-2)"></i><b>Ink 2 #4A4A55</b><span>secondary · 5.23 worst on glass</span></div>
+        <div class="sw"><i style="background:var(--ink-3)"></i><b>Ink 3 #5F5F6B</b><span>meta · opaque and sheets only</span></div>
+        <div class="sw"><i style="background:var(--tip)"></i><b>Tip #1C1C22</b><span>tooltips and toasts, solid</span></div>
+      </div>
+      <div class="card">
+        <div class="sw"><i style="background:var(--success)"></i><b>Success #0F5E35</b><span>4.70 worst on glass</span></div>
+        <div class="sw"><i style="background:var(--warning)"></i><b>Warning #774000</b><span>4.99 worst on glass</span></div>
+        <div class="sw"><i style="background:var(--error)"></i><b>Error #A01C24</b><span>4.68 worst on glass</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid c2">
+    <div>
+      <h2>Type. Onest, one family, five working sizes.</h2>
+      <div class="card">
+        <div class="type-row"><small>Title 22 / 600</small><span style="font:var(--fw-title) var(--fs-title)/var(--lh-title) var(--font-ui);letter-spacing:var(--ls-title)">Website settings</span></div>
+        <div class="type-row"><small>Body 15 / 400</small><span style="font:var(--fw-body) var(--fs-body)/var(--lh-body) var(--font-ui)">Harbor Bakery, fresh bread since 1987</span></div>
+        <div class="type-row"><small>Control 13 / 500</small><span style="font:var(--fw-control) var(--fs-control)/var(--lh-control) var(--font-ui)">Replace image · Edit text · Publish</span></div>
+        <div class="type-row"><small>Meta 12 / 400</small><span style="font:var(--fw-meta) var(--fs-meta)/var(--lh-meta) var(--font-ui);color:var(--ink-2)">Edited 2 hours ago · 12 pictures</span></div>
+        <div class="type-row"><small>Caption 11 / 500</small><span style="font:var(--fw-caption) var(--fs-caption)/var(--lh-caption) var(--font-ui);letter-spacing:var(--ls-caption)">Heading · Card · Banner photo</span></div>
+        <div class="type-row"><small>Addresses: mono</small><span style="font:400 12px/1.4 var(--font-mono)">agency.pagehaven.site · CNAME</span></div>
+      </div>
+    </div>
+    <div>
+      <h2>Shape. Capsules for controls, soft corners for panels, a larger corner for sheets.</h2>
+      <div class="card shape-demo">
+        <div><span class="shape" style="display:block;width:120px;height:36px;border-radius:var(--r-capsule)"></span>Capsule 999 px</div>
+        <div><span class="shape" style="display:block;width:96px;height:96px;border-radius:var(--r-panel)"></span>Panel 14 px</div>
+        <div><span class="shape" style="display:block;width:130px;height:110px;border-radius:var(--r-sheet)"></span>Sheet 22 px</div>
+        <div><span class="shape" style="display:block;width:70px;height:28px;border-radius:var(--r-row)"></span>Row 8 px</div>
+        <div><span style="display:block;padding:3px 7px;border-radius:var(--r-chip);background:var(--accent);color:#FFF;font:500 11px/14px var(--font-ui)">Heading</span>Chip 5 px</div>
+      </div>
+      <h2 style="margin-top:20px">Icons. Lucide, 1.5 px rendered stroke at every size.</h2>
+      <div class="card icons-row">
+        <div><span class="tgt" style="width:28px;height:28px"><svg class="icon icon-16"><use href="#pencil"/></svg></span>28 · icon 16<br>stroke 2.25</div>
+        <div><span class="tgt" style="width:32px;height:32px"><svg class="icon icon-16"><use href="#link"/></svg></span>32 · icon 16<br>stroke 2.25</div>
+        <div><span class="tgt" style="width:36px;height:36px"><svg class="icon"><use href="#undo-2"/></svg></span>36 · icon 18<br>stroke 2</div>
+        <div><span class="tgt" style="width:44px;height:44px"><svg class="icon icon-20"><use href="#settings"/></svg></span>44 · icon 20<br>stroke 1.8</div>
+        <div style="margin-left:12px"><div class="seg"><button aria-pressed="true">Edit</button><button>Preview</button></div>Exclusive choice: white thumb</div>
+        <div><span class="tb-btn toggle icon-only" aria-pressed="true" style="background:var(--accent-wash);color:var(--accent)"><svg class="icon"><use href="#link"/></svg></span>Toggle on: accent wash</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Materials. Three levels. The site is level 1 and gets nothing.</h2>
+    <div class="grid c3">
+      <div><div class="mat"><div class="glass-2 l2"><span>Edit</span><span>Style</span><span>Link</span></div><div class="glass-3 l3"><b>Website settings</b><span>Changes here apply to every page.</span></div></div>
+        <p class="mat-cap">Glass, as shipped. Level 2 <code>rgba(250,250,252,.80) blur(24px) saturate(1.6)</code>. Level 3 <code>.94 blur(40px) saturate(1.2)</code>.</p></div>
+      <div class="force-opaque"><div class="mat"><div class="glass-2 l2"><span>Edit</span><span>Style</span><span>Link</span></div><div class="glass-3 l3"><b>Website settings</b><span>Changes here apply to every page.</span></div></div>
+        <p class="mat-cap">Opaque fallback: no backdrop-filter, or <code>prefers-reduced-transparency: reduce</code>. Same shapes, <code>--surface</code> fill.</p></div>
+      <div><div class="mat" style="filter:none"><div class="l2" style="position:absolute;left:24px;right:24px;top:28px;height:44px;display:flex;align-items:center;justify-content:space-around;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1px var(--ink);font:500 13px/1 var(--font-ui);color:var(--ink)"><span>Edit</span><span>Style</span><span>Link</span></div><div class="l3" style="position:absolute;left:24px;right:24px;top:92px;height:110px;border-radius:var(--r-sheet);padding:16px 20px;background:var(--surface);box-shadow:0 0 0 1px var(--ink)"><b>Website settings</b><span style="color:var(--ink)">Changes here apply to every page.</span></div></div>
+        <p class="mat-cap"><code>prefers-contrast: more</code>: opaque, 1 px ink edge, secondary text becomes ink. <code>forced-colors</code> maps to Canvas, CanvasText and Highlight.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Selection states, drawn over the owner's site. Ring plus white halo, so one of the two always reaches 3:1.</h2>
+    <div class="states">
+      <div><div class="state"><span class="tgt-el">Fresh bread</span></div><p class="state-name">Idle</p></div>
+      <div><div class="state photo"><span class="tgt-el">Fresh bread</span><span class="sel-hover" style="left:18px;right:18px;top:52px;height:30px"></span></div><p class="state-name">Hovered</p></div>
+      <div><div class="state"><span class="tgt-el">Fresh bread</span><span class="sel-ring" style="left:18px;right:18px;top:52px;height:30px"></span><span class="sel-chip" style="top:22px">Heading</span></div><p class="state-name">Selected</p></div>
+      <div><div class="state photo"><span class="tgt-el">Fresh bread<i class="caret"></i></span><span class="sel-ring" style="left:18px;right:18px;top:52px;height:30px;background:rgba(55,48,189,.10)"></span><span class="sel-chip" style="top:22px">Editing</span></div><p class="state-name">Editing</p></div>
+      <div><div class="state"><span class="tgt-el">Fresh bread</span><span class="sel-ring" style="left:18px;right:18px;top:52px;height:30px"></span><span class="sel-chip" style="top:22px;background:var(--surface);color:var(--ink-2);box-shadow:0 0 0 1px var(--rule-strong)">Saving…</span></div><p class="state-name">Saving</p></div>
+      <div><div class="state photo"><span class="tgt-el">Fresh bread</span><span class="sel-ring" style="left:18px;right:18px;top:52px;height:30px;--select-ring:var(--error)"></span><span class="sel-chip" style="top:22px;background:var(--error)">Not saved</span></div><p class="state-name">Error</p></div>
+      <div><div class="state"><span class="tgt-el" style="color:#9CA3AF">Live prices</span><span style="position:absolute;left:18px;right:18px;top:52px;height:30px;border-radius:3px;outline:1.5px dashed var(--ink-2);outline-offset:0;box-shadow:0 0 0 3px #FFF"></span><span class="sel-chip" style="top:22px;background:var(--tip)">Can't edit here</span></div><p class="state-name">Unsupported</p></div>
+    </div>
+  </section>
+
+  <section class="grid c2">
+    <div>
+      <h2>Motion. Short, from the anchor, and never looping.</h2>
+      <div class="card">
+        <table>
+          <tr><th>Surface</th><th>How it moves</th><th>Reduced motion</th></tr>
+          <tr><td>Button press</td><td>scale .97, <code>90ms ease-out</code></td><td>colour change only</td></tr>
+          <tr><td>Hover, segment thumb</td><td>colour and thumb, <code>140ms ease-out</code></td><td>same</td></tr>
+          <tr><td>Popover, menu, switcher</td><td>opacity and scale .96 to 1 from the anchor, <code>200ms ease-emph</code>; out <code>130ms ease-in</code></td><td>opacity <code>120ms</code></td></tr>
+          <tr><td>Sheet, dialog</td><td>rise 12 px with opacity, <code>300ms ease-emph</code>; out <code>200ms</code>; scrim fades</td><td>opacity <code>120ms</code></td></tr>
+          <tr><td>Selection ring</td><td>slides to the next element, <code>160ms ease-move</code></td><td>jumps</td></tr>
+          <tr><td>Dock contents</td><td>crossfade <code>140ms</code>; the dock keeps its place</td><td>same</td></tr>
+          <tr><td>Publish</td><td>label changes to Publishing…, then a check draws once, <code>240ms</code></td><td>check appears</td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2>Easing curves</h2>
+      <div class="card">
+        <div class="curve">
+          <figure><svg viewBox="0 0 1 1" preserveAspectRatio="none"><path d="M0 1 C .2 .2 .2 0 1 0" fill="none" stroke="#3730BD" stroke-width=".03"/></svg>ease-out<br>.2 .8 .2 1</figure>
+          <figure><svg viewBox="0 0 1 1" preserveAspectRatio="none"><path d="M0 1 C .16 0 .3 0 1 0" fill="none" stroke="#3730BD" stroke-width=".03"/></svg>ease-emph<br>.16 1 .3 1</figure>
+          <figure><svg viewBox="0 0 1 1" preserveAspectRatio="none"><path d="M0 1 C .4 1 1 1 1 0" fill="none" stroke="#3730BD" stroke-width=".03"/></svg>ease-in<br>.4 0 1 1</figure>
+          <figure><svg viewBox="0 0 1 1" preserveAspectRatio="none"><path d="M0 1 C .65 1 .35 0 1 0" fill="none" stroke="#3730BD" stroke-width=".03"/></svg>ease-move<br>.65 0 .35 1</figure>
+        </div>
+        <p class="mat-cap">No shimmer, no spinner loops, no moving reflections on glass. Nothing animates while the owner types.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const bg = new URLSearchParams(location.search).get("bg") || "dark";
+const site = document.getElementById("site");
+// Rectangles measured on the published Agency template at 1280 px wide (page coordinates).
+const scene = {
+  dark:  { offset: 0,   ring: [203, 332, 875, 88], chip: "Heading", hover: [529, 476, 223, 69], dock: 428 },
+  light: { offset: 745, ring: [391, 96, 498, 49],  chip: "Heading", hover: [179, 387, 162, 29], dock: 192 },
+}[bg];
+site.style.top = `-${scene.offset}px`;
+const place = (el, [x, y, w, h]) => Object.assign(el.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+place(document.getElementById("ring"), scene.ring);
+place(document.getElementById("hover"), scene.hover);
+const chip = document.getElementById("chip");
+Object.assign(chip.style, { left: `${scene.ring[0] - 2}px`, top: `${scene.ring[1] - 2}px` });
+const dock = document.getElementById("dock");
+dock.style.top = `${scene.dock}px`;
+dock.style.left = `${scene.ring[0] + scene.ring[2] / 2}px`;
+dock.style.transform = "translateX(-50%)";
+</script>
+</body>
+</html>

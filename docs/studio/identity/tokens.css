@@ -1,0 +1,87 @@
+/* Pagehaven Studio identity tokens (proposal). measure.py reads this file; README.md carries a copy. */
+:root {
+  /* Families. One UI face. --font-ui-fallback is the answer if the owner keeps Schibsted Grotesk. */
+  --font-ui: "Onest", "Onest Fallback", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui-fallback: "Schibsted Grotesk", "Schibsted Grotesk Fallback", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Type roles: size / line height / weight / tracking. */
+  --fs-caption: 0.6875rem;  --lh-caption: 0.875rem;  --fw-caption: 500;  --ls-caption: 0.01em;   /* 11: selection chip, kbd, counts */
+  --fs-meta: 0.75rem;       --lh-meta: 1rem;         --fw-meta: 400;     --ls-meta: 0.005em;     /* 12: row meta, hints */
+  --fs-control: 0.8125rem;  --lh-control: 1rem;      --fw-control: 500;  --ls-control: 0;        /* 13: capsule and menu labels */
+  --fs-body: 0.9375rem;     --lh-body: 1.375rem;     --fw-body: 400;     --ls-body: 0;           /* 15: inputs, sentences in panels */
+  --fs-title: 1.375rem;     --lh-title: 1.75rem;     --fw-title: 600;    --ls-title: -0.015em;   /* 22: sheet and dialog titles */
+  --fs-display: clamp(2.25rem, 1.5rem + 3vw, 3.5rem); --lh-display: 1.05; --fw-display: 600; --ls-display: -0.03em; /* dashboard, landing */
+
+  /* Neutrals. Cool and nearly grey, hue taken from the accent so the chrome reads as one family. */
+  --ws-ground: #E8E8EC;        /* workspace behind the canvas */
+  --ws-ground-edge: #D9D9DF;   /* canvas edge on the ground */
+  --surface: #FAFAFB;          /* opaque panels, inputs, fallback for every glass level */
+  --surface-sunk: #F0F0F3;     /* search fields and tracks inside panels */
+  --ink: #17171C;              /* text and icons on any Pagehaven surface */
+  --ink-2: #4A4A55;            /* secondary text, idle icons */
+  --ink-3: #5F5F6B;            /* meta on opaque and glass-3 surfaces; never on glass-2 */
+  --rule: rgba(23, 23, 28, 0.10);
+  --rule-strong: rgba(23, 23, 28, 0.18);
+  --control-edge: #85858F;     /* input and switch edges: 3:1 on surface */
+  --hover: rgba(23, 23, 28, 0.06);
+  --pressed: rgba(23, 23, 28, 0.11);
+
+  /* Accent: Haven Ultramarine. Selection, focus, the current item, links and Publish. */
+  --accent: #3730BD;
+  --accent-hover: #2E28A3;
+  --accent-pressed: #25208A;
+  --accent-soft: #E7E6FA;      /* current row, pressed segment on opaque */
+  --accent-wash: rgba(55, 48, 189, 0.12); /* the same on glass */
+  --on-accent: #FFFFFF;
+  --select-ring: var(--accent);
+  --select-halo: #FFFFFF;
+  --select-width: 2px;
+  --halo-width: 1.5px;
+  --focus-ring: 0 0 0 2px var(--select-halo), 0 0 0 4px var(--accent);
+
+  /* Status. Each also carries a word and a shape. */
+  --success: #0F5E35;  --success-soft: #E3F1E8;
+  --warning: #774000;  --warning-soft: #F8ECD8;
+  --error: #A01C24;    --error-soft: #F9E5E5;
+  --tip: #1C1C22;      --on-tip: #F4F4F7;  /* tooltips and toasts: solid, never glass */
+
+  /* Materials. Level 1 is the imported site and gets nothing. */
+  --glass-2-tint: rgba(250, 250, 252, 0.80);
+  --glass-2-filter: blur(24px) saturate(1.6);
+  --glass-2-edge-in: inset 0 0 0 1px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-2-edge-out: 0 0 0 1px rgba(17, 17, 28, 0.12);
+  --glass-2-shadow: 0 1px 2px rgba(17, 17, 28, 0.08), 0 8px 24px -6px rgba(17, 17, 28, 0.22);
+  --glass-3-tint: rgba(250, 250, 252, 0.94);
+  --glass-3-filter: blur(40px) saturate(1.2);
+  --glass-3-edge-in: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-3-edge-out: 0 0 0 1px rgba(17, 17, 28, 0.14);
+  --glass-3-shadow: 0 2px 6px rgba(17, 17, 28, 0.08), 0 28px 64px -16px rgba(17, 17, 28, 0.36);
+  --scrim: rgba(17, 17, 28, 0.30);
+
+  /* Shapes. Capsules for controls, a soft panel corner, a larger sheet corner; never one radius for all. */
+  --r-capsule: 999px;          /* toolbar groups, buttons on glass, segments, chips */
+  --r-row: 8px;                /* rows and fields inside a panel: panel radius minus its 6px inset */
+  --r-panel: 14px;             /* popovers, page switcher, contextual dock menus */
+  --r-sheet: 22px;             /* settings and publish sheets, dialogs */
+  --r-chip: 5px;               /* the selection label, which sits on the owner's site */
+  --r-canvas: 6px;             /* the page when it floats on the ground; 0 edge to edge */
+
+  /* Control sizes. 36 on desktop pointers, 44 under (pointer: coarse). */
+  --h-28: 28px;  --h-32: 32px;  --h-36: 36px;  --h-44: 44px;
+  --icon-16: 16px; --icon-18: 18px; --icon-20: 20px;
+  --icon-stroke-px: 1.5;       /* rendered stroke; stroke-width = 1.5 * 24 / icon size */
+
+  /* Motion. No loops. Exits run at about two thirds of the entrance. */
+  --dur-press: 90ms;
+  --dur-quick: 140ms;
+  --dur-pop: 200ms;
+  --dur-pop-out: 130ms;
+  --dur-sheet: 300ms;
+  --dur-sheet-out: 200ms;
+  --dur-select: 160ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+}
