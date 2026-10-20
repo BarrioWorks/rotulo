@@ -43,7 +43,11 @@ body.editor-body { height: 100vh; overflow: hidden; background: var(--canvas-bac
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .ed-status:hover, .ed-status[aria-expanded="true"] { background: var(--hover); color: var(--ink); }
-.ed-status-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-status-text { display: flex; gap: 6px; min-width: 0; white-space: nowrap; }
+/* The save word never truncates; the publication words give way on narrow windows. */
+.ed-status-save { flex: none; }
+.ed-status-sep { flex: none; color: var(--ink-3); }
+.ed-status-publish { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ed-status[data-tone="warning"] { color: var(--warning); }
 .ed-status[data-tone="error"] { color: var(--error); }
 .ed-status-mark { display: inline-flex; flex: none; }
@@ -330,6 +334,8 @@ body[data-boot="manage"] .manage { display: flex; }
   .ed-top-right { gap: var(--s2); padding: 0 var(--s2) 0 0; }
   .ed-slash, .ed-page, .ed-divider { display: none; }
   .ed-status { max-width: 150px; }
+  /* Room for the save word only; the publication state stays in the tooltip, the label and the Publish button. */
+  .ed-status-sep, .ed-status-publish { display: none; }
   .ed-view span { display: none; }
   .ed-rail-toggle { display: inline-flex; }
   .ed-rail {

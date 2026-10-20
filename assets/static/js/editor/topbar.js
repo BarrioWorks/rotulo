@@ -1,11 +1,9 @@
-import { must } from "../ui.js";
+import { h, must } from "../ui.js";
 import { openMenu } from "./menu.js";
 import { pageLabel } from "./pages.js";
 import { icon } from "../ui.js";
 import { changed, siteState, statusLine } from "./state.js";
 const SAVING_DELAY_MS = 400;
-/** How long "Saved" shows after a save lands before the line settles back to the publish state. */
-export const SAVED_VISIBLE_MS = 2000;
 function sentence(label) {
     return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -25,8 +23,6 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
     const deviceButtons = [...document.querySelectorAll("[data-device]")];
     let savingVisible = false;
     let savingTimer = 0;
-    let savedVisible = false;
-    let savedTimer = 0;
     undoBtn.addEventListener("click", undo);
     redoBtn.addEventListener("click", redo);
     for (const b of modeButtons)
@@ -68,10 +64,10 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
     let renderedMark = null;
     function renderPill() {
         const s = store.get();
-        const view = statusLine(s, savingVisible, savedVisible);
+        const view = statusLine(s, savingVisible);
         pill.dataset["tone"] = view.tone;
         pill.setAttribute("aria-busy", String(view.mark === "saving"));
-        pillText.textContent = view.text;
+        pillText.replaceChildren(h("span", { class: "ed-status-save", text: view.save }), ...(view.publish ? [h("span", { class: "ed-status-sep", text: "·", attrs: { "aria-hidden": "true" } }), h("span", { class: "ed-status-publish", text: view.publish })] : []));
         if (view.mark !== renderedMark) {
             renderedMark = view.mark;
             pillMark.replaceChildren(view.mark === "saved" ? icon("check", "icon-sm") : view.mark === "problem" ? icon("alert", "icon-sm") : "");
@@ -91,14 +87,6 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
             redoBtn.setAttribute("aria-label", redoLabel);
             undoBtn.dataset["tip"] = undoLabel;
             redoBtn.dataset["tip"] = redoLabel;
-        }
-        if (prev && s.saves.savedAt !== prev.saves.savedAt && s.saves.savedAt !== null) {
-            savedVisible = true;
-            window.clearTimeout(savedTimer);
-            savedTimer = window.setTimeout(() => {
-                savedVisible = false;
-                renderPill();
-            }, SAVED_VISIBLE_MS);
         }
         if (changed(s, prev, "saves")) {
             const pending = s.saves.pending > 0;

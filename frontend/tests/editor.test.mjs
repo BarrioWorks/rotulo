@@ -100,20 +100,28 @@ test("an offline save waits in the queue and the pill says so", () => {
   const store = createStore(initialState(bootstrap, 0));
   store.dispatch({ type: "save_queued" });
   store.dispatch({ type: "save_offline" });
-  assert.deepEqual(statusLine(store.get(), true), { tone: "warning", text: "Offline: changes will be saved when you're back", mark: "problem" });
+  assert.deepEqual(statusLine(store.get(), true), { tone: "warning", text: "Offline: changes will be saved when you're back", save: "Offline: changes will be saved when you're back", publish: null, mark: "problem" });
   store.dispatch({ type: "save_ok", revision: 4, history: bootstrap.history, draftChanged: true, log: "edit", page: "index.html", at: 1 });
   assert.equal(store.get().saves.problem, null);
 });
 
-test("the status shows saving only once the delay has passed, then Saved, then settles", () => {
+test("the status keeps saying Saved next to the publication state, and shows saving only after the delay", () => {
   const store = createStore(initialState(bootstrap, 0));
+  assert.deepEqual(statusLine(store.get(), false), { tone: "neutral", text: "Saved · Not published yet", save: "Saved", publish: "Not published yet", mark: "saved" });
   store.dispatch({ type: "save_queued" });
-  assert.equal(statusLine(store.get(), false).text, "Not published yet");
-  assert.deepEqual(statusLine(store.get(), true), { tone: "neutral", text: "Saving…", mark: "saving" });
+  assert.equal(statusLine(store.get(), false).text, "Saved · Not published yet", "a quick save never flashes Saving");
+  assert.deepEqual(statusLine(store.get(), true), { tone: "neutral", text: "Saving… · Not published yet", save: "Saving…", publish: "Not published yet", mark: "saving" });
   saved(store, { undo: "edit text" });
   store.dispatch({ type: "save_ok", revision: 5, history: bootstrap.history, draftChanged: true, log: "none", page: "index.html", at: 2 });
-  assert.deepEqual(statusLine(store.get(), false, true), { tone: "neutral", text: "Saved", mark: "saved" });
-  assert.equal(statusLine(store.get(), false, false).text, "Not published yet", "after the Saved moment it settles");
+  assert.equal(statusLine(store.get(), false).save, "Saved");
+  assert.equal(statusLine(store.get(), true).save, "Saved", "Saved stays: it does not time out");
+});
+
+test("with a live website the status counts what is saved but not published", () => {
+  const store = createStore(initialState({ ...bootstrap, project: { ...bootstrap.project, live_release: { number: 1, created_at: "2026-10-19T10:00:00Z" } } }, 0));
+  for (const label of ["edit text", "image change", "link change"]) saved(store, { undo: label });
+  assert.equal(statusLine(store.get(), false).text, "Saved · 3 changes not published");
+  assert.equal(statusLine(store.get(), false).tone, "neutral", "unpublished changes are not a problem");
 });
 
 test("the editor's status words never say online or live", () => {
@@ -121,11 +129,11 @@ test("the editor's status words never say online or live", () => {
   const saves = { pending: 0, problem: null, savedAt: null };
   const base = { project: { ...bootstrap.project, live_release: live }, releases: [], draftChanged: true, changes: [], saves };
   const texts = [
-    statusLine({ ...base, project: bootstrap.project }, false).text,
-    statusLine({ ...base, draftChanged: false }, false).text,
-    statusLine(base, false).text,
-    statusLine({ ...base, changes: [{ label: "a", page: "index.html" }, { label: "b", page: "index.html" }, { label: "c", page: "index.html" }] }, false).text,
-    statusLine({ ...base, releases: [{ number: 3 }] }, false).text,
+    statusLine({ ...base, project: bootstrap.project }, false).publish,
+    statusLine({ ...base, draftChanged: false }, false).publish,
+    statusLine(base, false).publish,
+    statusLine({ ...base, changes: [{ label: "a", page: "index.html" }, { label: "b", page: "index.html" }, { label: "c", page: "index.html" }] }, false).publish,
+    statusLine({ ...base, releases: [{ number: 3 }] }, false).publish,
   ];
   assert.deepEqual(texts, ["Not published yet", "Published", "Changes not published", "3 changes not published", "Visitors see version 2"]);
   for (const t of texts) assert.doesNotMatch(t, /online|live/i);
@@ -135,15 +143,15 @@ test("unpublished changes are listed from the session's undo labels, and undo re
   const store = createStore(initialState({ ...bootstrap, project: { ...bootstrap.project, live_release: { number: 2, created_at: "2026-10-19T10:00:00Z" } } }, 0));
   saved(store, { undo: "edit text" });
   saved(store, { undo: "image change" });
-  assert.equal(statusLine(store.get(), false).text, "2 changes not published");
+  assert.equal(statusLine(store.get(), false).publish, "2 changes not published");
   saved(store, { undo: "edit text", redo: "image change", log: "undo" });
-  assert.equal(statusLine(store.get(), false).text, "1 change not published");
+  assert.equal(statusLine(store.get(), false).publish, "1 change not published");
   saved(store, { undo: "image change", log: "redo" });
   assert.deepEqual(store.get().changes.map((c) => c.label), ["edit text", "image change"]);
   assert.deepEqual(changeSummary(store.get()), [{ page: "Home", labels: ["Image change", "Edit text"] }]);
   saved(store, { undo: null, draftChanged: false, log: "undo" });
   assert.deepEqual(store.get().changes, []);
-  assert.equal(statusLine(store.get(), false).text, "Published");
+  assert.equal(statusLine(store.get(), false).publish, "Published");
 });
 
 test("what visitors see is derived from the live release, the versions and the draft", () => {
@@ -154,12 +162,12 @@ test("what visitors see is derived from the live release, the versions and the d
   assert.deepEqual(siteState({ ...base, project: { ...base.project, live_release: live } }), { kind: "changes", live: 1, count: 0 });
   const releases = [{ number: 3 }, { number: 2 }, { number: 1 }];
   assert.deepEqual(siteState({ ...base, project: { ...base.project, live_release: live }, releases }), { kind: "older", live: 1, latest: 3, draftChanged: true });
-  assert.equal(statusLine({ ...base, project: { ...base.project, live_release: live }, releases, saves: { pending: 0, problem: null, savedAt: null } }, false).text, "Visitors see version 1");
+  assert.equal(statusLine({ ...base, project: { ...base.project, live_release: live }, releases, saves: { pending: 0, problem: null, savedAt: null } }, false).publish, "Visitors see version 1");
 });
 
 test("a conflict outranks every other state in the pill", () => {
   const s = { ...initialState(bootstrap, 0), saves: { pending: 1, problem: { kind: "conflict" }, savedAt: null } };
-  assert.deepEqual(statusLine(s, true), { tone: "error", text: "Changed in another tab", mark: "problem" });
+  assert.deepEqual(statusLine(s, true), { tone: "error", text: "Changed in another tab", save: "Changed in another tab", publish: null, mark: "problem" });
 });
 
 test("publishing clears the change list and marks the site current", () => {
@@ -167,7 +175,7 @@ test("publishing clears the change list and marks the site current", () => {
   saved(store, { undo: "edit text" });
   store.dispatch({ type: "published", release: { number: 1, created_at: "2026-10-19T10:00:00Z", live: true, file_count: 3, bytes: 10 } });
   assert.equal(store.get().draftChanged, false);
-  assert.equal(statusLine(store.get(), false).text, "Published");
+  assert.equal(statusLine(store.get(), false).publish, "Published");
   saved(store, { undo: "edit text" });
   store.dispatch({ type: "nothing_to_publish" });
   assert.deepEqual(store.get().changes, []);

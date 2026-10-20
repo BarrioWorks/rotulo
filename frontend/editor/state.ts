@@ -353,7 +353,12 @@ export type Tone = "neutral" | "success" | "warning" | "error";
 
 export interface StatusLine {
   tone: Tone;
+  /** The whole line, for screen readers and tooltips: "Saved · Not published yet". */
   text: string;
+  /** Whether the owner's changes are safe: "Saved", "Saving…", or the problem. */
+  save: string;
+  /** Whether visitors see them, shown beside the save state unless saving has a problem. */
+  publish: string | null;
   /** What the mark before the words shows: a spinner, a check, an alert, or nothing. */
   mark: "saving" | "saved" | "problem" | null;
 }
@@ -374,18 +379,21 @@ export function publishText(site: SiteState): string {
 }
 
 /**
- * The status in the top bar, as plain words: save problems first, then saving and a short
- * "Saved" after each save, then whether the website is published. `savingVisible` and
- * `savedVisible` are timers the top bar owns, so this stays pure.
+ * The status in the top bar, as plain words in two parts that both stay on screen: whether the
+ * changes are saved, and whether the website is published. A save problem replaces both, in
+ * its warning or error colour. `savingVisible` is a timer the top bar owns (saves that land
+ * quickly never flash "Saving…"), so this stays pure.
  */
-export function statusLine(s: Pick<State, "project" | "releases" | "draftChanged" | "changes" | "saves">, savingVisible: boolean, savedVisible = false): StatusLine {
+export function statusLine(s: Pick<State, "project" | "releases" | "draftChanged" | "changes" | "saves">, savingVisible: boolean): StatusLine {
   const problem = s.saves.problem;
-  if (problem?.kind === "conflict") return { tone: "error", text: "Changed in another tab", mark: "problem" };
-  if (problem?.kind === "error") return { tone: "error", text: "Couldn't save", mark: "problem" };
-  if (problem?.kind === "offline") return { tone: "warning", text: "Offline: changes will be saved when you're back", mark: "problem" };
-  if (s.saves.pending > 0 && savingVisible) return { tone: "neutral", text: "Saving…", mark: "saving" };
-  if (s.saves.pending === 0 && savedVisible && s.saves.savedAt !== null) return { tone: "neutral", text: "Saved", mark: "saved" };
-  return { tone: "neutral", text: publishText(siteState(s)), mark: null };
+  const alone = (tone: Tone, save: string): StatusLine => ({ tone, text: save, save, publish: null, mark: "problem" });
+  if (problem?.kind === "conflict") return alone("error", "Changed in another tab");
+  if (problem?.kind === "error") return alone("error", "Couldn't save");
+  if (problem?.kind === "offline") return alone("warning", "Offline: changes will be saved when you're back");
+  const saving = s.saves.pending > 0 && savingVisible;
+  const save = saving ? "Saving…" : "Saved";
+  const publish = publishText(siteState(s));
+  return { tone: "neutral", text: `${save} · ${publish}`, save, publish, mark: saving ? "saving" : "saved" };
 }
 
 /** Publishing makes sense only when the draft differs from what is live. */
