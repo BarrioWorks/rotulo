@@ -1,3 +1,5 @@
+> Current record: [`blog.md`](blog.md) redoes the before and after evaluation on Furnace Hill Coffee, a realistic blog. Read it first. This file is the earlier record on the Agency template.
+
 # Studio evaluation: Phases G and H
 
 ## After the fix round
