@@ -7,7 +7,7 @@ export interface CanvasSession {
   loading: boolean;
   textElement: string | null;
   finishing?: boolean;
-  /** The owner clicked or pressed a key within the browser's activation window. A script in the site cannot fake this. */
+  /** The owner just pressed inside the site: a fresh user activation, with no press in the app's own controls inside the activation window. */
   activated?: boolean;
 }
 

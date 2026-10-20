@@ -9,6 +9,8 @@ export const DESKTOP_WIDTH = 1280;
 export const PHONE = { width: 390, height: 844 };
 const BEZEL = 11;
 const VEIL_DELAY_MS = 300;
+/** Chromium's transient user activation lasts five seconds. */
+const USER_ACTIVATION_MS = 5000;
 /** Fits a 1280 px desktop or a 390 by 844 phone into the space the window leaves. */
 export function frameLayout(device, zoom, available) {
     const width = Math.max(1, available.width);
@@ -260,12 +262,20 @@ export function createCanvas(store, handlers) {
         if (!textSession && store.get().mode === "edit" && (focused === active || focused === document.body || focused === null))
             surface.focus({ preventScroll: true });
     }
+    // A request to edit from the site needs a fresh user activation, which a script in the site cannot
+    // create. Presses in the app's own chrome also activate this window, so a request made while one of
+    // those is still within the browser's activation window does not count.
+    let chromeInputAt = -Infinity;
+    // Keys on the canvas itself only move the selection, so they are not presses in the chrome.
+    document.addEventListener("pointerdown", () => { chromeInputAt = performance.now(); }, true);
+    document.addEventListener("keydown", (event) => { if (event.target !== surface)
+        chromeInputAt = performance.now(); }, true);
     window.addEventListener("message", (event) => {
         const source = awaitingReady ? (pending ?? active) : active;
         if (event.source !== source.contentWindow || event.origin !== originOf(source))
             return;
         const message = parseAgentMessage(event.data);
-        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false, activated: navigator.userActivation?.isActive ?? false }, message))
+        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false, activated: (navigator.userActivation?.isActive ?? false) && performance.now() - chromeInputAt > USER_ACTIVATION_MS }, message))
             return;
         switch (message.type) {
             case "ready": {
