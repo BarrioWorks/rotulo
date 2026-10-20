@@ -158,3 +158,13 @@ test('a site-triggered frame reload preserves selection for the next ready hands
   onLoad();
   assert.equal(context.restore.select, 'a'); assert.equal(context.restore.scrollY, 120);
 });
+
+test('obstacle hit grid walks repeated content only once without dropping the obstacle', () => {
+  const hit = {}, content = {}, sel = { getBoundingClientRect: () => ({ top: 200, bottom: 300, left: 100, right: 200, height: 100 }) };
+  let walks = 0;
+  const context = { document: { documentElement: { clientWidth: 1280 }, body: {}, elementFromPoint: () => hit },
+    innerWidth: 1280, innerHeight: 800, k: 1, host: {}, contentAt: () => { walks++; return content; },
+  };
+  const find = vm.runInNewContext(`${section('function findObstacles(', 'function boxOf(')} findObstacles`, context);
+  assert.equal(find(sel)[0], content); assert.equal(walks, 1);
+});

@@ -290,6 +290,8 @@ function findObstacles(sel: HTMLElement): Element[] {
   for (let i = 0; i < 4; i++) rows.push(r.top - band + (i * (band - 2)) / 3, r.bottom + 2 + (i * (band + 24 * k)) / 3);
   for (let i = 1; i <= 3; i++) rows.push(r.top + (i * r.height) / 4);
   const found = new Set<Element>();
+  // The hit grid often lands on the same node. Walk its content ancestry only once.
+  const contentByHit = new Map<Element, Element | null>();
   const step = Math.max(24, vw / 36);
   for (const y of rows) {
     if (y < 0 || y >= innerHeight) continue;
@@ -297,7 +299,8 @@ function findObstacles(sel: HTMLElement): Element[] {
       if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) continue;
       const hit = document.elementFromPoint(x, y);
       if (!hit || hit === host || hit === document.body || hit === document.documentElement) continue;
-      const content = contentAt(hit, sel);
+      if (!contentByHit.has(hit)) contentByHit.set(hit, contentAt(hit, sel));
+      const content = contentByHit.get(hit);
       if (content) found.add(content);
     }
   }

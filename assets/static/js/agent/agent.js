@@ -262,6 +262,8 @@ function findObstacles(sel) {
     for (let i = 1; i <= 3; i++)
         rows.push(r.top + (i * r.height) / 4);
     const found = new Set();
+    // The hit grid often lands on the same node. Walk its content ancestry only once.
+    const contentByHit = new Map();
     const step = Math.max(24, vw / 36);
     for (const y of rows) {
         if (y < 0 || y >= innerHeight)
@@ -272,7 +274,9 @@ function findObstacles(sel) {
             const hit = document.elementFromPoint(x, y);
             if (!hit || hit === host || hit === document.body || hit === document.documentElement)
                 continue;
-            const content = contentAt(hit, sel);
+            if (!contentByHit.has(hit))
+                contentByHit.set(hit, contentAt(hit, sel));
+            const content = contentByHit.get(hit);
             if (content)
                 found.add(content);
         }
