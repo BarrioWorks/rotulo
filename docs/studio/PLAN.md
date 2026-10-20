@@ -32,3 +32,10 @@ High. The work is reversible in git and needs no backend change, but it rewrites
 | H | Browser end to end, final screenshots, measurements | One agent |
 
 Concurrency stays at five agents. Each implementing agent works in its own git worktree and owns its own files.
+
+## Progress
+
+- A to B done: baseline, research, identity, editor model (`baseline/`, `research/`, `identity/`, `editor/`).
+- D done: Studio foundation merged (Onest, ultramarine, materials, motion, icon sizes, glass contrast gate).
+- C done: three prototypes, two critiques on different models, pick A with grafts (`direction/README.md`).
+- E and F running in three worktrees: editor shell and caption (`studio/shell`), agent and canvas fixes (`studio/agent`), other screens (`studio/screens`).
