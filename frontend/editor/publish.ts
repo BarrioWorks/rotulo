@@ -45,9 +45,9 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   const change: Change = saver.change;
   const pid = () => store.get().project.pid;
   const pop = must<HTMLElement>(document, "[data-publish-pop]");
-  const historySheet = must<HTMLDialogElement>(document, 'dialog[data-dialog="history"]');
+  const historySheet = must<HTMLElement>(document, '[data-dialog="history"]');
   const historyList = must<HTMLUListElement>(historySheet, "[data-release-list]");
-  const settings = must<HTMLDialogElement>(document, 'dialog[data-dialog="settings"]');
+  const settings = must<HTMLElement>(document, '[data-dialog="settings"]');
   const manageReview = document.querySelector<HTMLElement>("[data-manage-review]");
   const manageHistory = document.querySelector<HTMLUListElement>("[data-manage-history]");
   const manageAddress = document.querySelector<HTMLElement>("[data-manage-address]");
@@ -77,10 +77,17 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     window.open(store.get().project.site_url, "_blank", "noopener,noreferrer");
   }
 
+  function publicationFeedback(text: string): void {
+    const status = document.querySelector<HTMLElement>("[data-status-text]");
+    if (status) { status.textContent = text; status.dataset["publicationFeedback"] = text; }
+    announce(text);
+  }
+
   async function publish(): Promise<void> {
     if (publishing) return;
     publishing = true;
     publishError = null;
+    publicationFeedback("Publishing…");
     renderAll();
     let rejection: ApiError | null = null;
     const result = await change((base) => api.publish(pid(), base), {
@@ -98,12 +105,14 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
       } else if (failure) {
         publishError = failure.message;
       }
+      publicationFeedback(publishError ?? "Couldn’t publish. Try again.");
       renderAll();
       return;
     }
     store.dispatch({ type: "published", release: result.release });
     store.dispatch({ type: "project", project: { ...store.get().project, site_url: result.site_url } });
     closeReview();
+    publicationFeedback(`Published at ${new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`);
     announce(`Published. Visitors now see version ${result.release.number}.`);
     toast(`Published. Visitors now see version ${result.release.number}.`, { action: { label: "View website", run: viewWebsite } });
   }
@@ -177,7 +186,6 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     if (where === "popover") {
       const history = h("button", { class: "link-btn", text: "Version history", attrs: { type: "button" } });
       history.addEventListener("click", () => {
-        closeReview();
         openHistory(popTrigger);
       });
       out.push(h("div", { class: "pub-foot" }, history));
@@ -189,7 +197,9 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     const s = store.get();
     if (!pop.hidden) {
       const focusedConfirm = document.activeElement instanceof HTMLElement && document.activeElement.hasAttribute("data-publish-confirm");
+      const hadHistory = !historySheet.hidden && historySheet.parentElement === pop;
       pop.replaceChildren(...review(s, "popover"));
+      if (hadHistory) pop.append(historySheet);
       if (focusedConfirm) pop.querySelector<HTMLElement>("[data-publish-confirm]")?.focus();
     }
     if (manageReview) manageReview.replaceChildren(...review(s, "manage"));
@@ -215,6 +225,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     }
     popTrigger = trigger;
     publishError = null;
+    store.dispatch({ type: "open_surface", surface: "publish" });
     pop.hidden = false;
     trigger?.setAttribute("aria-expanded", "true");
     document.body.toggleAttribute("data-review-open", true);
@@ -229,7 +240,10 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   function closeReview(restore = true): boolean {
     if (pop.hidden) return false;
     pop.hidden = true;
+    historySheet.hidden = true;
+    document.body.append(historySheet);
     pop.replaceChildren();
+    if (store.get().surface.kind === "publish") store.dispatch({ type: "close_panel" });
     document.body.toggleAttribute("data-review-open", false);
     document.removeEventListener("pointerdown", onOutside, true);
     popTrigger?.setAttribute("aria-expanded", "false");
@@ -282,7 +296,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     if (!ok) return;
     const result = await change((base) => api.restore(pid(), base, release.number));
     if (!result) return;
-    if (historySheet.open) historySheet.close();
+    closeReview(false);
     await afterRestore(result.pages);
     toast(`Version ${release.number} is now in the editor.`);
   }
@@ -302,7 +316,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
         actions.append(live);
       }
       if (!compact) {
-        const open = h("button", { class: "btn btn-ghost btn-sm", text: "Open in editor", attrs: { type: "button", "aria-label": `Open version ${r.number} in the editor` } });
+        const open = h("button", { class: "btn btn-ghost btn-sm", text: "Restore", attrs: { type: "button", "aria-label": `Open version ${r.number} in the editor` } });
         open.addEventListener("click", () => void openVersion(r));
         actions.append(open);
       }
@@ -317,16 +331,18 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
 
   function renderHistory(): void {
     const s = store.get();
-    if (historySheet.open) historyList.replaceChildren(...releaseRows(s, false));
+    if (!historySheet.hidden) historyList.replaceChildren(...releaseRows(s, false));
     if (manageHistory) manageHistory.replaceChildren(...releaseRows(s, true));
   }
 
-  must<HTMLButtonElement>(historySheet, "[data-close]").addEventListener("click", () => historySheet.close());
+  must<HTMLButtonElement>(historySheet, "[data-close]").addEventListener("click", () => closeReview());
 
-  function openHistory(_trigger: HTMLElement | null = null): void {
-    historyList.replaceChildren(...releaseRows(store.get(), false));
-    historySheet.showModal();
-    historySheet.querySelector<HTMLElement>(".release button, [data-close]")?.focus();
+  function openHistory(trigger: HTMLElement | null = null): void {
+    if (store.get().surface.kind !== "publish") openReview(trigger);
+    historySheet.hidden = false;
+    pop.append(historySheet);
+    renderHistory();
+    historySheet.querySelector<HTMLElement>("button")?.focus();
     void loadReleases();
   }
 
@@ -342,7 +358,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   const domainForm = must<HTMLFormElement>(settings, "[data-domain-form]");
   const domainInput = must<HTMLInputElement>(settings, "[data-domain-input]");
   const domainError = must<HTMLElement>(settings, "[data-domain-error]");
-  must<HTMLButtonElement>(settings, "[data-close]").addEventListener("click", () => settings.close());
+  must<HTMLButtonElement>(settings, "[data-close]").addEventListener("click", () => closeSettings());
 
   siteSlug.addEventListener("input", () => {
     const cleaned = siteSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, "-");
@@ -449,15 +465,35 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     }
   });
 
-  function openSettings(_trigger: HTMLElement | null = null): void {
+  let settingsTrigger: HTMLElement | null = null;
+  function closeSettings(): void {
+    store.dispatch({ type: "close_panel" });
+    settingsTrigger?.focus({ preventScroll: true });
+  }
+  function settingsSection(section: string): void {
+    for (const content of settings.querySelectorAll<HTMLElement>("[data-settings-content]")) content.hidden = content.dataset["settingsContent"] !== section;
+    for (const b of settings.querySelectorAll<HTMLButtonElement>("[data-settings-section]")) b.setAttribute("aria-pressed", String(b.dataset["settingsSection"] === section));
+    if (section === "versions") {
+      const host = must<HTMLElement>(settings, "[data-settings-versions]");
+      host.append(historySheet); historySheet.hidden = false; renderHistory();
+    }
+  }
+  function openSettings(trigger: HTMLElement | null = null): void {
+    settingsTrigger = trigger;
     const s = store.get();
-    siteName.value = s.project.name;
-    siteSlug.value = s.project.slug;
-    settingsError.hidden = true;
-    settings.showModal();
-    siteName.focus();
+    siteName.value = s.project.name; siteSlug.value = s.project.slug; settingsError.hidden = true;
+    store.dispatch({ type: "open_surface", surface: "settings" });
+    settingsSection("general"); siteName.focus();
     if (s.customDomains) void loadDomains();
   }
+  for (const button of settings.querySelectorAll<HTMLButtonElement>("[data-settings-section]")) button.addEventListener("click", () => settingsSection(button.dataset["settingsSection"] ?? "general"));
+  settings.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSettings(); }
+  });
+  must<HTMLButtonElement>(settings, "[data-settings-pages]").addEventListener("click", () => must<HTMLButtonElement>(document, "[data-page-switcher]").click());
+  must<HTMLButtonElement>(settings, "[data-settings-images]").addEventListener("click", () => must<HTMLButtonElement>(document, "[data-open-images]").click());
+  must<HTMLButtonElement>(settings, "[data-page-meta]").addEventListener("click", () => store.dispatch({ type: "open_panel", panel: "page" }));
+  must<HTMLButtonElement>(settings, "[data-settings-publish]").addEventListener("click", () => openReview(document.querySelector<HTMLElement>('[data-action="publish"]')));
 
   function renderAll(): void {
     renderReview();
@@ -465,8 +501,10 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   }
 
   store.subscribe((s, prev) => {
+    settings.hidden = s.surface.kind !== "settings";
+    if (s.surface.kind !== "publish" && !pop.hidden) closeReview(false);
     if (changed(s, prev, "project", "draftChanged", "changes", "releases", "saves", "pages")) renderAll();
-    if (changed(s, prev, "customDomains")) domainSection.hidden = !s.customDomains;
+    if (!s.customDomains) domainSection.hidden = true;
     if (changed(s, prev, "domains", "dns")) domainList.replaceChildren(...(s.domains ?? []).map((d) => domainCard(d, s.dns)));
     if (changed(s, prev, "project")) {
       try {

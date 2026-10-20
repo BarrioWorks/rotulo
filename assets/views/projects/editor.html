@@ -6,48 +6,21 @@
 {% block body %}
 <div class="visually-hidden" id="editor-announcer" role="status" aria-live="polite"></div>
 
-<section class="manage" data-manage aria-labelledby="manage-title">
-  <a class="btn btn-ghost btn-sm manage-back" href="/projects">
-    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
-    Your websites
-  </a>
-  <h1 class="manage-title" id="manage-title">{{ project.name }}</h1>
-  <p class="manage-address" data-manage-address></p>
-  <div class="alert alert-info" data-manage-wide hidden>
-    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-info"/></svg>
-    <span class="grow">Your window is wide enough to edit now.</span>
-    <button class="link-btn" type="button" data-manage-open>Open the editor</button>
-  </div>
-  <section class="manage-card" aria-label="Publishing" data-manage-review></section>
-  <section class="manage-card" aria-labelledby="manage-history-title">
-    <h2 class="manage-heading" id="manage-history-title">Version history</h2>
-    <ul class="release-list" role="list" data-manage-history></ul>
-  </section>
-  <button class="btn btn-secondary btn-block" type="button" data-manage-settings>Website settings</button>
-  <p class="manage-note">To change text and pictures, open Pagehaven on a computer.</p>
-</section>
-
 <div class="editor" id="editor" data-pid="{{ project.pid }}" data-name="{{ project.name }}">
   <header class="ed-top">
-    <div class="ed-top-left">
+    <div class="ed-top-left material-float">
       <a class="btn btn-ghost btn-icon btn-sm" href="/projects" aria-label="Back to your websites" data-tip="Your websites">
         <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
       </a>
-      <button class="btn btn-ghost btn-icon btn-sm ed-rail-toggle" type="button" data-rail-toggle aria-expanded="false" aria-controls="ed-rail" aria-label="Pages and settings" data-tip="Pages and settings">
-        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-page"/></svg>
-      </button>
-      <button class="ed-crumb ed-site" type="button" data-site-menu aria-haspopup="menu" aria-expanded="false" data-tip="Settings, versions and shortcuts">
-        <span class="ed-site-name truncate" data-site-name>{{ project.name }}</span>
-        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-down"/></svg>
-      </button>
-      <span class="ed-slash" aria-hidden="true">/</span>
       <button class="ed-crumb ed-page" type="button" data-page-switcher aria-haspopup="menu" aria-expanded="false" data-tip="Switch page" data-kbd="Ctrl+K">
-        <span class="truncate" data-page-name>Home</span>
+        <span class="ed-site-name" data-site-name>{{ project.name }}</span><span class="ed-slash">/</span><span class="truncate" data-page-name>Home</span>
         <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-down"/></svg>
       </button>
+      <button class="btn btn-ghost btn-sm" type="button" data-open-images>Images</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-open-settings>Settings</button>
     </div>
 
-    <div class="ed-top-center">
+    <div class="ed-top-center material-float">
       <div class="row ed-history">
         <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="undo" aria-label="Undo" data-tip="Undo" data-kbd="Ctrl+Z" disabled>
           <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-undo"/></svg>
@@ -75,19 +48,16 @@
       </div>
     </div>
 
-    <div class="ed-top-right">
+    <div class="ed-top-right material-float">
       <button class="ed-status" type="button" data-status-pill data-tone="neutral" aria-haspopup="dialog" aria-expanded="false">
         <span class="ed-status-mark" data-status-mark aria-hidden="true"></span><span class="ed-status-text" data-status-text></span>
       </button>
-      <a class="btn btn-secondary ed-view" target="_blank" rel="noopener noreferrer" data-view-site hidden>
-        <span>View website</span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
-      </a>
       <button class="btn btn-primary ed-publish" type="button" data-action="publish" aria-haspopup="dialog" aria-expanded="false">Publish</button>
     </div>
   </header>
 
-  <aside class="ed-rail" id="ed-rail" aria-label="Pages and properties" data-rail>
-    <section class="rail-pages" data-rail-pages aria-labelledby="rail-pages-title">
+  <div data-surface-host>
+    <section class="studio-pop material-sheet rail-pages" data-rail-pages hidden aria-labelledby="rail-pages-title">
       <div class="rail-start" data-rail-start aria-labelledby="rail-start-title" role="group">
         <h2 class="rail-start-title" id="rail-start-title">Start here</h2>
         <p class="rail-start-text">Click any text or picture on your page to change it.</p>
@@ -97,6 +67,7 @@
           <li><button class="rail-shortcut" type="button" data-start="settings">Change your web address</button></li>
         </ul>
       </div>
+      <label class="visually-hidden" for="page-search">Find a page</label><input class="input" id="page-search" type="search" placeholder="Find a page…" role="combobox" aria-controls="page-options" aria-expanded="true" aria-autocomplete="list" data-page-search>
       <div class="rail-head">
         <h2 class="rail-title" id="rail-pages-title">Pages</h2>
         <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="add-page" aria-label="Add page" data-tip="Add page">
@@ -104,14 +75,10 @@
         </button>
       </div>
       <div class="rail-note" data-page-note hidden></div>
-      <ul class="page-list" data-page-list role="list"></ul>
-      <ul class="rail-rows" role="list" aria-label="Website">
-        <li><button class="rail-row" type="button" data-row="settings"><span class="grow">Website settings</span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></button></li>
-        <li><button class="rail-row" type="button" data-row="history"><span class="grow">Version history</span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></button></li>
-        <li><button class="rail-row" type="button" data-row="images"><span class="grow">Images</span><span class="rail-row-count tnum" data-images-count></span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></button></li>
-      </ul>
+      <ul class="page-list" id="page-options" data-page-list role="listbox" aria-label="Pages"></ul>
+      <button class="btn btn-ghost" type="button" data-add-page>Add a page…</button>
     </section>
-    <section class="rail-images" data-rail-images aria-labelledby="rail-images-title" hidden>
+    <section class="studio-pop material-sheet rail-images" data-rail-images aria-labelledby="rail-images-title" hidden>
       <div class="rail-panel-head">
         <button class="btn btn-ghost btn-sm rail-back" type="button" data-images-back data-kbd="Esc" data-tip="Back to the pages">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg><span>Pages</span>
@@ -121,8 +88,8 @@
       </div>
       <ul class="image-list" role="list" data-image-list></ul>
     </section>
-    <section class="rail-panel" id="ed-rail-panel" data-rail-panel role="group" aria-labelledby="ed-rail-title" hidden></section>
-  </aside>
+    <section class="studio-pop material-sheet rail-panel" id="ed-rail-panel" data-rail-panel role="group" aria-labelledby="ed-rail-title" hidden></section>
+  </div>
 
   <main class="ed-main" id="main">
     <div class="canvas-area" data-canvas-area data-device="desktop" data-mode="edit">
@@ -135,7 +102,7 @@
       </div>
     </div>
 
-    <div class="ftb" id="toolbar" role="toolbar" aria-orientation="horizontal" aria-label="Tools" data-toolbar></div>
+    <div class="ftb material-float" id="toolbar" role="toolbar" aria-orientation="horizontal" aria-label="Tools" data-toolbar></div>
     <button class="ed-offscreen" type="button" data-offscreen hidden>
       <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-move-up"/></svg>
       <span data-offscreen-text></span>
@@ -143,14 +110,14 @@
 
     <div class="canvas-foot">
       <p class="canvas-hint" data-canvas-hint aria-live="polite"></p>
-      <button class="btn btn-ghost btn-sm canvas-zoom" type="button" data-zoom><span class="tnum" data-zoom-label>Fit</span></button>
+
     </div>
   </main>
 </div>
 
-<div class="popover ed-publish-pop" role="dialog" aria-labelledby="ed-publish-title" data-publish-pop hidden></div>
+<div class="popover material-sheet ed-publish-pop" role="dialog" aria-labelledby="ed-publish-title" data-publish-pop hidden></div>
 
-<dialog class="sheet" data-dialog="history" aria-labelledby="history-title">
+<section class="studio-history" data-dialog="history" hidden aria-labelledby="history-title">
   <div class="sheet-head">
     <h2 id="history-title">Version history</h2>
     <button class="btn btn-ghost btn-icon btn-sm" type="button" data-close aria-label="Close version history">
@@ -161,9 +128,9 @@
     <p class="hint">Every publish is saved as a version. Publish an earlier version again if something went wrong, or open it in the editor to start from it.</p>
     <ul class="release-list" role="list" data-release-list></ul>
   </div>
-</dialog>
+</section>
 
-<dialog class="modal ed-settings" data-dialog="settings" aria-labelledby="settings-title">
+<section class="ed-settings material-sheet" hidden data-settings-sheet role="region" tabindex="-1" data-dialog="settings" aria-labelledby="settings-title">
   <div class="modal-body">
     <div class="row-between">
       <h2 id="settings-title">Website settings</h2>
@@ -171,6 +138,8 @@
         <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-close"/></svg>
       </button>
     </div>
+    <nav class="settings-nav" aria-label="Settings sections"><button class="btn btn-ghost btn-sm" type="button" data-settings-section="general">General</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="pages">Pages</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="assets">Assets</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="domains">Domains</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="publishing">Publishing</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="versions">Versions</button></nav>
+    <div data-settings-content="general"><h3>General</h3>
     <form class="settings-group" data-settings-form>
       <div class="field">
         <label class="label" for="site-name">Website name</label>
@@ -179,7 +148,7 @@
       <div class="field">
         <label class="label" for="site-slug">Web address</label>
         <div class="input-group">
-          <input class="input" id="site-slug" type="text" minlength="3" maxlength="32" pattern="[a-z0-9-]{3,32}" autocomplete="off" autocapitalize="off" spellcheck="false" required data-settings-slug aria-describedby="slug-hint">
+          <input class="input" id="site-slug" type="text" minlength="3" maxlength="32" pattern="[a-z0-9\-]{3,32}" autocomplete="off" autocapitalize="off" spellcheck="false" required data-settings-slug aria-describedby="slug-hint">
           <span class="input-addon" data-settings-suffix></span>
         </div>
         <span class="hint" id="slug-hint">3 to 32 lowercase letters, numbers or dashes. Changing it moves your website to the new address.</span>
@@ -188,7 +157,8 @@
       <div class="settings-actions"><button class="btn btn-primary" type="submit">Save</button></div>
     </form>
 
-    <section class="settings-group" data-domain-section aria-labelledby="domain-title">
+    </div><div data-settings-content="pages" hidden><button class="btn btn-secondary" type="button" data-settings-pages>Manage pages</button><button class="btn btn-ghost" type="button" data-page-meta>Page title and description</button></div><div data-settings-content="assets" hidden><button class="btn btn-secondary" type="button" data-settings-images>Browse page images</button></div><div data-settings-content="publishing" hidden><button class="btn btn-primary" type="button" data-settings-publish>Review and publish</button></div><div data-settings-content="versions" hidden data-settings-versions></div>
+    <section class="settings-group" data-settings-content="domains" hidden data-domain-section aria-labelledby="domain-title">
       <h3 class="settings-heading" id="domain-title">Your own domain</h3>
       <p class="hint">Use an address you own, like www.yourbusiness.com.</p>
       <div class="domain-list" data-domain-list></div>
@@ -200,7 +170,7 @@
       <p class="field-error" id="domain-error" role="alert" data-domain-error hidden></p>
     </section>
   </div>
-</dialog>
+</section>
 
 <dialog class="modal" data-dialog="shortcuts" aria-labelledby="shortcuts-title">
   <div class="modal-body">
@@ -219,10 +189,9 @@
       <dt><span class="kbd">Alt</span> <span class="kbd">Shift</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move the selected section up or down</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Z</span></dt><dd>Undo</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">Z</span></dt><dd>Redo</dd>
-      <dt><span class="kbd">Ctrl</span> <span class="kbd">K</span></dt><dd>Switch page</dd>
-      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">P</span></dt><dd>Review and publish</dd>
-      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">H</span></dt><dd>Version history</dd>
-      <dt><span class="kbd">F6</span></dt><dd>Jump between the top bar, pages, the page and its tools</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">K</span></dt><dd>Open command palette</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">.</span></dt><dd>Toggle focus mode</dd>
+      <dt><span class="kbd">F6</span></dt><dd>Jump between the islands, open surface, canvas and caption</dd>
       <dt><span class="kbd">?</span></dt><dd>Show these shortcuts</dd>
     </dl>
     <p class="hint">On a Mac, use Cmd instead of Ctrl. Changes save automatically.</p>
@@ -274,6 +243,10 @@
     <button class="btn btn-primary" type="button" data-conflict-reload>Reload</button>
   </div>
 </dialog>
+
+<div class="studio-bottom" data-bottom-bar></div>
+<button class="btn btn-secondary studio-show" type="button" data-show-tools hidden>Show tools</button>
+<dialog class="modal studio-palette" data-command-palette aria-label="Commands"><div class="modal-body"><label class="label" for="command-search">Find a command or page</label><input class="input" id="command-search" role="combobox" aria-expanded="true" aria-controls="command-options" aria-autocomplete="list"><ul id="command-options" role="listbox" aria-label="Commands"></ul><button class="btn btn-ghost" type="button" data-command-close>Close</button></div></dialog>
 
 <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" hidden data-image-input>
 {% endblock body %}

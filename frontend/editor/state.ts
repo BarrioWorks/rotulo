@@ -21,16 +21,15 @@ export type Focus =
   | { kind: "selected"; selection: Selection }
   | { kind: "blocked"; rect: Rect; around: string | null };
 
-/** Panels with fields open in the left rail in place of the page list. */
+/** Properties hosted by the single floating surface. */
 export type Panel = "style" | "background" | "link" | "text-link" | "image" | "page";
 
-/**
- * The left rail: the page list (with the first-time guidance when nothing is selected), the
- * page's pictures, or a panel. A panel remembers the kind of part it opened for, so selecting a
- * different kind of part returns to the pages instead of keeping an unrelated panel open.
- */
-export type Rail =
+/** Exactly one floating surface can be open. */
+export type Surface =
+  | { kind: "none" }
   | { kind: "pages" }
+  | { kind: "settings" }
+  | { kind: "publish" }
   | { kind: "images" }
   | { kind: "panel"; panel: Panel; element: string | null; subject: Kind | null; replaced: boolean };
 
@@ -92,7 +91,7 @@ export interface State {
   outline: Outline;
   palette: string[];
   anchors: { id: string; name: string }[];
-  rail: Rail;
+  surface: Surface;
   pageMeta: { title: string; description: string };
   releases: Release[] | null;
   domains: Domain[] | null;
@@ -112,6 +111,7 @@ export type Action =
   | { type: "deselected" }
   | { type: "viewport"; scrollY: number; rect: Rect | null; obstructions: Rect[]; obstacles?: Rect[] }
   | { type: "outline"; outline: Outline }
+  | { type: "open_surface"; surface: "none" | "pages" | "images" | "settings" | "publish" }
   | { type: "open_images" }
   | { type: "palette"; colors: string[] }
   | { type: "anchors"; items: { id: string; name: string }[] }
@@ -158,7 +158,7 @@ export function initialState(data: Bootstrap, now: number): State {
     outline: { heading: null, images: [] },
     palette: [],
     anchors: [],
-    rail: { kind: "pages" },
+    surface: { kind: "none" },
     pageMeta: { title: "", description: "" },
     releases: null,
     domains: null,
@@ -178,7 +178,7 @@ export function pagePath(pathname: string): string {
   return path;
 }
 
-/** Whether a rail panel makes sense for a selection. The page panel needs none. */
+/** Whether a surface panel makes sense for a selection. The page panel needs none. */
 export function panelApplies(panel: Panel, selection: Selection | null, editing: boolean): boolean {
   if (panel === "page") return true;
   if (!selection) return false;
@@ -197,11 +197,11 @@ function selectionOf(focus: Focus): Selection | null {
 }
 
 /** Keeps an open panel on a new selection of the same kind when it applies, otherwise returns to the pages. */
-function retarget(rail: Rail, focus: Focus, editing: boolean): Rail {
-  if (rail.kind !== "panel" || rail.panel === "page") return rail;
+function retarget(surface: Surface, focus: Focus, editing: boolean): Surface {
+  if (surface.kind !== "panel" || surface.panel === "page") return surface;
   const selection = selectionOf(focus);
-  if (!selection || selection.kind !== rail.subject || !panelApplies(rail.panel, selection, editing)) return { kind: "pages" };
-  return selection.element === rail.element ? rail : { ...rail, element: selection.element, replaced: false };
+  if (!selection || selection.kind !== surface.subject || !panelApplies(surface.panel, selection, editing)) return { kind: "none" };
+  return selection.element === surface.element ? surface : { ...surface, element: selection.element, replaced: false };
 }
 
 function logChange(changes: LoggedChange[], log: SaveLog, previous: History, next: History, page: string): LoggedChange[] {
@@ -232,13 +232,13 @@ export function reduce(state: State, action: Action): State {
         path: action.data.pages.some((p) => p.path === state.path) ? state.path : "index.html",
       };
     case "mode":
-      return { ...state, mode: action.mode, focus: { kind: "none" }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
+      return { ...state, mode: action.mode, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false) };
     case "device":
       return { ...state, device: action.device };
     case "zoom":
       return { ...state, zoom: action.zoom };
     case "open_page":
-      return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, outline: { heading: null, images: [] }, rail: retarget(state.rail, { kind: "none" }, false) };
+      return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, outline: { heading: null, images: [] }, surface: retarget(state.surface, { kind: "none" }, false) };
     case "canvas_loading":
       return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
     case "page_ready":
@@ -246,12 +246,12 @@ export function reduce(state: State, action: Action): State {
       return { ...state, canvasLoading: false, canvasOrigin: action.origin, pageMeta: { title: action.title, description: action.description } };
     case "selected": {
       const focus: Focus = { kind: "selected", selection: action.selection };
-      return { ...state, focus, obstacles: action.obstacles ?? [], rail: retarget(state.rail, focus, state.editing.active) };
+      return { ...state, focus, obstacles: action.obstacles ?? [], surface: retarget(state.surface, focus, state.editing.active) };
     }
     case "blocked":
-      return { ...state, focus: { kind: "blocked", rect: action.rect, around: action.around }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
+      return { ...state, focus: { kind: "blocked", rect: action.rect, around: action.around }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false) };
     case "deselected":
-      return { ...state, focus: { kind: "none" }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
+      return { ...state, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false) };
     case "viewport": {
       const { focus } = state;
       const next: Focus =
@@ -264,24 +264,26 @@ export function reduce(state: State, action: Action): State {
     }
     case "outline":
       return { ...state, outline: action.outline };
+    case "open_surface":
+      return { ...state, surface: { kind: action.surface } };
     case "open_images":
-      return { ...state, rail: { kind: "images" } };
+      return { ...state, surface: { kind: "images" } };
     case "palette":
       return { ...state, palette: action.colors };
     case "anchors":
       return { ...state, anchors: action.items };
     case "editing": {
-      const rail: Rail = !action.active && state.rail.kind === "panel" && state.rail.panel === "text-link" ? { kind: "pages" } : state.rail;
-      return { ...state, editing: { active: action.active, formats: action.formats }, rail };
+      const surface: Surface = !action.active && state.surface.kind === "panel" && state.surface.panel === "text-link" ? { kind: "none" } : state.surface;
+      return { ...state, editing: { active: action.active, formats: action.formats }, surface };
     }
     case "open_panel": {
       const selection = selectionOf(state.focus);
       if (!panelApplies(action.panel, selection, state.editing.active)) return state;
       const page = action.panel === "page";
-      return { ...state, rail: { kind: "panel", panel: action.panel, element: page ? null : (selection?.element ?? null), subject: page ? null : (selection?.kind ?? null), replaced: action.replaced ?? false } };
+      return { ...state, surface: { kind: "panel", panel: action.panel, element: page ? null : (selection?.element ?? null), subject: page ? null : (selection?.kind ?? null), replaced: action.replaced ?? false } };
     }
     case "close_panel":
-      return state.rail.kind === "pages" ? state : { ...state, rail: { kind: "pages" } };
+      return state.surface.kind === "none" ? state : { ...state, surface: { kind: "none" } };
     case "save_queued":
       return { ...state, saves: { ...state.saves, pending: state.saves.pending + 1 } };
     case "save_ok": {
@@ -289,10 +291,10 @@ export function reduce(state: State, action: Action): State {
       const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
       // Undo and redo make "Picture replaced" and its choices out of date.
       const stepped = action.log === "undo" || action.log === "redo";
-      const rail: Rail = stepped && state.rail.kind === "panel" && state.rail.replaced ? { ...state.rail, replaced: false } : state.rail;
+      const surface: Surface = stepped && state.surface.kind === "panel" && state.surface.replaced ? { ...state.surface, replaced: false } : state.surface;
       return {
         ...state,
-        rail,
+        surface,
         saves: { pending: Math.max(0, state.saves.pending - 1), problem: null, savedAt: action.at },
         project: { ...state.project, revision: action.revision },
         history: action.history,
