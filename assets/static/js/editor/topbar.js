@@ -17,6 +17,10 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     const modeButtons = [...document.querySelectorAll("[data-mode]")];
     const deviceButtons = [...document.querySelectorAll("[data-device]")];
     const toolsHome = center.parentElement;
+    const zoom = must(document, "[data-zoom]");
+    zoom.hidden = false;
+    new MutationObserver(() => { if (zoom.hidden)
+        zoom.hidden = false; }).observe(zoom, { attributes: true, attributeFilter: ["hidden"] });
     function layout() {
         if (touch.matches) {
             bottom.prepend(center);

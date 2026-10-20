@@ -106,11 +106,13 @@ export function createToolbar({ store, canvas, edits }) {
     /** After choosing a link around an image, its Link panel opens once the selection arrives. */
     let pendingPanel = null;
     let lastSelection = null;
-    root.addEventListener("mousedown", (event) => {
+    function keepTextSelection(event) {
         const target = event.target instanceof Element ? event.target : null;
         if (target && !target.closest("input, textarea, select"))
             event.preventDefault();
-    });
+    }
+    root.addEventListener("mousedown", keepTextSelection);
+    actionHost.addEventListener("mousedown", keepTextSelection);
     /** The toolbar button that opened the rail panel, so focus can return to it. */
     let panelTrigger = null;
     function openPanel(panel, replaced = false, trigger = null) {
@@ -418,6 +420,11 @@ export function createToolbar({ store, canvas, edits }) {
     // The phone view and zoom change the canvas width without a window resize.
     new ResizeObserver(() => render(true)).observe(canvas.surface);
     return {
+        moveSection(direction) {
+            const sel = selection(store.get());
+            if (sel?.can.includes(direction === "up" ? "u" : "d"))
+                void edits.moveSection(sel, direction);
+        },
         activatePrimary() {
             const s = store.get();
             const sel = selection(s);

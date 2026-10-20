@@ -102,3 +102,22 @@ test("a stale retry is still a conflict when someone else moved the website furt
   assert.equal(await done, null);
   assert.deepEqual(store.get().saves.problem, { kind: "conflict" });
 });
+
+test("Retry resends a failed save once through the revision queue", async () => {
+  globalThis.document = { getElementById: () => null };
+  const store = createStore(initialState(bootstrap, 0));
+  const saver = createSaver(store, async () => bootstrap);
+  const revisions = [];
+  const run = async (base) => {
+    revisions.push(base);
+    if (revisions.length === 1) throw new ApiError(503, "unavailable", "Try again");
+    return { revision: base + 1, history: bootstrap.history, draft_changed_since_publish: true };
+  };
+  assert.equal(await saver.change(run), null);
+  assert.equal(store.get().saves.problem.kind, "error");
+  assert.equal(await saver.retryNow(), true);
+  assert.deepEqual(revisions, [3, 3]);
+  assert.equal(store.get().saves.problem, null);
+  assert.equal(store.get().saves.pending, 0);
+  assert.equal(await saver.retryNow(), false, "a successful retry is never replayed again");
+});

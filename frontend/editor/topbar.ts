@@ -36,6 +36,9 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
   const modeButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-mode]")];
   const deviceButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-device]")];
   const toolsHome = center.parentElement;
+  const zoom = must<HTMLButtonElement>(document, "[data-zoom]");
+  zoom.hidden = false;
+  new MutationObserver(() => { if (zoom.hidden) zoom.hidden = false; }).observe(zoom, { attributes: true, attributeFilter: ["hidden"] });
   function layout(): void {
     if (touch.matches) { bottom.prepend(center); bottom.append(actions); }
     else { toolsHome?.insertBefore(center, document.querySelector(".ed-top-right")); must<HTMLElement>(document, "[data-toolbar]").append(actions); }

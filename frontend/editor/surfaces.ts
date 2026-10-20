@@ -317,6 +317,13 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     if (focusedKey) imageList.querySelector<HTMLElement>(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
   }
 
+  must<HTMLButtonElement>(document, "[data-images-upload]").addEventListener("click", () => {
+    const image = store.get().outline.images[0];
+    if (!image) return;
+    pendingImage = image.element;
+    canvas.send({ type: "select_element", element: image.element });
+  });
+
   /* The panel view */
 
   function panelKey(s: State): string {
@@ -326,8 +333,11 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
   }
 
   function closePanel(): void {
+    const surface = store.get().surface;
+    const page = surface.kind === "panel" && surface.panel === "page";
     store.dispatch({ type: "close_panel" });
-    returnFocus();
+    if (page) must<HTMLButtonElement>(document, "[data-page-switcher]").focus();
+    else returnFocus();
   }
 
   let renderedPanel: string | null = null;
@@ -394,7 +404,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
   });
 
   function focusFirst(): void {
-    const field = panelView.querySelector<HTMLElement>("[data-autofocus]") ?? panelView.querySelector<HTMLElement>(".surface-panel-body input, .surface-panel-body select, .surface-panel-body textarea, .surface-panel-body button");
+    const field = panelView.querySelector<HTMLElement>("[data-autofocus]") ?? panelView.querySelector<HTMLElement>(".rail-panel-body input, .rail-panel-body select, .rail-panel-body textarea, .rail-panel-body button");
     field?.focus({ preventScroll: true });
   }
 
@@ -410,6 +420,12 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     if (store.get().surface.kind !== "panel") return;
     const caption = document.querySelector<HTMLElement>("[data-toolbar]");
     if (!caption) return;
+    const surface = store.get().surface;
+    if (surface.kind === "panel" && surface.panel === "page") {
+      const anchor = must<HTMLElement>(document, "[data-page-switcher]").getBoundingClientRect();
+      panelView.style.left = `${anchor.left}px`; panelView.style.top = `${anchor.bottom + 8}px`;
+      panelView.style.maxHeight = `${innerHeight - anchor.bottom - 24}px`; return;
+    }
     const r = caption.getBoundingClientRect();
     const box = canvas.visibleBox();
     const above = caption.dataset["placement"] === "above-start";

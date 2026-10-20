@@ -303,6 +303,13 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         if (focusedKey)
             imageList.querySelector(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
     }
+    must(document, "[data-images-upload]").addEventListener("click", () => {
+        const image = store.get().outline.images[0];
+        if (!image)
+            return;
+        pendingImage = image.element;
+        canvas.send({ type: "select_element", element: image.element });
+    });
     /* The panel view */
     function panelKey(s) {
         if (s.surface.kind !== "panel")
@@ -311,8 +318,13 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         return JSON.stringify([s.surface, s.surface.panel === "page" ? [s.path, s.pageMeta] : sel ? [sel.element, sel.info, sel.name] : null, s.palette, s.anchors, s.pages, s.editing.active]);
     }
     function closePanel() {
+        const surface = store.get().surface;
+        const page = surface.kind === "panel" && surface.panel === "page";
         store.dispatch({ type: "close_panel" });
-        returnFocus();
+        if (page)
+            must(document, "[data-page-switcher]").focus();
+        else
+            returnFocus();
     }
     let renderedPanel = null;
     let renderedElement = null;
@@ -378,7 +390,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         window.setTimeout(renderSurfaces, 0);
     });
     function focusFirst() {
-        const field = panelView.querySelector("[data-autofocus]") ?? panelView.querySelector(".surface-panel-body input, .surface-panel-body select, .surface-panel-body textarea, .surface-panel-body button");
+        const field = panelView.querySelector("[data-autofocus]") ?? panelView.querySelector(".rail-panel-body input, .rail-panel-body select, .rail-panel-body textarea, .rail-panel-body button");
         field?.focus({ preventScroll: true });
     }
     panelView.addEventListener("keydown", (event) => {
@@ -394,6 +406,14 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         const caption = document.querySelector("[data-toolbar]");
         if (!caption)
             return;
+        const surface = store.get().surface;
+        if (surface.kind === "panel" && surface.panel === "page") {
+            const anchor = must(document, "[data-page-switcher]").getBoundingClientRect();
+            panelView.style.left = `${anchor.left}px`;
+            panelView.style.top = `${anchor.bottom + 8}px`;
+            panelView.style.maxHeight = `${innerHeight - anchor.bottom - 24}px`;
+            return;
+        }
         const r = caption.getBoundingClientRect();
         const box = canvas.visibleBox();
         const above = caption.dataset["placement"] === "above-start";

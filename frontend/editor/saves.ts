@@ -36,7 +36,7 @@ export type Change = <T>(run: (baseRevision: number) => Promise<T>, options?: Ch
 export interface Saver {
   change: Change;
   /** Retries a change that is waiting for the network, now. */
-  retryNow(): void;
+  retryNow(): Promise<boolean>;
 }
 
 function isSaved(value: unknown): value is Saved {
@@ -57,6 +57,7 @@ export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>):
   let tail: Promise<unknown> = Promise.resolve();
   let halted = false;
   let wake: (() => void) | null = null;
+  let retryFailed: (() => Promise<boolean>) | null = null;
 
   function waitForRetry(attempt: number): Promise<void> {
     return new Promise((resolve) => {
@@ -85,6 +86,7 @@ export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>):
         const base = store.get().project.revision;
         try {
           const result = await run(base);
+          retryFailed = null;
           if (isSaved(result)) {
             store.dispatch({
               type: "save_ok",
@@ -142,6 +144,7 @@ export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>):
             if (options.toastRejection !== false) toast(failure.message, { kind: "error" });
             options.onRejected?.(failure);
           } else {
+            retryFailed = () => change(run, options).then((result) => result !== null);
             store.dispatch({ type: "save_failed", message: failure.message });
             toast(failure.message, { kind: "error" });
             options.onRejected?.(failure);
@@ -154,5 +157,13 @@ export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>):
     return job;
   }
 
-  return { change, retryNow: () => wake?.() };
+  return {
+    change,
+    async retryNow() {
+      if (wake) { wake(); return false; }
+      const retry = retryFailed;
+      retryFailed = null;
+      return retry ? retry() : false;
+    },
+  };
 }

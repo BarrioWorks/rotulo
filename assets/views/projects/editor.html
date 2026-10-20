@@ -46,6 +46,8 @@
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-phone"/></svg>
         </button>
       </div>
+      <button class="btn btn-ghost btn-sm" type="button" data-zoom><span data-zoom-label>Fit</span></button>
+      <button class="btn btn-ghost btn-sm" type="button" data-focus>Focus</button>
     </div>
 
     <div class="ed-top-right material-float">
@@ -86,7 +88,9 @@
         <h2 class="rail-title" id="rail-images-title">Images</h2>
         <p class="rail-subject" data-images-subject></p>
       </div>
+      <p class="hint">Choose a picture to replace it, then upload your new image.</p>
       <ul class="image-list" role="list" data-image-list></ul>
+      <button class="btn btn-secondary" type="button" data-images-upload>Upload a replacement…</button>
     </section>
     <section class="studio-pop material-sheet rail-panel" id="ed-rail-panel" data-rail-panel role="group" aria-labelledby="ed-rail-title" hidden></section>
   </div>
@@ -139,7 +143,7 @@
       </button>
     </div>
     <nav class="settings-nav" aria-label="Settings sections"><button class="btn btn-ghost btn-sm" type="button" data-settings-section="general">General</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="pages">Pages</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="assets">Assets</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="domains">Domains</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="publishing">Publishing</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="versions">Versions</button></nav>
-    <div data-settings-content="general"><h3>General</h3>
+    <div data-settings-content="general"><h3>General</h3><button class="btn btn-ghost btn-sm" type="button" data-settings-shortcuts>Keyboard shortcuts</button>
     <form class="settings-group" data-settings-form>
       <div class="field">
         <label class="label" for="site-name">Website name</label>

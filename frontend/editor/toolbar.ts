@@ -121,6 +121,7 @@ export interface ToolbarDeps {
 export interface Toolbar {
   /** Runs the selection's first action (Enter on the canvas). */
   activatePrimary(): void;
+  moveSection(direction: "up" | "down"): void;
   /** Moves focus into the toolbar, to the button that opened the last panel if it is still there. Returns false when it is hidden. */
   focus(): boolean;
 }
@@ -140,10 +141,12 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
   let pendingPanel: { element: string; panel: Panel } | null = null;
   let lastSelection: string | null = null;
 
-  root.addEventListener("mousedown", (event) => {
+  function keepTextSelection(event: MouseEvent): void {
     const target = event.target instanceof Element ? event.target : null;
     if (target && !target.closest("input, textarea, select")) event.preventDefault();
-  });
+  }
+  root.addEventListener("mousedown", keepTextSelection);
+  actionHost.addEventListener("mousedown", keepTextSelection);
 
   /** The toolbar button that opened the rail panel, so focus can return to it. */
   let panelTrigger: string | null = null;
@@ -424,6 +427,10 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
   new ResizeObserver(() => render(true)).observe(canvas.surface);
 
   return {
+    moveSection(direction) {
+      const sel = selection(store.get());
+      if (sel?.can.includes(direction === "up" ? "u" : "d")) void edits.moveSection(sel, direction);
+    },
     activatePrimary() {
       const s = store.get();
       const sel = selection(s);

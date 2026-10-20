@@ -214,6 +214,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   }
 
   function onOutside(event: Event): void {
+    if (event.target instanceof Element && event.target.closest("dialog")) return;
     if (event.target instanceof Node && (pop.contains(event.target) || popTrigger?.contains(event.target))) return;
     closeReview(false);
   }
@@ -335,7 +336,10 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     if (manageHistory) manageHistory.replaceChildren(...releaseRows(s, true));
   }
 
-  must<HTMLButtonElement>(historySheet, "[data-close]").addEventListener("click", () => closeReview());
+  must<HTMLButtonElement>(historySheet, "[data-close]").addEventListener("click", () => {
+    if (store.get().surface.kind === "settings") settingsSection("general");
+    else closeReview();
+  });
 
   function openHistory(trigger: HTMLElement | null = null): void {
     if (store.get().surface.kind !== "publish") openReview(trigger);
@@ -490,6 +494,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   settings.addEventListener("keydown", (event) => {
     if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSettings(); }
   });
+  must<HTMLButtonElement>(settings, "[data-settings-shortcuts]").addEventListener("click", () => must<HTMLDialogElement>(document, '[data-dialog="shortcuts"]').show());
   must<HTMLButtonElement>(settings, "[data-settings-pages]").addEventListener("click", () => must<HTMLButtonElement>(document, "[data-page-switcher]").click());
   must<HTMLButtonElement>(settings, "[data-settings-images]").addEventListener("click", () => must<HTMLButtonElement>(document, "[data-open-images]").click());
   must<HTMLButtonElement>(settings, "[data-page-meta]").addEventListener("click", () => store.dispatch({ type: "open_panel", panel: "page" }));

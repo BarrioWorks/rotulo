@@ -69,7 +69,7 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
                 return;
             const s = store.get();
             if (s.editing.active && canvas) {
-                canvas.send({ type: "finish_text", commit: true });
+                void canvas.finishText();
                 canvas.surface.focus({ preventScroll: true });
             }
             else if (s.surface.kind !== "none") {
@@ -91,8 +91,7 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
         const sel = selection(store.get());
         const move = (direction) => canvas.send({ type: "select_relative", direction });
         if (event.altKey && event.shiftKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-            if (sel && sel.can.includes(event.key === "ArrowUp" ? "u" : "d"))
-                document.querySelector(`[data-key="${event.key === "ArrowUp" ? "move-up" : "move-down"}"]`)?.click();
+            toolbar.moveSection(event.key === "ArrowUp" ? "up" : "down");
         }
         else if (event.key === "ArrowDown" || (event.altKey && event.key === "ArrowRight" && !sel))
             move("next");
@@ -113,15 +112,17 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
     });
     function cycleRegions(direction) {
         const regions = [
-            [".ed-top", ".ed-top button:not([disabled]), .ed-top a"],
+            [".ed-top-left", ".ed-top-left a, .ed-top-left button"],
+            [".ed-top-center", ".ed-top-center button:not([disabled])"],
+            [".ed-top-right", ".ed-top-right button"],
             ["[data-settings-sheet]", "[data-settings-sheet]:not([hidden]) button"],
             ["[data-surface-host]", "[data-surface-host] section:not([hidden]) input, [data-surface-host] section:not([hidden]) button"],
             ["[data-canvas-frame]", "[data-canvas-frame]"],
-            ["[data-toolbar]", "[data-toolbar].is-visible button[tabindex='0']"],
+            ["[data-caption-actions]", "[data-caption-actions]:not([hidden]) button[tabindex='0']:not([hidden])"],
         ];
         const available = regions
             .map(([container, target]) => ({ container: document.querySelector(container), target: document.querySelector(target) }))
-            .filter((r) => r.container !== null && r.target !== null && r.target.offsetParent !== null);
+            .filter((r) => r.container !== null && r.target !== null && r.target.offsetParent !== null && getComputedStyle(r.target).visibility !== "hidden" && !r.target.closest("[inert]"));
         const current = available.findIndex((r) => r.container.contains(document.activeElement));
         available[(current + direction + available.length) % available.length]?.target.focus();
     }
@@ -139,10 +140,13 @@ async function main() {
     const store = createStore(initialState(data, Date.now()));
     const saver = createSaver(store, () => api.bootstrap(pid));
     const change = saver.change;
-    document.addEventListener("studio-retry", () => { if (store.get().saves.problem?.kind === "conflict")
-        window.location.reload();
-    else
-        saver.retryNow(); });
+    document.addEventListener("studio-retry", () => {
+        if (store.get().saves.problem?.kind === "conflict")
+            window.location.reload();
+        else
+            void saver.retryNow().then((recovered) => { if (recovered)
+                canvas?.reload(selection(store.get())?.element ?? null); });
+    });
     const conflict = must(document, 'dialog[data-dialog="conflict"]');
     must(conflict, "[data-conflict-reload]").addEventListener("click", () => window.location.reload());
     conflict.addEventListener("cancel", (event) => event.preventDefault());

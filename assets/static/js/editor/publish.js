@@ -188,6 +188,8 @@ export function createPublishing({ store, saver, afterRestore }) {
         pop.style.right = `${Math.round(Math.max(8, window.innerWidth - r.right))}px`;
     }
     function onOutside(event) {
+        if (event.target instanceof Element && event.target.closest("dialog"))
+            return;
         if (event.target instanceof Node && (pop.contains(event.target) || popTrigger?.contains(event.target)))
             return;
         closeReview(false);
@@ -306,7 +308,12 @@ export function createPublishing({ store, saver, afterRestore }) {
         if (manageHistory)
             manageHistory.replaceChildren(...releaseRows(s, true));
     }
-    must(historySheet, "[data-close]").addEventListener("click", () => closeReview());
+    must(historySheet, "[data-close]").addEventListener("click", () => {
+        if (store.get().surface.kind === "settings")
+            settingsSection("general");
+        else
+            closeReview();
+    });
     function openHistory(trigger = null) {
         if (store.get().surface.kind !== "publish")
             openReview(trigger);
@@ -469,6 +476,7 @@ export function createPublishing({ store, saver, afterRestore }) {
             closeSettings();
         }
     });
+    must(settings, "[data-settings-shortcuts]").addEventListener("click", () => must(document, '[data-dialog="shortcuts"]').show());
     must(settings, "[data-settings-pages]").addEventListener("click", () => must(document, "[data-page-switcher]").click());
     must(settings, "[data-settings-images]").addEventListener("click", () => must(document, "[data-open-images]").click());
     must(settings, "[data-page-meta]").addEventListener("click", () => store.dispatch({ type: "open_panel", panel: "page" }));
