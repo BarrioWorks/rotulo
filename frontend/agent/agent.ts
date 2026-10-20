@@ -268,14 +268,21 @@ function redraw(): void {
   if (active && selected) placeSlug(r);
   place(blockedBox, active ? blocked : null, 2 * k);
   drawHiddenSections(bars);
-  post({
-    type: "viewport",
+  const viewport = {
+    type: "viewport" as const,
     scrollY: Math.max(0, window.scrollY),
     rect: selected ? rectOf(selected) : blocked ? rectOf(blocked) : null,
     obstructions: bars,
     obstacles: active && selected ? obstacleRects(selected) : [],
-  });
+  };
+  // Hover redraws every frame the pointer crosses an edge; the editor only needs changes.
+  const key = JSON.stringify(viewport);
+  if (key === lastViewport) return;
+  lastViewport = key;
+  post(viewport);
 }
+
+let lastViewport = "";
 
 /* Words and pictures around the selection. The toolbar avoids covering them. Found by hit
    testing a grid around the selection, then measured every frame from the cached elements. */
@@ -781,6 +788,7 @@ function refresh(el: Element | null): void {
 function handle(message: EditorMessage): void {
   switch (message.type) {
     case "init":
+      lastViewport = "";
       setMode(message.mode);
       if (message.scale !== null) setScale(message.scale);
       if (message.scrollY !== null) restoreScroll(message.scrollY);
@@ -896,6 +904,7 @@ function handle(message: EditorMessage): void {
 }
 
 function setScale(scale: number): void {
+  if (1 / scale === k) return;
   k = 1 / scale;
   host.style.setProperty("--k", String(k));
   staleObstacles();
