@@ -63,6 +63,7 @@ impl Hooks for App {
             .unwrap_or_default();
         AppRoutes::with_default_routes()
             .add_route(controllers::pages::routes())
+            .add_route(controllers::seo::routes())
             .add_route(controllers::api::routes(
                 limits.upload_bytes,
                 limits.image_bytes,
@@ -107,7 +108,11 @@ impl Initializer for ViewEngineInitializer {
     }
 
     async fn after_routes(&self, router: Router, ctx: &AppContext) -> Result<Router> {
-        let view = engines::TeraView::build()?;
+        let metadata = controllers::seo::metadata(&Pagehaven::from(ctx).settings.app_origin);
+        let view = engines::TeraView::build_with_post_process(move |tera| {
+            tera.global_context().insert("seo_pages", &metadata);
+            Ok(())
+        })?;
         sites::initialize_not_found(ctx, &view)?;
         Ok(router.layer(Extension(ViewEngine::from(view))))
     }
@@ -119,11 +124,15 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
     let state = Pagehaven::from(&ctx);
     let path = request.uri().path().to_owned();
     if path == "/internal/tls/allowed" {
-        return tls_allowed(&ctx, &state, request.uri().query().unwrap_or("")).await;
+        let mut response = tls_allowed(&ctx, &state, request.uri().query().unwrap_or("")).await;
+        controllers::seo::response_headers(&path, &mut response);
+        return response;
     }
     if path == "/_ping" || path == "/_health" {
         // Health checks from a proxy or orchestrator address the container, not a hostname.
-        return next.run(request).await;
+        let mut response = next.run(request).await;
+        controllers::seo::response_headers(&path, &mut response);
+        return response;
     }
     let host = hosts::classify(
         request
@@ -142,12 +151,16 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
             if security::unsafe_method(request.method())
                 && !security::same_origin(&request, &state.settings)
             {
-                return security::forbidden();
+                let mut response = security::forbidden();
+                controllers::seo::response_headers(&path, &mut response);
+                return response;
             }
             let mut response = next.run(request).await;
             security::app_headers(&mut response, &state.settings);
+            controllers::seo::response_headers(&path, &mut response);
             response
         }
+        Host::Preview(_) if !read_only => preview::read_only(),
         _ if !read_only => (
             StatusCode::METHOD_NOT_ALLOWED,
             "Websites on Pagehaven are read-only.",

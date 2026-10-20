@@ -98,6 +98,10 @@ fn headers(response: &mut Response, state: &Pagehaven) {
          form-action 'none'; base-uri 'self'; object-src 'none'; frame-ancestors {app}"
     );
     let h = response.headers_mut();
+    h.insert(
+        "x-robots-tag",
+        HeaderValue::from_static("noindex, nofollow"),
+    );
     if let Ok(value) = HeaderValue::from_str(&policy) {
         h.insert(header::CONTENT_SECURITY_POLICY, value);
     }
@@ -148,6 +152,19 @@ async fn editor_script(state: &Pagehaven, path: &str) -> Response {
         source
     };
     respond(StatusCode::OK, FileKind::Js.mime(), body)
+}
+
+pub fn read_only() -> Response {
+    let mut response = (
+        StatusCode::METHOD_NOT_ALLOWED,
+        "Websites on Pagehaven are read-only.",
+    )
+        .into_response();
+    response.headers_mut().insert(
+        "x-robots-tag",
+        HeaderValue::from_static("noindex, nofollow"),
+    );
+    response
 }
 
 pub async fn serve(ctx: &AppContext, token: &str, uri_path: &str) -> Response {

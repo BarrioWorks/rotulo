@@ -1,6 +1,9 @@
 {% extends "layouts/base.html" %}
 {% block title %}Pagehaven · Your website. Yours to edit.{% endblock title %}
-{% block head %}<meta name="description" content="Import your finished website, change its words and pictures right on the page, and publish when you’re ready. No coding needed.">{% endblock head %}
+{% block head %}
+{% set_global seo = seo_pages.home %}
+<script type="application/ld+json">{{ seo_pages.home_json_ld | safe }}</script>
+{% endblock head %}
 {% block body_class %}home-body{% endblock body_class %}
 {% block body %}
 <header class="home-header">

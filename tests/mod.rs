@@ -14,5 +14,7 @@ mod preview;
 mod projects;
 #[path = "requests/publishing.rs"]
 mod publishing;
+#[path = "requests/seo.rs"]
+mod seo;
 #[path = "requests/support.rs"]
 mod support;
