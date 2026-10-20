@@ -206,38 +206,12 @@
     <section class="mk-wrap mk-section mk-faq" aria-labelledby="faq-title">
       <h2 id="faq-title" class="mk-h2">Questions before you import</h2>
       <div class="mk-faq-list">
+        {% for item in seo_pages.home_faq %}
         <div class="mk-faq-item">
-          <h3>Will my website work in Pagehaven?</h3>
-          <p>It will if the ZIP holds finished HTML pages, with index.html at the top, inside one folder, or in a dist or build folder. Every local stylesheet and script the pages link to must be in the ZIP, text files must be UTF-8, and the ZIP can be up to 25 MB. A ZIP of source code is refused with this message: “This ZIP contains source code rather than a finished website. Export the built static website files and try again.”</p>
+          <h3>{{ item.question }}</h3>
+          <p>{{ item.answer }}</p>
         </div>
-        <div class="mk-faq-item">
-          <h3>My site came from Lovable, Bolt or v0. Will it work?</h3>
-          <p>Their downloads are usually the project’s source code, which Pagehaven refuses. The built output, often a dist folder, imports and publishes. These sites usually build their pages in the browser with JavaScript, so you can edit only the text and pictures written in the HTML files.</p>
-        </div>
-        <div class="mk-faq-item">
-          <h3>Will editing break what the AI made?</h3>
-          <p>Pagehaven changes only the part you edit. Your site’s own styles, fonts and scripts stay in place. If an edit goes wrong, undo it, or make an earlier version live again.</p>
-        </div>
-        <div class="mk-faq-item">
-          <h3>Do I need to know HTML?</h3>
-          <p>No. You click the part of the page you want to change, then choose Edit text, Style or Replace image from the controls next to it.</p>
-        </div>
-        <div class="mk-faq-item">
-          <h3>When do visitors see my changes?</h3>
-          <p>Only after you press Publish and confirm. Pagehaven first lists your changes and shows the address visitors will use. Your first publish makes the whole website public, every page, not only the parts you changed.</p>
-        </div>
-        <div class="mk-faq-item">
-          <h3>What happens to private files in my ZIP?</h3>
-          <p>Pagehaven leaves server code, private keys, password files and databases out of your website. It lists each file it left out with the reason, and warns you about secrets. It keeps the ZIP you uploaded in your account, so remove secrets before you upload.</p>
-        </div>
-        <div class="mk-faq-item">
-          <h3>What address does my website get?</h3>
-          <p>An address made from your website’s name on the Pagehaven sites domain, with a number added when that name is taken. You can change it in Website settings.</p>
-        </div>
-        <div class="mk-faq-item">
-          <h3>What if I forget my password?</h3>
-          <p>Pagehaven can’t reset passwords yet. Use a password manager, and sign up with an email address you will keep.</p>
-        </div>
+        {% endfor %}
       </div>
     </section>
   </div>

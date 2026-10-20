@@ -30,6 +30,7 @@ pub fn metadata(app_origin: &str) -> Value {
         "static_website_hosting": page("/static-website-hosting", "Publish a static website from a ZIP | Pagehaven", "Publish a static website from a ZIP with Pagehaven. Check your files, preview a draft, review changes and publish to a hosted address. Keep earlier versions.", "index, follow"),
         "login": page("/login", "Sign in to your HTML website editor · Pagehaven", "Sign in to Pagehaven to edit text, images and links in your imported HTML websites and publish your changes when you are ready.", "noindex, follow"),
         "register": page("/register", "Create your HTML website editor account · Pagehaven", "Create a Pagehaven account to import a compatible HTML website ZIP, edit text, images and links visually, and publish your website without code.", "noindex, follow"),
+        "home_faq": HOME_FAQ.iter().map(|(question, answer)| json!({"question": question, "answer": answer})).collect::<Vec<_>>(),
         "image": format!("{origin}/static/img/marketing/og.png"),
         "home_json_ld": serde_json::to_string(&json!({
             "@context": "https://schema.org",
@@ -38,56 +39,11 @@ pub fn metadata(app_origin: &str) -> Value {
                 {"@type": "SoftwareApplication", "name": "Pagehaven", "url": format!("{origin}/"), "applicationCategory": "DesignApplication", "operatingSystem": "Web", "description": HOME_DESCRIPTION},
                 {
                     "@type": "FAQPage",
-                    "mainEntity": [
-                        {
-                            "@type": "Question",
-                            "name": "Will my website work in Pagehaven?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "If it is a folder of HTML pages, yes. If the ZIP holds source code instead, Pagehaven refuses it with this message: “This ZIP contains source code rather than a finished website. Export the built static website files and try again.” See what works."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "Will editing break what the AI made?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "Pagehaven changes only the part you edit. The rest of each page is published as you imported it. If an edit goes wrong, undo it, or make an earlier version live again."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "Do I need to know HTML?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "No. You click the part of the page you want to change, then choose Edit text, Style or Replace image from the controls next to it."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "When do visitors see my changes?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "Only after you press Publish and confirm. Pagehaven first shows the list of changes and the address visitors will use."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "What happens to private files in my ZIP?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "Pagehaven leaves out server code, private keys, password files and databases. It lists each file it left out with the reason, and warns you about secrets."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "What if I forget my password?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "Pagehaven can’t reset passwords yet. Use a password manager, and sign up with an email address you will keep."
-                            }
-                        }
-                    ]
+                    "mainEntity": HOME_FAQ.iter().map(|(question, answer)| json!({
+                        "@type": "Question",
+                        "name": question,
+                        "acceptedAnswer": {"@type": "Answer", "text": answer},
+                    })).collect::<Vec<_>>()
                 }
             ]
         })).expect("static JSON metadata").replace('<', "\\u003c")
@@ -123,6 +79,18 @@ async fn robots_txt(State(ctx): State<AppContext>) -> Response {
         format!("User-agent: *\nDisallow: /projects\nDisallow: /api\nDisallow: /editor\nDisallow: /internal/\nDisallow: /_health\nDisallow: /_ping\nDisallow: /logout\nSitemap: {origin}/sitemap.xml\n"),
     ).into_response()
 }
+
+/// The homepage FAQ. It renders the visible questions and the FAQPage structured data, so they cannot drift apart.
+const HOME_FAQ: &[(&str, &str)] = &[
+    ("Will my website work in Pagehaven?", "It will if the ZIP holds finished HTML pages, with index.html at the top, inside one folder, or in a dist or build folder. Every local stylesheet and script the pages link to must be in the ZIP, text files must be UTF-8, and the ZIP can be up to 25 MB. A ZIP of source code is refused with this message: “This ZIP contains source code rather than a finished website. Export the built static website files and try again.”"),
+    ("My site came from Lovable, Bolt or v0. Will it work?", "Their downloads are usually the project’s source code, which Pagehaven refuses. The built output, often a dist folder, imports and publishes. These sites usually build their pages in the browser with JavaScript, so you can edit only the text and pictures written in the HTML files."),
+    ("Will editing break what the AI made?", "Pagehaven changes only the part you edit. Your site’s own styles, fonts and scripts stay in place. If an edit goes wrong, undo it, or make an earlier version live again."),
+    ("Do I need to know HTML?", "No. You click the part of the page you want to change, then choose Edit text, Style or Replace image from the controls next to it."),
+    ("When do visitors see my changes?", "Only after you press Publish and confirm. Pagehaven first lists your changes and shows the address visitors will use. Your first publish makes the whole website public, every page, not only the parts you changed."),
+    ("What happens to private files in my ZIP?", "Pagehaven leaves server code, private keys, password files and databases out of your website. It lists each file it left out with the reason, and warns you about secrets. It keeps the ZIP you uploaded in your account, so remove secrets before you upload."),
+    ("What address does my website get?", "An address made from your website’s name on the Pagehaven sites domain, with a number added when that name is taken. You can change it in Website settings."),
+    ("What if I forget my password?", "Pagehaven can’t reset passwords yet. Use a password manager, and sign up with an email address you will keep."),
+];
 
 fn xml_text(text: &str) -> String {
     text.replace('&', "&amp;")
