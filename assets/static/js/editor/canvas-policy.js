@@ -8,6 +8,8 @@ export function acceptsCanvasMessage(session, message) {
         case "text":
         case "editing":
             return (session.mode === "edit" || session.finishing === true) && session.textElement === message.element;
+        case "request_text":
+            return session.mode === "edit" && session.textElement === null;
         case "navigate":
             return session.mode === "preview";
         default:

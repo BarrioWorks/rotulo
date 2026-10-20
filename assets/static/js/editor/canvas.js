@@ -7,7 +7,6 @@ const PREVIEW_MAX_AGE_MS = 11 * 60 * 60 * 1000;
 export const DESKTOP_WIDTH = 1280;
 export const PHONE = { width: 390, height: 844 };
 const BEZEL = 11;
-const GUTTER = 12;
 const VEIL_DELAY_MS = 300;
 /** Fits a 1280 px desktop or a 390 by 844 phone into the space the window leaves. */
 export function frameLayout(device, zoom, available) {
@@ -21,6 +20,35 @@ export function frameLayout(device, zoom, available) {
     const layoutWidth = Math.max(width, DESKTOP_WIDTH);
     const scale = zoom === "actual" ? 1 : width / layoutWidth;
     return { scale, viewport: { width: layoutWidth, height: height / scale }, frame: { width: layoutWidth * scale, height } };
+}
+/** Reserve the canvas before bootstrap. Read the container, including its responsive padding. */
+export function reserveFrame(area, surface, iframe, device = "desktop", zoom = "fit") {
+    const css = getComputedStyle(area);
+    const number = (value) => parseFloat(value) || 0;
+    const layout = frameLayout(device, zoom, {
+        width: area.clientWidth - number(css.paddingLeft) - number(css.paddingRight),
+        height: area.clientHeight - number(css.paddingTop) - number(css.paddingBottom),
+    });
+    surface.style.width = `${layout.frame.width}px`;
+    surface.style.height = `${layout.frame.height}px`;
+    surface.style.setProperty("--canvas-scale", String(layout.scale));
+    iframe.style.width = `${layout.viewport.width}px`;
+    iframe.style.height = `${layout.viewport.height}px`;
+    iframe.style.transform = layout.scale === 1 ? "" : `scale(${layout.scale})`;
+    return layout;
+}
+// Module evaluation runs before main() awaits bootstrap, while the deferred module's DOM exists.
+let initialSizing = null;
+if (typeof document !== "undefined") {
+    const area = document.querySelector("[data-canvas-area]");
+    const surface = document.querySelector("[data-canvas-frame]");
+    const iframe = document.querySelector("[data-canvas]");
+    if (area && surface && iframe) {
+        const reserve = () => reserveFrame(area, surface, iframe);
+        reserve();
+        initialSizing = new ResizeObserver(reserve);
+        initialSizing.observe(area);
+    }
 }
 /** The app's interface font, handed to the agent as bytes so the slug in the site matches the app. */
 const UI_FONT_URL = "/static/fonts/onest-variable-latin.woff2";
@@ -78,11 +106,7 @@ export function createCanvas(store, handlers) {
     }
     function applyLayout() {
         const s = store.get();
-        const available = { width: area.clientWidth - 2 * GUTTER, height: area.clientHeight - 2 * GUTTER };
-        layout = frameLayout(s.device, s.zoom, available);
-        surface.style.width = `${layout.frame.width}px`;
-        surface.style.height = `${layout.frame.height}px`;
-        surface.style.setProperty("--canvas-scale", String(layout.scale));
+        layout = reserveFrame(area, surface, active, s.device, s.zoom);
         for (const iframe of [active, pending])
             if (iframe)
                 sizeIframe(iframe);
@@ -97,6 +121,8 @@ export function createCanvas(store, handlers) {
         zoomButton.hidden = s.zoom === "fit" && percent === 100;
         zoomButton.classList.toggle("is-small", s.zoom === "fit" && layout.scale < 0.6);
     }
+    initialSizing?.disconnect();
+    initialSizing = null;
     new ResizeObserver(() => applyLayout()).observe(area);
     function setLoadingVeil(on) {
         window.clearTimeout(veilTimer);
@@ -123,7 +149,8 @@ export function createCanvas(store, handlers) {
             else if (frame === active && !awaitingReady) {
                 // The page moved itself (a script or a refresh). Go back to the page the editor chose.
                 textSession = null;
-                restore = { scrollY: null, select: null, pulse: false };
+                const s = store.get();
+                restore = { scrollY: s.scrollY, select: s.focus.kind === "selected" ? s.focus.selection.element : null, pulse: false };
                 store.dispatch({ type: "canvas_loading" });
                 void navigate(expectedPath);
             }
@@ -249,6 +276,12 @@ export function createCanvas(store, handlers) {
                 restore = { scrollY: null, select: null, pulse: false };
                 break;
             }
+            case "request_text": {
+                const s = store.get();
+                if (s.focus.kind === "selected" && s.focus.selection.element === message.element && s.focus.selection.can.includes("t"))
+                    send({ type: "start_text", element: message.element });
+                break;
+            }
             case "select":
                 handlers.onPageClick();
                 if (textSession?.element !== message.element)
@@ -316,7 +349,6 @@ export function createCanvas(store, handlers) {
     zoomButton.addEventListener("click", () => {
         store.dispatch({ type: "zoom", zoom: store.get().zoom === "fit" ? "actual" : "fit" });
     });
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     store.subscribe((s, prev) => {
         if (!prev || s.mode !== prev.mode) {
             if (prev)
@@ -337,19 +369,19 @@ export function createCanvas(store, handlers) {
             applyLayout();
         }
         else if (s.device !== prev.device) {
-            const swapDevice = () => {
-                area.dataset["device"] = s.device;
-                applyLayout();
-                requestAnimationFrame(() => surface.classList.remove("is-switching"));
-                if (s.focus.kind === "selected")
-                    send({ type: "reveal", element: s.focus.selection.element, pulse: false });
-            };
-            if (reducedMotion.matches)
-                swapDevice();
-            else {
-                surface.classList.add("is-switching");
-                window.setTimeout(swapDevice, 90);
-            }
+            area.dataset["device"] = s.device;
+            applyLayout();
+            requestAnimationFrame(() => {
+                const current = store.get();
+                if (current.device !== s.device || current.focus.kind !== "selected")
+                    return;
+                if (awaitingReady)
+                    restore.select = current.focus.selection.element;
+                else if (textSession)
+                    send({ type: "reveal", element: current.focus.selection.element, pulse: false });
+                else
+                    send({ type: "select_element", element: current.focus.selection.element });
+            });
         }
         else if (s.zoom !== prev.zoom) {
             applyLayout();
