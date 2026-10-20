@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction C · Gallery Wall · Pagehaven concept board</title>
+<style>
+@font-face { font-family: "Onest"; src: url("../../../../../assets/static/fonts/onest-variable-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+:root {
+  --wall: #FFFFFF; --wall-2: #F2F2F4; --ink: #17171C; --ink-2: #4A4A55; --ink-3: #5F5F6B; --rule: rgba(23,23,28,.14);
+  --accent: #3730BD; --tip: #1C1C22; --on-tip: #F4F4F7; --on-tip-2: #B4B4C0;
+  --ease-emph: cubic-bezier(.16,1,.3,1);
+  --font: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --gut: clamp(16px, 4vw, 64px);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 80px; }
+body { margin: 0; background: var(--wall); color: var(--ink); font: 400 1rem/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--ink); color: #fff; }
+a { color: inherit; }
+:focus-visible { outline: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); border-radius: 8px; }
+img { display: block; max-width: 100%; }
+.icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+.board-note { background: var(--ink); color: #F4F4F7; padding: 20px var(--gut); display: grid; gap: 10px 40px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); font-size: .875rem; }
+.board-note h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.board-note p { margin: 0; color: #C9C9D2; max-width: 62ch; }
+.board-note dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+.board-note dt { color: #A9A9B5; } .board-note dd { margin: 0; }
+.board-note .ask { color: #FFD9A8; }
+.chip { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.3); }
+.part { font-size: .75rem; font-weight: 600; color: var(--ink-3); padding: 28px var(--gut) 0; margin: 0; }
+
+.nav { display: flex; align-items: center; gap: 28px; padding: 18px var(--gut); }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 1.0625rem; letter-spacing: -.02em; text-decoration: none; margin-right: auto; }
+.nav a.plain { font-size: .875rem; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 22px; border-radius: 999px; font: 600 1rem/1 var(--font); text-decoration: none; }
+.btn-ink { background: var(--ink); color: #fff; }
+.btn-ink:hover { background: #2C2C34; }
+.btn-line { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; padding: 0 4px; }
+.btn-sm { height: 36px; padding: 0 16px; font-size: .8125rem; }
+
+/* Hero: the owner's site, full bleed, with Pagehaven's chrome on it. The site is the only colour. */
+.wall { position: relative; margin: 0 var(--gut); border-radius: 12px; overflow: hidden; aspect-ratio: 1280 / 640; background: #F8F7F3; box-shadow: 0 0 0 1px var(--rule); }
+.wall > img { position: absolute; left: 0; top: -8.125%; width: 100%; height: auto; }
+.ring { position: absolute; left: 58.2%; top: 30%; width: 34.2%; height: 20.5%; border: 2px solid var(--accent); box-shadow: 0 0 0 1.5px #fff, inset 0 0 0 1.5px #fff; border-radius: 2px; }
+.capsule { position: absolute; display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: var(--tip); color: var(--on-tip); font-size: .8125rem; font-weight: 500; white-space: nowrap; box-shadow: 0 8px 24px -8px rgba(17,17,28,.45); }
+.capsule > * { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 999px; }
+.capsule .kind { color: var(--on-tip-2); font-size: .6875rem; }
+.capsule .on { background: rgba(255,255,255,.14); }
+.capsule .ico { padding: 0 9px; color: var(--on-tip-2); }
+.capsule .pub { background: #fff; color: var(--ink); font-weight: 600; }
+.capsule .dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #F2B866; }
+.cap-sel { left: 58.2%; top: calc(50.5% + 10px); animation: rise 260ms var(--ease-emph) 300ms both; }
+.cap-top { top: 12px; }
+.cap-l { left: 12px; } .cap-r { right: 12px; } .cap-m { left: 50%; transform: translateX(-50%); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cap-sel { animation: none; } }
+
+.hero { padding: clamp(32px, 4vw, 56px) var(--gut) 0; }
+.hero h2 { margin: 0; font-weight: 500; font-size: clamp(2.75rem, .6rem + 7.4vw, 8.25rem); line-height: .95; letter-spacing: -.04em; }
+.hero-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 24px 48px; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--ink); }
+.hero-row p { margin: 0; max-width: 46ch; font-size: 1.125rem; color: var(--ink-2); }
+.hero-row .cta { display: flex; gap: 12px 18px; align-items: center; flex-wrap: wrap; }
+.label { margin: 10px var(--gut) 0; font-size: .8125rem; color: var(--ink-3); }
+
+/* How it works: a before and after the visitor operates, then three labelled steps. */
+.how { padding: 64px var(--gut) 24px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: 32px 56px; align-items: start; }
+.how h3 { margin: 0; font-size: clamp(1.75rem, 1.2rem + 2vw, 2.75rem); font-weight: 500; letter-spacing: -.03em; line-height: 1.05; }
+.how ol { list-style: none; padding: 0; margin: 28px 0 0; counter-reset: s; }
+.how li { padding: 16px 0; border-top: 1px solid var(--rule); counter-increment: s; display: grid; grid-template-columns: 2.25rem 1fr; }
+.how li::before { content: counter(s); font-weight: 600; font-variant-numeric: tabular-nums; }
+.how li b { display: block; font-weight: 600; }
+.how li span { color: var(--ink-2); font-size: .9375rem; }
+.compare { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 1280 / 560; box-shadow: 0 0 0 1px var(--rule); background: #F8F7F3; --cut: 75%; }
+.compare img { position: absolute; left: 0; top: -9.3%; width: 100%; height: auto; }
+.compare .after { clip-path: inset(0 0 0 var(--cut)); }
+.compare .seam { position: absolute; top: 0; bottom: 0; left: var(--cut); width: 2px; margin-left: -1px; background: var(--ink); pointer-events: none; }
+.compare .tag { position: absolute; top: 12px; padding: 6px 10px; border-radius: 999px; background: var(--tip); color: var(--on-tip); font-size: .75rem; font-weight: 500; }
+.compare .tb { left: 12px; } .compare .ta { right: 12px; }
+.range { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: .8125rem; color: var(--ink-2); }
+.range input { flex: 1; accent-color: var(--ink); height: 24px; }
+
+.app { background: var(--wall-2); padding: 8px var(--gut) 72px; margin-top: 40px; }
+.app .part { padding-left: 0; }
+.slice { position: relative; margin-top: 16px; border-radius: 10px; overflow: hidden; aspect-ratio: 1280 / 520; background: #F8F7F3; box-shadow: 0 0 0 1px var(--rule); }
+.slice > img { position: absolute; left: 0; top: -10%; width: 100%; height: auto; }
+.legend { margin: 14px 0 0; color: var(--ink-2); font-size: .875rem; max-width: 76ch; }
+
+@media (max-width: 760px) {
+  .board-note { grid-template-columns: 1fr; }
+  .nav a.plain { display: none; }
+  .wall > img, .compare img, .slice > img { max-width: none; }
+  .wall { aspect-ratio: 390 / 520; margin: 0; border-radius: 0; }
+  .wall > img { width: 270%; left: -153.6%; top: -12.7%; }
+  .ring { left: 4%; width: 91%; top: 26%; height: 19.8%; }
+  .cap-sel { left: 4%; top: calc(45.8% + 8px); }
+  .cap-sel .kind { display: none; }
+  .cap-m { display: none; }
+  .how { grid-template-columns: 1fr; }
+  .compare { aspect-ratio: 390 / 300; }
+  .compare img { width: 260%; left: -150%; top: -8%; }
+  .slice { aspect-ratio: 390 / 460; }
+  .slice > img { width: 200%; left: -10%; }
+  .slice .capsule:not(.cap-top) { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="board-note">
+  <div>
+    <h1>Direction C. Gallery Wall</h1>
+    <p>Pagehaven steps back like a white gallery wall, and the owner's site is the only colour on the page. Chrome becomes small opaque ink capsules that read the same over any site. The signature is a before and after the visitor drags, built from two real screenshots of one heading edit.</p>
+  </div>
+  <dl>
+    <dt>Type</dt><dd>Onest only, display at 500, lighter and larger. In the repo, OFL 1.1.</dd>
+    <dt>Colour</dt><dd><i class="chip" style="background:#fff"></i>wall <i class="chip" style="background:#17171C"></i>ink, also the CTA <i class="chip" style="background:#3730BD"></i>ultramarine only for selection and focus</dd>
+    <dt>Icons</dt><dd>Lucide sprite in the repo, ISC.</dd>
+    <dt class="ask">Needs approval</dt><dd class="ask">Two identity changes: glass level 2 replaced by opaque ink capsules in the editor, and ink, not ultramarine, as the primary button. No new font or icon.</dd>
+  </dl>
+</header>
+
+<p class="part">1. Homepage hero</p>
+<nav class="nav" aria-label="Concept navigation">
+  <a class="brand" href="#"><img src="../../../../../assets/static/img/logo.svg" alt="" width="28" height="28">Pagehaven</a>
+  <a class="plain" href="#how-c">How it works</a>
+  <a class="plain" href="#">Sign in</a>
+  <a class="btn btn-ink btn-sm" href="#">Import your website</a>
+</nav>
+<div class="wall" role="img" aria-label="The Furnace Hill Coffee website open in Pagehaven, with its heading selected and small dark controls: Edit text, Style, Link, Undo, Preview and Publish.">
+  <img src="../../../../studio/final/screens/editor-resting-1280.png" width="1280" height="800" fetchpriority="high" alt="">
+  <span class="ring"></span>
+  <span class="capsule cap-sel"><span class="kind">Heading · Saved</span><span class="on">Edit text</span><span>Style</span><span>Link</span></span>
+  <span class="capsule cap-top cap-l"><span class="ico"><svg class="icon"><use href="../../../../../assets/static/img/icons.svg#i-chevron-left"/></svg></span><span>Furnace Hill / Home</span></span>
+  <span class="capsule cap-top cap-m"><span class="ico"><svg class="icon"><use href="../../../../../assets/static/img/icons.svg#i-undo"/></svg></span><span class="on">Edit</span><span>Preview</span><span class="ico"><svg class="icon"><use href="../../../../../assets/static/img/icons.svg#i-phone"/></svg></span></span>
+  <span class="capsule cap-top cap-r"><span class="dot">Not live yet</span><span class="pub">Publish</span></span>
+</div>
+<p class="label">Furnace Hill Coffee, imported from a ZIP. The site's own type and photos, untouched.</p>
+<section class="hero" aria-labelledby="c-title">
+  <h2 id="c-title">Built with AI.<br>Edited by you.</h2>
+  <div class="hero-row">
+    <p>Import the website your AI tool exported, change its words, photos and links right on the page, and publish to your own address.</p>
+    <div class="cta"><a class="btn btn-ink" href="#">Import your website</a><a class="btn-line" href="#how-c">See an edit</a></div>
+  </div>
+</section>
+
+<p class="part" id="how-c">2. How it works</p>
+<section class="how" aria-labelledby="c-how">
+  <div>
+    <h3 id="c-how">One heading, before and after.</h3>
+    <ol>
+      <li><span><b>Import the ZIP</b>Static sites only. Pagehaven lists anything it left out.</span></li>
+      <li><span><b>Click and type</b>Saved as a draft. Undo is always there.</span></li>
+      <li><span><b>Publish</b>Review the changes, then go live. Older versions stay in history.</span></li>
+    </ol>
+  </div>
+  <div>
+    <div class="compare" id="cmp">
+      <img src="../../../../studio/final/screens/editor-heading-selected-1280.png" loading="lazy" alt="Before: the heading reads Ten bags from Finca Los Naranjos.">
+      <img class="after" src="../../../../studio/final/screens/editor-editing-1280.png" loading="lazy" alt="After: the heading reads Ten bags from Los Naranjos, and what they cost.">
+      <span class="seam"></span><span class="tag tb">Before</span><span class="tag ta">After</span>
+    </div>
+    <label class="range">Before <input type="range" min="0" max="100" value="75" aria-label="Compare before and after" oninput="document.getElementById('cmp').style.setProperty('--cut', this.value + '%')"> After</label>
+  </div>
+</section>
+
+<div class="app">
+  <p class="part">3. Editor chrome: opaque ink capsules</p>
+  <div class="slice" role="img" aria-label="A replaced photo on the Furnace Hill site, selected, with dark capsules: Image · Saved, Replace image, Description, Link and More.">
+    <img src="../../../../studio/final/screens/editor-image-replaced-1280.png" alt="">
+    <span class="capsule cap-top cap-l"><span class="ico"><svg class="icon"><use href="../../../../../assets/static/img/icons.svg#i-chevron-left"/></svg></span><span>Furnace Hill / Home</span><span>Images</span></span>
+    <span class="capsule cap-top cap-r"><span class="dot">Not live yet</span><span class="pub">Publish · 2</span></span>
+    <span class="capsule" style="left:8.6%;bottom:9%"><span class="kind">Image · Saved</span><span class="on">Replace image</span><span>Description</span><span>Link</span><span class="ico"><svg class="icon"><use href="../../../../../assets/static/img/icons.svg#i-more"/></svg></span></span>
+  </div>
+  <p class="legend">Ink capsules keep 15:1 text contrast over any site without a blur measurement, and they look the same over white, black and photos. The cost is weight: over a light site they draw more attention than glass, and they drop the floating material the brief asks for. The shipped light panel on the right of the screenshot is unchanged in this sketch.</p>
+</div>
+</body>
+</html>
