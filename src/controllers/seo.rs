@@ -35,7 +35,60 @@ pub fn metadata(app_origin: &str) -> Value {
             "@context": "https://schema.org",
             "@graph": [
                 {"@type": "WebSite", "name": "Pagehaven", "url": format!("{origin}/"), "description": HOME_DESCRIPTION},
-                {"@type": "SoftwareApplication", "name": "Pagehaven", "url": format!("{origin}/"), "applicationCategory": "DesignApplication", "operatingSystem": "Web", "description": HOME_DESCRIPTION}
+                {"@type": "SoftwareApplication", "name": "Pagehaven", "url": format!("{origin}/"), "applicationCategory": "DesignApplication", "operatingSystem": "Web", "description": HOME_DESCRIPTION},
+                {
+                    "@type": "FAQPage",
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": "Will my website work in Pagehaven?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "If it is a folder of HTML pages, yes. If the ZIP holds source code instead, Pagehaven refuses it with this message: “This ZIP contains source code rather than a finished website. Export the built static website files and try again.” See what works."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Will editing break what the AI made?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Pagehaven changes only the part you edit. The rest of each page is published as you imported it. If an edit goes wrong, undo it, or make an earlier version live again."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Do I need to know HTML?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "No. You click the part of the page you want to change, then choose Edit text, Style or Replace image from the controls next to it."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "When do visitors see my changes?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Only after you press Publish and confirm. Pagehaven first shows the list of changes and the address visitors will use."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "What happens to private files in my ZIP?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Pagehaven leaves out server code, private keys, password files and databases. It lists each file it left out with the reason, and warns you about secrets."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "What if I forget my password?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Pagehaven can’t reset passwords yet. Use a password manager, and sign up with an email address you will keep."
+                            }
+                        }
+                    ]
+                }
             ]
         })).expect("static JSON metadata").replace('<', "\\u003c")
     })

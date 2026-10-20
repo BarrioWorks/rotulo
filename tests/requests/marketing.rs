@@ -53,6 +53,44 @@ fn words(text: impl Iterator<Item = impl AsRef<str>>) -> String {
 
 #[tokio::test]
 #[serial_test::serial]
+async fn home_faq_schema_matches_every_visible_question_and_answer() {
+    request_with_create_db::<App, _, _>(|server, _ctx| async move {
+        let response = get(&server, "/", "").await;
+        response.assert_status_ok();
+        let document = scraper::Html::parse_document(&response.text());
+        let schemas = select(&document, "script[type='application/ld+json']");
+        let schema: Value = serde_json::from_str(&schemas[0].text().collect::<String>()).unwrap();
+        let faqs: Vec<_> = schema["@graph"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|entry| entry["@type"] == "FAQPage")
+            .collect();
+        assert_eq!(faqs.len(), 1);
+        let entries = faqs[0]["mainEntity"].as_array().unwrap();
+        let visible = select(&document, ".mk-faq-item");
+        assert!(!visible.is_empty());
+        assert_eq!(entries.len(), visible.len());
+        let question = scraper::Selector::parse("h3").unwrap();
+        let answer = scraper::Selector::parse("p").unwrap();
+        for (entry, item) in entries.iter().zip(visible) {
+            assert_eq!(entry["@type"], "Question");
+            assert_eq!(entry["acceptedAnswer"]["@type"], "Answer");
+            assert_eq!(
+                entry["name"].as_str().unwrap(),
+                words(item.select(&question).next().unwrap().text())
+            );
+            assert_eq!(
+                entry["acceptedAnswer"]["text"].as_str().unwrap(),
+                words(item.select(&answer).next().unwrap().text())
+            );
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial_test::serial]
 async fn marketing_guides_are_public_and_have_accessible_content_and_internal_links() {
     request_with_create_db::<App, _, _>(|server, _ctx| async move {
         let cookie = register(&server, "guides@example.com").await;
