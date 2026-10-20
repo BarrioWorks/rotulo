@@ -16,7 +16,7 @@ async fn discovery_is_app_only_and_uses_the_trusted_origin() {
         let r = get(&server, "/sitemap.xml", "").await;
         r.assert_status_ok();
         r.assert_header("content-type", "application/xml; charset=utf-8");
-        assert_eq!(r.text(), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url><loc>{ORIGIN}/</loc></url>\n  <url><loc>{ORIGIN}/compatible-exports</loc></url>\n</urlset>\n"));
+        assert_eq!(r.text(), format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url><loc>{ORIGIN}/</loc></url>\n  <url><loc>{ORIGIN}/compatible-exports</loc></url>\n  <url><loc>{ORIGIN}/visual-html-editor</loc></url>\n  <url><loc>{ORIGIN}/static-website-hosting</loc></url>\n</urlset>\n"));
         for host in ["absent.sites.localhost:5150", "customer.example:5150"] {
             for path in ["/robots.txt", "/sitemap.xml"] {
                 let r = hosted(&server, host, path).await;
@@ -34,6 +34,9 @@ async fn rendered_metadata_and_private_response_policies() {
     request_with_create_db::<App, _, _>(|server, _ctx| async move {
         for (path, key) in [
             ("/", "home"),
+            ("/compatible-exports", "compatible_exports"),
+            ("/visual-html-editor", "visual_html_editor"),
+            ("/static-website-hosting", "static_website_hosting"),
             ("/login", "login"),
             ("/register", "register"),
         ] {
@@ -109,9 +112,11 @@ async fn rendered_metadata_and_private_response_policies() {
                 assert_eq!(schema["@graph"][1]["operatingSystem"], "Web");
                 assert_eq!(schema["@graph"][1]["url"], format!("{ORIGIN}/"));
                 assert!(!schema.to_string().contains("offers"));
-            } else {
+            } else if matches!(path, "/login" | "/register") {
                 r.assert_header("x-robots-tag", "noindex, follow");
                 assert!(schemas.is_empty());
+            } else {
+                assert!(!r.headers().contains_key("x-robots-tag"));
             }
         }
         for path in [

@@ -66,6 +66,7 @@ impl Hooks for App {
         AppRoutes::with_default_routes()
             .add_route(controllers::pages::routes())
             .add_route(controllers::seo::routes())
+            .add_route(controllers::marketing::routes())
             .add_route(controllers::api::routes(
                 limits.upload_bytes,
                 limits.image_bytes,
