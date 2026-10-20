@@ -198,6 +198,8 @@
   --fs-display-2: clamp(2rem, 1.35rem + 2.4vw, 3.25rem); --lh-display-2: 1.04; --fw-display-2: 660; --ls-display-2: -0.03em;
   --fs-mk-lead: clamp(1.125rem, 1rem + 0.4vw, 1.3125rem); --lh-mk-lead: 1.5;
   --fs-mk-body: 1.0625rem; --lh-mk-body: 1.65;  /* 17 px marketing body */
+  --fs-numeral: clamp(2.75rem, 1.6rem + 3.6vw, 5.5rem); --lh-numeral: 0.9; --fw-numeral: 700; --ls-numeral: -0.04em; /* demo step numbers */
+  --fs-display-3: clamp(1.5rem, 1.2rem + 1vw, 2.125rem); --lh-display-3: 1.1; --fw-display-3: 650; --ls-display-3: -0.025em; /* large terms */
   /* The ultramarine field: white type, secondary #DAD9F8 (6.58:1). Product screenshots are the only light objects on it. */
   --field: var(--accent);
   --on-field: #FFFFFF;

@@ -1,17 +1,54 @@
-/** The homepage's before and after comparison: a range input sets how much of the before screenshot shows. */
-export function splitPercent(value: string): string {
-  const n = Math.min(100, Math.max(0, Number(value) || 0));
-  return `${n}%`;
+/** The homepage demo: a tablist of editing steps, each showing its own screenshots. */
+
+/** The step a key moves to, or null when the key does not move the selection. Arrows wrap. */
+export function stepForKey(key: string, current: number, count: number): number | null {
+  switch (key) {
+    case "ArrowRight":
+    case "ArrowDown":
+      return (current + 1) % count;
+    case "ArrowLeft":
+    case "ArrowUp":
+      return (current - 1 + count) % count;
+    case "Home":
+      return 0;
+    case "End":
+      return count - 1;
+    default:
+      return null;
+  }
 }
 
-for (const figure of document.querySelectorAll<HTMLElement>("[data-compare]")) {
-  const input = figure.querySelector<HTMLInputElement>("[data-compare-input]");
-  if (!input) continue;
-  const update = () => {
-    figure.style.setProperty("--split", splitPercent(input.value));
-    input.setAttribute("aria-valuetext", `${input.value}% before, ${100 - Number(input.value)}% after`);
+function mountSteps(root: HTMLElement): void {
+  const list = root.querySelector<HTMLElement>("[role=tablist]");
+  const tabs = [...root.querySelectorAll<HTMLButtonElement>("[role=tab]")];
+  const panels = tabs.map((tab) => document.getElementById(tab.getAttribute("aria-controls") ?? ""));
+  if (!list || tabs.length === 0 || panels.some((panel) => !panel)) return;
+
+  const select = (index: number, focus: boolean) => {
+    tabs.forEach((tab, i) => {
+      const on = i === index;
+      tab.setAttribute("aria-selected", String(on));
+      tab.tabIndex = on ? 0 : -1;
+      panels[i]!.hidden = !on;
+    });
+    if (focus) tabs[index]!.focus();
   };
-  input.addEventListener("input", update);
-  input.hidden = false;
-  update();
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => select(i, false));
+    tab.addEventListener("keydown", (event) => {
+      const next = stepForKey(event.key, i, tabs.length);
+      if (next === null) return;
+      event.preventDefault();
+      select(next, true);
+    });
+  });
+
+  list.hidden = false;
+  root.classList.add("is-tabbed");
+  select(0, false);
+}
+
+if (typeof document !== "undefined") {
+  for (const root of document.querySelectorAll<HTMLElement>("[data-steps]")) mountSteps(root);
 }
