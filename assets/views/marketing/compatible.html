@@ -1,0 +1,131 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+{% set_global seo = seo_pages.compatible_exports %}
+{% endblock head %}
+{% block styles %}<link rel="stylesheet" href="/static/css/marketing.css">{% endblock styles %}
+{% block body_class %}mk-body{% endblock body_class %}
+{% block body %}
+<div class="mk-field">{% include "marketing/header.html" %}</div>
+<main id="main">
+  <div class="mk-field">
+    <div class="mk-wrap mk-doc-head">
+      <h1 class="mk-doc-title">What a compatible ZIP looks like</h1>
+      <p class="mk-doc-lead">Pagehaven imports a finished website, meaning the HTML pages and the pictures, styles and fonts they use, in one ZIP. This page shows what it accepts, what it refuses and the limits.</p>
+    </div>
+  </div>
+
+  <div class="mk-page">
+    <div class="mk-wrap mk-section mk-doc">
+      <nav class="mk-doc-nav" aria-label="On this page">
+        <p>On this page</p>
+        <a href="#accepted">A ZIP that imports</a>
+        <a href="#refused">What Pagehaven refuses</a>
+        <a href="#javascript">Pages built by JavaScript</a>
+        <a href="#left-out">What stays out of your site</a>
+        <a href="#limits">Limits</a>
+      </nav>
+
+      <div class="mk-doc-body">
+        <section id="accepted" aria-labelledby="accepted-title">
+          <h2 id="accepted-title">A ZIP that imports</h2>
+          <p>This is the sample site in the homepage screenshots, shortened. Every page is an HTML file, and everything a page loads is in the ZIP with it.</p>
+<pre class="mk-tree" aria-label="Files in furnace-hill.zip">furnace-hill.zip
+├── index.html            <span class="mk-tree-note">the home page, at the top</span>
+├── about.html
+├── contact.html
+├── los-naranjos.html
+├── css/
+│   └── site.css
+├── fonts/
+│   ├── SourceSerif4-Regular.woff2
+│   └── OFL.txt
+└── images/
+    ├── coffee-tree.jpg
+    └── roaster.jpg</pre>
+          <h3>What Pagehaven checks</h3>
+          <ul>
+            <li><code>index.html</code> sits at the top of the ZIP, inside one folder, or in a <code>dist</code> or <code>build</code> folder. If several folders could be the website, Pagehaven asks which one to import.</li>
+            <li>The stylesheets and scripts each page links to are in the ZIP. If one is missing, the import stops and names it. Other missing files, such as a picture, get a warning.</li>
+            <li>Text files are UTF-8.</li>
+            <li>Pagehaven keeps HTML, CSS, JavaScript, JSON, text, SVG, pictures, icons, fonts, MP4 and WebM video, MP3, Ogg and WAV audio, PDF and WASM files.</li>
+          </ul>
+          <h3>Where to get one</h3>
+          <ul>
+            <li>A page from an AI chat. Save it as an <code>.html</code> file named <code>index.html</code>, put it in a folder with any pictures it uses, and ZIP the folder.</li>
+            <li>An HTML template. Download the template’s ZIP. It already holds finished pages.</li>
+            <li>A site someone built for you. Ask them for the built website folder, then ZIP that folder.</li>
+          </ul>
+        </section>
+
+        <section id="refused" aria-labelledby="refused-title">
+          <h2 id="refused-title">What Pagehaven refuses, and why</h2>
+          <h3>Project code that still needs a build step</h3>
+          <p>Some tools download a project’s code, with files such as <code>package.json</code> and a <code>src</code> folder, instead of its finished pages. A build step turns that code into pages, and Pagehaven never runs one. It refuses the ZIP with this message:</p>
+          <blockquote class="mk-quote">
+            <p>This ZIP contains source code rather than a finished website. Export the built static website files and try again.</p>
+            <cite>Shown when the ZIP holds source code</cite>
+          </blockquote>
+          <p>To fix it, ask the tool, or whoever built the site, for the built website folder, often called <code>dist</code> or <code>build</code>, and ZIP that.</p>
+          <h3>A ZIP with no home page</h3>
+          <blockquote class="mk-quote">
+            <p>We couldn’t find a website in this ZIP. It needs an index.html file at the top level or in a dist or build folder.</p>
+            <cite>Shown when there is no index.html</cite>
+          </blockquote>
+          <h3>Archives Pagehaven can’t open safely</h3>
+          <p>Pagehaven also refuses ZIPs that are encrypted, that use compression other than a standard ZIP, or that are split across several files. It refuses file paths that point outside the ZIP’s folder, links to other files, and two names that differ only in capital letters.</p>
+        </section>
+
+        <section id="javascript" aria-labelledby="javascript-title">
+          <h2 id="javascript-title">Pages built by JavaScript</h2>
+          <p>Some sites, such as a built React or Vite app, ship an almost empty HTML file and draw the page in the browser. Pagehaven imports them, and they publish and work. It shows this warning when you import one:</p>
+          <blockquote class="mk-quote mk-quote-warn">
+            <p>This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.</p>
+            <cite>Shown after the import</cite>
+          </blockquote>
+          <p>In any site, Pagehaven can’t edit content that the site’s own JavaScript creates, the contents of scripts and styles, form fields, embedded frames, canvas drawings or maths.</p>
+        </section>
+
+        <section id="left-out" aria-labelledby="left-out-title">
+          <h2 id="left-out-title">What stays out of your hosted site</h2>
+          <p>Pagehaven leaves these files out of your website and lists each one in the import report, with the reason:</p>
+          <ul>
+            <li>Server code and server settings, which Pagehaven never runs.</li>
+            <li>Private keys, password and environment files, databases and version-control folders.</li>
+            <li>Archives inside the ZIP, which are never unpacked.</li>
+            <li>Files your computer or editor created, such as <code>.DS_Store</code>.</li>
+            <li><code>node_modules</code>, package manifests and other project tooling a browser never loads.</li>
+          </ul>
+          <p>Secrets and server code also raise a warning, so you can check that nothing private was meant to be there. Pagehaven keeps a copy of the ZIP you uploaded. Publishing copies your pages as they are, without editor markup or sections you hid, and runs no build.</p>
+        </section>
+
+        <section id="limits" aria-labelledby="limits-title">
+          <h2 id="limits-title">Limits</h2>
+          <dl class="mk-limits">
+            <div><dt>ZIP size</dt><dd>25 MB</dd></div>
+            <div><dt>Files and folders in the ZIP</dt><dd>2,000</dd></div>
+            <div><dt>Size once unpacked</dt><dd>100 MB</dd></div>
+            <div><dt>Largest single file</dt><dd>20 MB</dd></div>
+            <div><dt>Folders inside folders</dt><dd>15 levels</dd></div>
+            <div><dt>Replacement pictures</dt><dd>PNG, JPEG, GIF, WebP or AVIF, up to 8 MB</dd></div>
+            <div><dt>Websites per account</dt><dd>25</dd></div>
+            <div><dt>Imports</dt><dd>20 an hour</dd></div>
+            <div><dt>Publishes</dt><dd>60 an hour</dd></div>
+            <div><dt>Custom domains, when your Pagehaven host enables them</dt><dd>Up to 5 per website</dd></div>
+          </dl>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <section class="mk-field mk-close" aria-labelledby="close-title">
+    <div class="mk-wrap mk-close-inner">
+      <h2 id="close-title" class="mk-close-title">Have a ZIP like this? Import it and make the first change.</h2>
+      <div class="mk-close-side">
+        <a class="mk-btn mk-btn-on-field" href="/register">Import your website</a>
+        <p>Free to try. There is no billing in Pagehaven yet.</p>
+      </div>
+    </div>
+  </section>
+</main>
+{% include "marketing/footer.html" %}
+{% endblock body %}

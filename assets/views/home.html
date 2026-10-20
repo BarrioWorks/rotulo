@@ -1,110 +1,211 @@
 {% extends "layouts/base.html" %}
-{% block title %}Pagehaven · Your website. Yours to edit.{% endblock title %}
 {% block head %}
 {% set_global seo = seo_pages.home %}
 <script type="application/ld+json">{{ seo_pages.home_json_ld | safe }}</script>
 {% endblock head %}
-{% block body_class %}home-body{% endblock body_class %}
+{% block styles %}<link rel="stylesheet" href="/static/css/marketing.css">{% endblock styles %}
+{% block body_class %}mk-body{% endblock body_class %}
 {% block body %}
-<header class="home-header">
-  <a class="brand" href="/">
-    <img src="/static/img/logo.svg" alt="" width="28" height="28">
-    <span>Pagehaven</span>
-  </a>
-  <a class="btn btn-ghost" href="/login">Sign in</a>
-</header>
-
-<main id="main" class="home">
-  <section class="home-hero" aria-labelledby="home-title">
-    <h1 id="home-title">Your website. <span>Yours to edit.</span></h1>
-    <div class="home-intro">
-      <p class="home-lead">Import your finished website, change its words and pictures right on the page, and publish when you’re ready. No coding needed.</p>
-      <div class="home-cta">
-        <a class="btn btn-primary btn-lg" href="/register">Create your account</a>
-        <p>Have an account? <a href="/login">Sign in</a></p>
+<div class="mk-field">{% include "marketing/header.html" %}</div>
+<main id="main">
+  <div class="mk-field mk-hero-field">
+    <section class="mk-wrap mk-hero" aria-labelledby="hero-title">
+      <h1 id="hero-title" class="mk-hero-title">Change your <span class="mk-nowrap">AI-made</span> website <span class="mk-ring">without asking<br> the AI again.</span></h1>
+      <div class="mk-hero-side">
+        <p class="mk-hero-lead">Import the ZIP of your finished site. Click a heading, photo or link on the page and change it there. Publish when it looks right.</p>
+        <div class="mk-actions">
+          <a class="mk-btn mk-btn-on-field" href="/register">Import your website</a>
+          <a class="mk-link-on-field" href="#how">See how it works</a>
+        </div>
+        <p class="mk-requirement">Free to try. For websites delivered as HTML files, in one ZIP up to 25&nbsp;MB.</p>
       </div>
+      <figure class="mk-hero-shot">
+        <picture>
+          <source media="(max-width: 640px)" srcset="/static/img/marketing/editor-after-phone.webp" width="600" height="660">
+          <img src="/static/img/marketing/editor-after-1280.webp" srcset="/static/img/marketing/editor-after-800.webp 800w, /static/img/marketing/editor-after-1280.webp 1280w" sizes="(max-width: 1208px) calc(100vw - 48px), 1160px" width="1280" height="800" fetchpriority="high" alt="The Pagehaven editor with the Furnace Hill Coffee home page open. The heading “Ten bags from Los Naranjos, and what they cost” is selected, its label reads Heading · Saved, and the Publish button shows one change waiting.">
+        </picture>
+        <figcaption>A screenshot of the real Pagehaven editor. Furnace Hill Coffee is a sample site, imported from a ZIP.</figcaption>
+      </figure>
+    </section>
+  </div>
+
+  <div class="mk-page">
+  <section class="mk-wrap mk-section mk-problem" aria-labelledby="problem-title">
+    <h2 id="problem-title" class="mk-h2">Every small change still goes back through the AI</h2>
+    <div class="mk-problem-body">
+      <p>A new price, a different opening time, this year’s team photo. Each one means writing another prompt, waiting, and then checking that nothing else on the page moved.</p>
+      <p>You could open the HTML files yourself. They are hundreds of lines of code you didn’t write.</p>
+      <p>And the finished site still needs somewhere to live, at an address you can send to people.</p>
     </div>
   </section>
 
-  <figure class="home-proof">
-    <div class="proof-sheet" aria-hidden="true">
-      <div class="mock-bar material-float material-capsule">
-        <span class="mock-back"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg></span>
-        <span class="mock-name">Furnace Hill Coffee <span class="mock-page">/ Home</span></span>
-        <span class="mock-word">Images</span>
-        <span class="mock-word">Settings</span>
-        <span class="mock-bar-end">
-          <span class="mock-url"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-domain"/></svg>furnace-hill.{{ sites_domain }}</span>
-          <span class="pill pill-changes">Changes not published</span>
-          <span class="mock-publish">Publish</span>
-        </span>
-      </div>
-      <div class="mock-body">
-        <div class="mock-canvas">
-          <div class="demo-site">
-            <div class="demo-nav"><b>Furnace Hill Coffee</b><span class="is-current">Journal</span><span>About</span><span>Contact</span></div>
-            <div class="demo-hero">
-              <img class="demo-photo" src="/static/img/landing-coffee-cherries.jpg" width="720" height="540" alt="">
-              <div class="demo-copy">
-                <div class="demo-selected">
-                  <p class="demo-title">Ten bags from Finca Los Naranjos</p>
-                  <div class="mock-caption material-float">
-                    <span class="mock-kind">Heading · Saved</span>
-                    <span class="is-on">Edit text</span>
-                    <span>Style</span>
-                    <span>Link</span>
-                    <span>More</span>
-                  </div>
-                </div>
-                <p class="demo-text">Our first coffee bought straight from a farm took two harvests, one failed sample and a lot of voice notes in Spanish.</p>
-                <p class="demo-meta">14 October 2026 · 5 min read</p>
-              </div>
-            </div>
-          </div>
+  <section class="mk-wrap mk-section mk-how" id="how" aria-labelledby="how-title">
+    <h2 id="how-title" class="mk-h2">How it works</h2>
+    <ol class="mk-steps">
+      <li class="mk-step">
+        <div class="mk-step-text">
+          <span class="mk-step-n" aria-hidden="true">1</span>
+          <h3>Import the ZIP</h3>
+          <p>Pagehaven checks every file, finds your pages and lists anything it left out, such as server code or private keys.</p>
         </div>
-      </div>
-    </div>
-    <figcaption>The real page, with your words on it. Click the headline, choose Edit text and type.</figcaption>
-  </figure>
-
-  <section class="home-steps" aria-labelledby="steps-title">
-    <h2 id="steps-title" class="visually-hidden">How it works</h2>
-    <ol class="steps">
-      <li class="step">
-        <h3>Import</h3>
-        <p>Get a ZIP of your finished website from its designer or website tool, then import it into Pagehaven.</p>
+        <img class="mk-step-shot" src="/static/img/marketing/step-import.webp" width="760" height="250" loading="lazy" decoding="async" alt="Pagehaven after an import: Furnace Hill Coffee, 7 pages imported and ready to edit, with an Open editor button.">
       </li>
-      <li class="step">
-        <h3>Edit</h3>
-        <p>Click any text or picture on your page and change it, just like editing a document.</p>
+      <li class="mk-step">
+        <div class="mk-step-text">
+          <span class="mk-step-n" aria-hidden="true">2</span>
+          <h3>Click and type</h3>
+          <p>Click a heading, photo or link on your page and change it in place. Each change saves as a draft, and Undo still works when you come back tomorrow.</p>
+        </div>
+        <img class="mk-step-shot" src="/static/img/marketing/step-edit.webp" width="540" height="262" loading="lazy" decoding="async" alt="A heading being edited on the page. The label above it reads Heading · Editing, next to Bold, Italic, Link and Done.">
       </li>
-      <li class="step">
-        <h3>Publish</h3>
-        <p>Publish your website in one click, at a Pagehaven address or on your own domain.</p>
+      <li class="mk-step">
+        <div class="mk-step-text">
+          <span class="mk-step-n" aria-hidden="true">3</span>
+          <h3>Publish when it looks right</h3>
+          <p>Review the list of changes, then publish to your Pagehaven address, such as <span class="mk-address site-address">furnace-hill.{{ sites_domain }}</span>. Every publish is kept as a version you can put back.</p>
+        </div>
+        <img class="mk-step-shot" src="/static/img/marketing/step-publish.webp" width="386" height="430" loading="lazy" decoding="async" alt="The Publish your website? panel. It lists one text change on the Home page, shows the address visitors will use, and offers Cancel and Publish.">
       </li>
     </ol>
   </section>
 
-  <section class="home-promises" aria-labelledby="promises-title">
-    <h2 id="promises-title">Your website stays yours</h2>
-    <dl class="promises">
+  <section class="mk-wrap mk-section mk-demo" aria-labelledby="demo-title">
+    <div class="mk-demo-head">
+      <h2 id="demo-title" class="mk-h2">One heading, a minute apart</h2>
+      <p>Two screenshots from the editor. Between them, someone clicked the heading, chose Edit text and typed. The site’s own fonts, photo and styles came through as they were. Drag the slider, or focus it and use the arrow keys.</p>
+    </div>
+    <figure class="mk-compare" data-compare>
+      <div class="mk-compare-frame">
+        <picture>
+          <source media="(max-width: 640px)" srcset="/static/img/marketing/editor-after-phone.webp" width="600" height="660">
+          <img class="mk-compare-after" src="/static/img/marketing/editor-after-1280.webp" srcset="/static/img/marketing/editor-after-800.webp 800w, /static/img/marketing/editor-after-1280.webp 1280w" sizes="(max-width: 1208px) calc(100vw - 48px), 1160px" width="1280" height="800" loading="lazy" decoding="async" alt="After: the heading reads “Ten bags from Los Naranjos, and what they cost”, saved, with one change waiting to publish.">
+        </picture>
+        <picture class="mk-compare-before">
+          <source media="(max-width: 640px)" srcset="/static/img/marketing/editor-before-phone.webp" width="600" height="660">
+          <img src="/static/img/marketing/editor-before-1280.webp" srcset="/static/img/marketing/editor-before-800.webp 800w, /static/img/marketing/editor-before-1280.webp 1280w" sizes="(max-width: 1208px) calc(100vw - 48px), 1160px" width="1280" height="800" loading="lazy" decoding="async" alt="Before: the same page with the original heading “Ten bags from Finca Los Naranjos” selected and nothing waiting to publish.">
+        </picture>
+        <span class="mk-compare-divider" aria-hidden="true"></span>
+        <span class="mk-compare-tag mk-compare-tag-before" aria-hidden="true">Before</span>
+        <span class="mk-compare-tag mk-compare-tag-after" aria-hidden="true">After</span>
+      </div>
+      <label class="mk-compare-control">
+        <span class="visually-hidden">Before and after: how much of the before screenshot to show</span>
+        <input type="range" min="0" max="100" value="70" step="1" data-compare-input hidden>
+      </label>
+      <figcaption>Real screenshots of the Furnace Hill sample site in the Pagehaven editor, before and after one heading edit.</figcaption>
+    </figure>
+  </section>
+
+  <section class="mk-band mk-section" aria-labelledby="fit-title">
+    <div class="mk-wrap">
+      <div class="mk-fit-head">
+        <h2 id="fit-title" class="mk-h2">Check your site before you sign up</h2>
+        <p>Pagehaven works with the finished website, the files a browser opens. It doesn’t run a build step.</p>
+      </div>
+      <ul class="mk-fit">
+        <li class="mk-fit-item" data-fit="yes">
+          <p class="mk-fit-label"><svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-success"/></svg>Imports and edits</p>
+          <h3>HTML pages with their pictures, styles and fonts</h3>
+          <p>A page saved from an AI chat, an HTML template, or the built folder of a static site. Pagehaven finds <code>index.html</code> at the top of the ZIP, inside one folder, or in <code>dist</code> or <code>build</code>.</p>
+        </li>
+        <li class="mk-fit-item" data-fit="partly">
+          <p class="mk-fit-label"><svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>Imports, edits only part</p>
+          <h3>Sites whose pages are built in the browser by JavaScript</h3>
+          <p>A built React or Vite site publishes and works. You can only edit the text and pictures written in its HTML files, and Pagehaven warns you when you import it.</p>
+        </li>
+        <li class="mk-fit-item" data-fit="no">
+          <p class="mk-fit-label"><svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-close"/></svg>Refused</p>
+          <h3>Project code that still needs a build step</h3>
+          <p>A folder of source files, such as <code>package.json</code> and <code>src</code>, with no finished pages. Pagehaven says so and asks for the built website instead.</p>
+        </li>
+      </ul>
+      <p class="mk-fit-more"><a href="/compatible-exports">What a compatible ZIP looks like, and the full list of limits</a></p>
+    </div>
+  </section>
+
+  <section class="mk-wrap mk-section mk-benefits" aria-labelledby="benefits-title">
+    <div class="mk-benefits-head">
+      <h2 id="benefits-title" class="mk-h2">What you can change by clicking</h2>
+      <p class="mk-benefits-lead">Nothing goes live until you press Publish. Until then, every change is a draft only you see in the editor.</p>
+    </div>
+    <dl class="mk-benefits-list">
       <div>
-        <dt>Only what you touch changes</dt>
-        <dd>Pagehaven edits the pages your website already has. Everything you don't click stays exactly as it was.</dd>
+        <dt>Words, headings and links</dt>
+        <dd>Type over any text written in your pages. Point a link at another page by picking its title from a list.</dd>
       </div>
       <div>
-        <dt>Every version is kept</dt>
-        <dd>Each time you publish, Pagehaven saves a version. Publish an earlier one again whenever you like.</dd>
+        <dt>Photos</dt>
+        <dd>Replace a picture with a PNG, JPEG, GIF, WebP or AVIF up to 8&nbsp;MB. Pagehaven reminds you to check the picture’s description.</dd>
       </div>
       <div>
-        <dt>A finished website is all you need</dt>
-        <dd>Bring your HTML pages, pictures and fonts together in a ZIP. Pagehaven checks the files before you start.</dd>
+        <dt>Colours, sizes and spacing</dt>
+        <dd>Change text and background colour, font size and weight, alignment, padding and margins from a fixed set of controls.</dd>
+      </div>
+      <div>
+        <dt>Sections and pages</dt>
+        <dd>Hide, duplicate, move or remove a section. Add a page by copying one, or rename a page and its links follow.</dd>
+      </div>
+      <div>
+        <dt>Versions</dt>
+        <dd>Each publish is a numbered version. Make an earlier one live again, or start editing from it.</dd>
       </div>
     </dl>
   </section>
+
+  <div class="mk-wrap mk-section mk-pair">
+    <section class="mk-clients" aria-labelledby="clients-title">
+      <h2 id="clients-title" class="mk-h3">Building sites for clients?</h2>
+      <p>Export the site as static HTML and import it into an account your client signs in to. They change words and photos by clicking, and every version they publish is kept, so a bad edit can be put back.</p>
+      <p>Pagehaven has no team accounts, client logins or password reset yet. Create the account with an email address your client will keep.</p>
+    </section>
+    <section class="mk-price" aria-labelledby="price-title">
+      <h2 id="price-title" class="mk-h3">What it costs</h2>
+      <p class="mk-price-line">Free to try. There is no billing in Pagehaven yet.</p>
+      <p>An account holds up to 25 websites.</p>
+    </section>
+  </div>
+
+  <section class="mk-wrap mk-section mk-faq" aria-labelledby="faq-title">
+    <h2 id="faq-title" class="mk-h2">Questions before you import</h2>
+    <div class="mk-faq-list">
+      <div class="mk-faq-item">
+        <h3>Will my website work in Pagehaven?</h3>
+        <p>If it is a folder of HTML pages, yes. If the ZIP holds source code instead, Pagehaven refuses it with this message: “This ZIP contains source code rather than a finished website. Export the built static website files and try again.” <a href="/compatible-exports">See what works</a>.</p>
+      </div>
+      <div class="mk-faq-item">
+        <h3>Will editing break what the AI made?</h3>
+        <p>Pagehaven changes only the part you edit. The rest of each page is published as you imported it. If an edit goes wrong, undo it, or make an earlier version live again.</p>
+      </div>
+      <div class="mk-faq-item">
+        <h3>Do I need to know HTML?</h3>
+        <p>No. You click the part of the page you want to change, then choose Edit text, Style or Replace image from the controls next to it.</p>
+      </div>
+      <div class="mk-faq-item">
+        <h3>When do visitors see my changes?</h3>
+        <p>Only after you press Publish and confirm. Pagehaven first shows the list of changes and the address visitors will use.</p>
+      </div>
+      <div class="mk-faq-item">
+        <h3>What happens to private files in my ZIP?</h3>
+        <p>Pagehaven leaves out server code, private keys, password files and databases. It lists each file it left out with the reason, and warns you about secrets.</p>
+      </div>
+      <div class="mk-faq-item">
+        <h3>What if I forget my password?</h3>
+        <p>Pagehaven can’t reset passwords yet. Use a password manager, and sign up with an email address you will keep.</p>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <section class="mk-field mk-close" aria-labelledby="close-title">
+  <div class="mk-wrap mk-close-inner">
+    <h2 id="close-title" class="mk-close-title">Your site is already built. Import it and make the first change.</h2>
+    <div class="mk-close-side">
+      <a class="mk-btn mk-btn-on-field" href="/register">Import your website</a>
+      <p>Free to try. You need an email address and a ZIP of HTML files.</p>
+    </div>
+  </div>
+</section>
 </main>
-<footer class="home-foot">
-  <span class="brand brand-small"><img src="/static/img/logo.svg" alt="" width="20" height="20"><span>Pagehaven</span></span>
-  <p>For finished static websites and HTML templates.</p>
-</footer>
+{% include "marketing/footer.html" %}
+<script type="module" src="/static/js/marketing.js"></script>
 {% endblock body %}

@@ -1,4 +1,4 @@
-//! Server-rendered pages: home, accounts, dashboard, import and the editor shell.
+//! Server-rendered pages: home, compatible exports, accounts, dashboard, import and the editor shell.
 
 use axum::{
     extract::{Form, Path, State},
@@ -41,6 +41,10 @@ async fn home(
         "home.html",
         json!({"sites_domain": state.settings.sites_domain}),
     )
+}
+
+async fn compatible_exports(ViewEngine(view): ViewEngine<TeraView>) -> Result<Response> {
+    format::render().view(&view, "marketing/compatible.html", json!({}))
 }
 
 #[derive(Deserialize)]
@@ -341,6 +345,7 @@ fn not_found_page(view: &TeraView, user: Option<&auth::User>) -> Result<Response
 pub fn routes() -> Routes {
     Routes::new()
         .add("/", get(home))
+        .add("/compatible-exports", get(compatible_exports))
         .add("/register", get(register_page).post(register))
         .add("/login", get(login_page).post(login))
         .add("/logout", post(logout))
