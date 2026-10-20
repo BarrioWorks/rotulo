@@ -8,7 +8,7 @@ The brief is `brief.md`. The plan and its definition of done are in `PLAN.md`, a
 |---|---|---|
 | 1 | Research summary with sources | `research/README.md` (15 principles from NN/g, Apple, Baymard, WCAG and web.dev; competitors; interaction ideas), `audit/README.md` (the running app before this round), `seo/README.md` |
 | 2 | Visual identity | `decisions.md` items 6 to 10 and 19 to 21, `research/directions/` (three concept boards), `DESIGN.md`, `assets/static/css/app.css` and `marketing.css` |
-| 3 | Marketing redesign | `/` (`assets/views/home.html`), `/compatible-exports`, `/visual-html-editor`, `/static-website-hosting`; claims traced in `home/claims.md` |
+| 3 | Marketing redesign | `/` (`assets/views/home.html`), `/compatible-exports`, `/visual-html-editor`, `/static-website-hosting`; each claim checked against the code in `home/claims.md` |
 | 4 | Product redesign | Sign up and sign in, the dashboard and import (`assets/views/auth`, `projects`, `partials`), the editor's first-edit tip, publish review and "is live" sheet (`frontend/editor`) |
 | 5 | Before and after screenshots | `verification.md` section 9 pairs `audit/screens/` (before) with `final/screens/` (after) at 1280, 834 and 390 |
 | 6 | Usability assessment | `verification.md` sections 1, 2 and 7; `critique/a.md` and `critique/b.md` (two models, independently) |
@@ -17,14 +17,14 @@ The brief is `brief.md`. The plan and its definition of done are in `PLAN.md`, a
 
 ## Results against the plan
 
-1. **Purpose in five seconds.** A reader with no context saw only the 1280 hero and said "Pagehaven lets you visually edit and publish an AI-made website", who it is for, and to import. Pass (`seo-perf.md`).
-2. **One primary action, no invented claims.** Every claim is in `home/claims.md`. There are no prices, testimonials or counts, and custom domains are not promised.
-3. **Import first.** Sign-up lands on import. The source-only ZIP is refused in the browser before upload with the exact text. A clean import opens the editor directly.
-4. **First edit without instructions.** A centred tip shows what can be edited. All twelve journeys completed and landed on the live site at 1280. Journeys 3 to 10 also completed at 834 and 390. Landing to the first live site took 12 actions, down from 14 (measured).
+1. **Purpose in five seconds.** Partly checked. A reader with no context saw only the 1280 hero and said "Pagehaven lets you visually edit and publish an AI-made website", who it is for, and to import (`seo-perf.md`). The reader was an agent, the exposure was not timed, and 834 and 390 were not tested this way.
+2. **One primary action, no invented claims.** `home/claims.md` checks each claim against the code. There are no prices, testimonials or counts, and custom domains are not promised.
+3. **Import first.** Sign-up lands on import. The source-only ZIP is refused in the browser before upload with the exact text. A clean import opens the editor directly. The named progress stages exist in `frontend/import.ts`, but the import finished too fast to capture them on the running app.
+4. **First edit without instructions.** A centred tip shows what can be edited. All twelve journeys completed and landed on the live site at 1280 on Furnace Hill. Journeys 3 to 10 also completed at 834 and 390. Landwind covered import, heading, image, link and publish, not all twelve. Landing to the first live site counted 12 actions under the baseline rule, down from 14. The walk itself took 13, because replacing a whole heading needed Ctrl+A after the second click (measured, `verification.md` section 1).
 5. **SEO.** `seo-check.py` passes 105 of 105 checks.
-6. **Funnel.** Signup, import, first edit, publish and return are measured from first-party events. Visitors and paid conversion are not measured: there is no visitor tracking and no billing.
-7. **Nothing weaker.** `scripts/check.sh` exits 0, smoke passes on four fixtures, and the security review's Medium and Low findings are fixed. The one regression it found, a frame message that could start a text session, is removed at the root and covered by a test that fails on the old code.
-8. **Screenshots.** 71 after screenshots in `final/screens/`.
+6. **Funnel.** Signup, import, first edit and publish are measured from first-party events. "Returned" means authenticated activity on a later UTC day, not a separate session. Writes are best effort, and history before the events table is backfilled and undercounts. Events keep account and website ids with no expiry and outlive website deletion, so a retention rule is an owner decision. Visitors and paid conversion are not measured: there is no visitor tracking and no billing (`funnel.md`).
+7. **Nothing weaker.** `scripts/check.sh` exits 0, smoke passes on four fixtures, and the security review's Medium and Low findings are fixed. The one regression it found, a frame message that could start a text session, is removed at the root and covered by a test that fails on the old code. That review stopped at commit `c94aec9`. A second review of everything after it is `security-rereview.md`.
+8. **Screenshots.** 73 after screenshots in `final/screens/`, taken at commit `66e03d1`. They predate the small fixes in `ef9e4cb`: the phone "is live" buttons still show at 36 px, and the homepage step 1 caption still says "type over it".
 
 ## Fixed after the final walk
 
