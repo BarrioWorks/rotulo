@@ -43,3 +43,27 @@ Every builder in this round follows these. Evidence is in `audit/README.md` (the
 | Funnel | `migration/src/*`, a new `src/events.rs`, `src/tasks.rs`, and small calls in `src/controllers/api.rs` and `src/controllers/pages.rs` |
 
 `assets/static/css/app.css` holds the tokens. Only the homepage builder may add display tokens there, and only by adding.
+
+## Owner round 2 (2026-10-20)
+
+The owner reviewed the built site and asked for these, in their words:
+
+- "the homepage layout is too boring"
+- "the 'One heading, a minute apart' example is too simple"
+- "SEO optimize the marketing pages"
+- "style the sign in pages and all the other pages in the design style of the landing page and colors as I like those colors"
+- "use codex agents beside claude to split the work evenly"
+
+What that changes:
+
+19. **The homepage layout gets bolder composition, not more decoration.** Vary the rhythm between full-bleed ultramarine fields, light sections and real product imagery. Use asymmetric layouts, large numerals, product shots that break the grid, and the ring device where it marks the point. Keep one primary action, honest claims and no gradients, blobs or stock art.
+20. **The demo shows a whole editing session.** It replaces the single heading slider with a real, multi-step demonstration on Furnace Hill:
+    - select and retype a heading;
+    - replace a photo;
+    - point a button at another page;
+    - review and publish;
+    - the live site.
+    Each step is a real screenshot or a short click-to-play recording, controllable by keyboard, with nothing autoplaying.
+21. **The ultramarine field becomes the identity across the app's own pages.** Sign in, sign up, the dashboard, import, errors and the compatibility page all use it. The editor chrome stays neutral glass, because the owner's site needs a neutral frame (Studio decision 9). Only the editor's entry moments use the field.
+22. **SEO covers content, not just tags.** Use keyword-aligned headings and copy where they stay true. Add internal links between marketing pages, FAQ structured data matching visible questions, image sizes and alt text, and the two remaining high-intent pages from `seo/README.md`, built with real product evidence.
+23. **The work splits between Claude and Codex builders,** each owning separate files.
