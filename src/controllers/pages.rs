@@ -87,6 +87,7 @@ async fn register(
     }
     match auth::register(&ctx.db, &form.name, &form.email, &form.password).await {
         Ok(user) => {
+            crate::events::record(&ctx.db, Some(user.id), None, "signup", None).await;
             let token = auth::create_session(&ctx.db, user.id)
                 .await
                 .map_err(internal)?;
@@ -151,6 +152,7 @@ async fn login(
     }
     match auth::authenticate(&ctx.db, &form.email, &form.password).await {
         Ok(user) => {
+            crate::events::record(&ctx.db, Some(user.id), None, "signin", None).await;
             if let Some(old) = jar.get(auth::cookie_name(auth::secure_cookies(&ctx))) {
                 auth::revoke_session(&ctx.db, old.value())
                     .await
@@ -171,6 +173,7 @@ async fn login(
 }
 
 async fn logout(State(ctx): State<AppContext>, jar: CookieJar) -> Result<Response> {
+    crate::events::returned_for_jar(&ctx, &jar).await;
     if let Some(cookie) = jar.get(auth::cookie_name(auth::secure_cookies(&ctx))) {
         auth::revoke_session(&ctx.db, cookie.value())
             .await

@@ -6,6 +6,8 @@ mod authorization;
 mod domains;
 #[path = "requests/editing.rs"]
 mod editing;
+#[path = "requests/funnel.rs"]
+mod funnel;
 #[path = "requests/imports.rs"]
 mod imports;
 #[path = "requests/preview.rs"]

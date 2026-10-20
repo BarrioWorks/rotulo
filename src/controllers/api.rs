@@ -72,6 +72,14 @@ async fn change_response(
     applied: &drafts::Applied,
 ) -> ApiResult<Value> {
     let project = projects::reload(&ctx.db, project_id).await?;
+    crate::events::record(
+        &ctx.db,
+        Some(project.user_id),
+        Some(project_id),
+        "first_edit",
+        None,
+    )
+    .await;
     Ok(json!({
         "revision": applied.revision,
         "pages": applied.pages,
@@ -119,10 +127,41 @@ async fn create_import(
     ApiUser(user): ApiUser,
     mut multipart: Multipart,
 ) -> ApiResult<Response> {
-    let state = Pagehaven::from(&ctx);
+    let mut reason = None;
+    let result = import_request(&ctx, &user, &mut multipart, &mut reason).await;
+    if !result
+        .as_ref()
+        .is_ok_and(|response| response.status().is_success())
+    {
+        let category = reason.unwrap_or(match &result {
+            Err(ApiError::RateLimited) => "rate_limited",
+            Err(ApiError::Rejected {
+                code: "too_large", ..
+            }) => "too_large",
+            _ => "other",
+        });
+        crate::events::record(
+            &ctx.db,
+            Some(user.id),
+            None,
+            "import_failed",
+            Some(category),
+        )
+        .await;
+    }
+    result
+}
+
+async fn import_request(
+    ctx: &AppContext,
+    user: &crate::auth::User,
+    multipart: &mut Multipart,
+    reason: &mut Option<&'static str>,
+) -> ApiResult<Response> {
+    let state = Pagehaven::from(ctx);
     let limits = state.settings.limits.clone();
     state.limit(state::IMPORT, &user.id.to_string())?;
-    if projects::count(&ctx.db, &user).await? >= limits.projects_per_user {
+    if projects::count(&ctx.db, user).await? >= limits.projects_per_user {
         return Err(ApiError::Rejected {
             code: "project_limit",
             status: StatusCode::FORBIDDEN,
@@ -204,6 +243,9 @@ async fn create_import(
             ok = result.is_ok(),
             "import finished"
         );
+        if let Err(error) = &result {
+            *reason = Some(crate::events::import_reason(error));
+        }
         match result {
             Ok(site) => site,
             Err(ImportError::ChooseFolder(folders)) => {
@@ -270,8 +312,9 @@ async fn create_import(
         .await?;
     }
     tx.commit().await?;
+    crate::events::record(&ctx.db, Some(user.id), Some(project_id), "import_ok", None).await;
     drop(staging);
-    let thumbnail = super::pages::thumbnail(&ctx, &state, project_id).await;
+    let thumbnail = super::pages::thumbnail(ctx, &state, project_id).await;
     Ok((
         StatusCode::CREATED,
         Json(json!({
@@ -855,6 +898,7 @@ async fn publish_draft(
     publish::ensure_publishable(&project)?;
     let started = std::time::Instant::now();
     let release = publish::publish(&ctx.db, &state, &project, user.id, body.base_revision).await?;
+    crate::events::record(&ctx.db, Some(user.id), Some(project.id), "publish", None).await;
     tracing::info!(
         elapsed_ms = started.elapsed().as_millis() as u64,
         files = release.file_count,
@@ -889,9 +933,9 @@ async fn activate_release(
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     publish::ensure_publishable(&project)?;
-    Ok(Json(
-        json!({"release": publish::activate(&ctx.db, &state, &project, number).await?}),
-    ))
+    let release = publish::activate(&ctx.db, &state, &project, number).await?;
+    crate::events::record(&ctx.db, Some(user.id), Some(project.id), "publish", None).await;
+    Ok(Json(json!({"release": release})))
 }
 
 async fn restore_release(
