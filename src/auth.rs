@@ -240,7 +240,11 @@ async fn signed_in(parts: &mut Parts, ctx: &AppContext) -> Result<Option<User>, 
     let Some(cookie) = jar.get(cookie_name(secure_cookies(ctx))) else {
         return Ok(None);
     };
-    user_for_token(&ctx.db, cookie.value()).await
+    let user = user_for_token(&ctx.db, cookie.value()).await?;
+    if let Some(user) = &user {
+        crate::events::returned(ctx, user.id).await;
+    }
+    Ok(user)
 }
 
 /// The signed-in user of a JSON API request.

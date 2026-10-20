@@ -6,6 +6,7 @@ pub mod document;
 pub mod domains;
 pub mod drafts;
 pub mod error;
+pub mod events;
 pub mod hosts;
 pub mod import;
 pub mod paths;

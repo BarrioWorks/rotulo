@@ -50,6 +50,8 @@ impl Hooks for App {
         let state = Pagehaven::new(settings)
             .map_err(|e| loco_rs::Error::string(&format!("data directory: {e}")))?;
         ctx.shared_store.insert(Arc::new(state));
+        ctx.shared_store
+            .insert(Arc::new(crate::events::Returned::default()));
         Ok(ctx)
     }
 
@@ -88,6 +90,7 @@ impl Hooks for App {
     fn register_tasks(tasks: &mut Tasks) {
         tasks.register(crate::tasks::Unpublish);
         tasks.register(crate::tasks::Reinstate);
+        tasks.register(crate::tasks::Funnel);
     }
 
     async fn truncate(_ctx: &AppContext) -> Result<()> {
