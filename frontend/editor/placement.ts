@@ -74,8 +74,6 @@ export function placeToolbar({ target, canvas, size, obstructions, editing = fal
   const bottom = canvas.y + canvas.height - size.height - INSET;
   const above = target.y - size.height - gap;
   const below = target.y + target.height + gap;
-  // Text grows downwards. Keep its tools above the edited element when possible.
-  if (editing && above >= top) return { kind: "placed", x, y: above, candidate: "above-start" };
   if (banner && target.y <= canvas.y + gap && target.width >= canvas.width * .9) {
     const navBottom = Math.max(top, ...obstructions.map((o) => o.y + o.height + gap));
     const y = Math.max(navBottom, Math.min(bottom, target.y + target.height - size.height - gap));
@@ -92,23 +90,33 @@ export function placeToolbar({ target, canvas, size, obstructions, editing = fal
   return { kind: "placed", x, y: Math.max(top, Math.min(bottom, above)), candidate: "above-start" };
 }
 
-/** Prefer the far side of the caption; flip to the roomier side and constrain the scroll box. */
+/** Candidate regions exclude both the caption and selection, including when the panel flips. */
 export function placePanel({ caption, selection, canvas, size, gap = 8 }: { caption: Box; selection: Box; canvas: Box; size: { width: number; height: number }; gap?: number }): Box {
   const inset = 8;
+  const left = canvas.x + inset;
+  const right = canvas.x + canvas.width - inset;
   const top = canvas.y + inset;
   const bottom = canvas.y + canvas.height - inset;
-  const aboveRoom = Math.max(0, caption.y - gap - top);
-  const belowRoom = Math.max(0, bottom - caption.y - caption.height - gap);
+  const width = Math.min(size.width, Math.max(0, right - left));
+  const x = Math.max(left, Math.min(caption.x, right - width));
+  const aboveEnd = Math.min(bottom, Math.min(caption.y, selection.y) - gap);
+  const belowStart = Math.max(top, Math.max(caption.y + caption.height, selection.y + selection.height) + gap);
+  const above = { x, y: top, width, height: Math.max(0, aboveEnd - top) };
+  const below = { x, y: belowStart, width, height: Math.max(0, bottom - belowStart) };
   const preferAbove = caption.y < selection.y;
-  const preferredRoom = preferAbove ? aboveRoom : belowRoom;
-  const above = preferredRoom >= size.height ? preferAbove : aboveRoom > belowRoom;
-  const width = Math.min(size.width, Math.max(0, canvas.width - inset * 2));
-  const height = Math.min(size.height, above ? aboveRoom : belowRoom);
-  return {
-    x: Math.max(canvas.x + inset, Math.min(caption.x, canvas.x + canvas.width - width - inset)),
-    y: Math.max(top, Math.min(bottom - height, above ? caption.y - gap - height : caption.y + caption.height + gap)),
-    width, height,
-  };
+  const vertical = preferAbove ? [above, below] : [below, above];
+  const unionLeft = Math.min(caption.x, selection.x);
+  const unionRight = Math.max(caption.x + caption.width, selection.x + selection.width);
+  const sides = [
+    { x: unionRight + gap, y: top, width: Math.max(0, right - unionRight - gap), height: Math.max(0, bottom - top) },
+    { x: left, y: top, width: Math.max(0, unionLeft - gap - left), height: Math.max(0, bottom - top) },
+  ].filter((region) => region.width >= width);
+  const room = [...vertical, ...sides].find((region) => region.height >= size.height)
+    ?? [...vertical, ...sides].reduce((best, region) => region.height > best.height ? region : best, above);
+  const height = Math.min(size.height, room.height);
+  const y = room === above ? aboveEnd - height : room === below ? belowStart
+    : Math.max(top, Math.min(caption.y, bottom - height));
+  return { x: room.x, y: Math.max(top, Math.min(y, bottom - height)), width, height };
 }
 
 /** The toolbar's widest size. Mirrors the `max-width` of `.ftb` in editor.css. */

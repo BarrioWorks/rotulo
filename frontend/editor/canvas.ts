@@ -1,3 +1,4 @@
+import { pageLabel } from "./pages.js";
 import { envelope, parseAgentMessage, type EditorMessage, type Rect } from "../protocol.js";
 import { must } from "../ui.js";
 import type { Box } from "./placement.js";
@@ -149,7 +150,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
 
   function title(s: State): string {
     const page = s.pages.find((p) => p.path === s.path);
-    const name = page ? (page.path === "index.html" ? "Home" : page.title || page.path) : s.path;
+    const name = page ? pageLabel(page, s.project.name, s.pages) : s.path;
     return `Your page: ${name}, ${s.mode === "edit" ? "editing" : "preview"}`;
   }
 

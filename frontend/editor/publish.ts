@@ -138,7 +138,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
       out.push(h("div", { class: "alert alert-error", attrs: { role: "alert" } }, icon("alert", "icon-sm"), h("span", { class: "grow", text: "This website was changed in another tab. Reload to see the latest version. " }), reload));
     }
 
-    const title = (text: string) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title" } : {} });
+    const title = (text: string) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title", tabindex: "-1" } : {} });
     const liveLine = live ? h("p", { class: "pub-meta", text: `Visitors see version ${live.number}, published ${dateTime(live.created_at).replace(/^Today/, "today").replace(/^Yesterday/, "yesterday")}.` }) : null;
     const addressRow = h("p", { class: "pub-address" }, icon("domain", "icon-sm"),
       h("a", { text: address, attrs: { href: s.project.site_url, target: "_blank", rel: "noopener noreferrer" } }));
@@ -289,6 +289,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     }, { log: "none" });
     if (!live) return;
     await loadReleases();
+    focusCurrentVersion();
     announce(`Version ${live.number} is now what visitors see`);
     toast(`Visitors now see version ${live.number}.`, { action: { label: "View website", run: viewWebsite } });
   }
@@ -326,7 +327,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
         open.addEventListener("click", () => void openVersion(r));
         actions.append(open);
       }
-      return h("li", { class: `release${isLive ? " is-live" : ""}` },
+      return h("li", { class: `release${isLive ? " is-live" : ""}`, attrs: { tabindex: "-1" } },
         h("div", { class: "release-head" },
           h("span", { class: "release-number", text: `Version ${r.number}` }),
           isLive ? h("span", { class: "pill pill-published", text: "Published" }) : null),
@@ -335,9 +336,18 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     });
   }
 
+  function focusCurrentVersion(): void {
+    const target = historyList.querySelector<HTMLElement>(".is-live") ?? pop.querySelector<HTMLElement>("#ed-publish-title");
+    target?.focus({ preventScroll: true });
+  }
+
   function renderHistory(): void {
     const s = store.get();
-    if (!historySheet.hidden) historyList.replaceChildren(...releaseRows(s, false));
+    if (!historySheet.hidden) {
+      const restoreFocus = historyList.contains(document.activeElement);
+      historyList.replaceChildren(...releaseRows(s, false));
+      if (restoreFocus) focusCurrentVersion();
+    }
     if (manageHistory) manageHistory.replaceChildren(...releaseRows(s, true));
   }
 

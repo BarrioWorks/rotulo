@@ -105,10 +105,11 @@ test("an action with a detail loses the detail before it moves into More", () =>
   ]);
 });
 
-test("a lower caption flips its Link panel above and keeps every edge in the window", () => {
+test("a lower caption flips beyond the selection and keeps every edge in the canvas", () => {
   const caption = { x: 1100, y: 685, width: 170, height: 40 };
   const p = placePanel({ caption, selection: { x: 500, y: 600, width: 220, height: 69 }, canvas: { x: 0, y: 0, width: 1280, height: 800 }, size: { width: 320, height: 297 } });
-  assert.equal(p.y + p.height, caption.y - 8);
+  assert.equal(intersect(p, caption), null);
+  assert.equal(intersect(p, { x: 500, y: 600, width: 220, height: 69 }), null);
   assert.ok(p.x >= 8 && p.x + p.width <= 1272);
   assert.ok(p.y >= 8 && p.y + p.height <= 792);
 });
@@ -120,12 +121,12 @@ test("an oversized panel scrolls within the roomier side without a minimum-heigh
   assert.equal(p.height, 74);
 });
 
-test("typing tools stay above downward-growing text, or yield when neither side fits", () => {
+test("typing tools prefer below with an eight pixel gap, or yield when neither side fits", () => {
   for (const height of [60, 150, 320]) {
     const target = { x: 400, y: 300, width: 500, height };
     const p = placeToolbar({ target, canvas, size, editing: true, obstructions: [] });
-    assert.equal(p.candidate, "above-start");
-    assert.equal(p.y, 252);
+    assert.equal(p.candidate, "below-start");
+    assert.equal(p.y, target.y + target.height + 8);
     assert.equal(intersect(box(p), target), null);
   }
   assert.deepEqual(placeToolbar({ target: { ...canvas }, canvas, size, editing: true, obstructions: [] }), { kind: "hidden" });
@@ -136,4 +137,35 @@ test("a full-width top banner puts its caption inside its bottom edge, below the
   assert.equal(p.candidate, "pinned");
   assert.ok(p.y > nav.y + nav.height);
   assert.ok(p.y + size.height < canvas.y + 680);
+});
+
+
+test("panels stay in the canvas band and never flip onto the selected button", () => {
+  for (const canvas of [{ x: 0, y: 52, width: 1280, height: 588 }, { x: 0, y: 60, width: 390, height: 672 }]) {
+    const selection = { x: 30, y: 360, width: canvas.width - 60, height: 70 };
+    const caption = { x: 30, y: 438, width: canvas.width - 60, height: 40 };
+    const panel = placePanel({ caption, selection, canvas, size: { width: 320, height: 464 } });
+    assert.equal(intersect(panel, selection), null);
+    assert.equal(intersect(panel, caption), null);
+    assert.ok(panel.y >= canvas.y + 8);
+    assert.ok(panel.y + panel.height <= canvas.y + canvas.height - 8);
+    assert.equal(panel.height, Math.max(selection.y - 8 - canvas.y - 8, canvas.y + canvas.height - 8 - caption.y - caption.height - 8));
+  }
+});
+
+test("panels use full height beside the element when neither vertical side fits", () => {
+  const selection = { x: 500, y: 250, width: 200, height: 80 };
+  const caption = { x: 500, y: 338, width: 240, height: 40 };
+  const panel = placePanel({ caption, selection, canvas: { x: 0, y: 52, width: 1280, height: 588 }, size: { width: 320, height: 464 } });
+  assert.equal(panel.height, 464);
+  assert.equal(intersect(panel, caption), null);
+  assert.equal(intersect(panel, selection), null);
+});
+
+
+test("a scrolled selection cannot expand a panel beyond the canvas", () => {
+  const canvas = { x: 0, y: 52, width: 390, height: 500 };
+  const panel = placePanel({ caption: { x: 10, y: 900, width: 200, height: 40 }, selection: { x: 10, y: 800, width: 370, height: 90 }, canvas, size: { width: 320, height: 700 } });
+  assert.ok(panel.y >= 60);
+  assert.ok(panel.y + panel.height <= 544);
 });

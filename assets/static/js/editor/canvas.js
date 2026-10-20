@@ -1,3 +1,4 @@
+import { pageLabel } from "./pages.js";
 import { envelope, parseAgentMessage } from "../protocol.js";
 import { must } from "../ui.js";
 import { changed } from "./state.js";
@@ -101,7 +102,7 @@ export function createCanvas(store, handlers) {
     }
     function title(s) {
         const page = s.pages.find((p) => p.path === s.path);
-        const name = page ? (page.path === "index.html" ? "Home" : page.title || page.path) : s.path;
+        const name = page ? pageLabel(page, s.project.name, s.pages) : s.path;
         return `Your page: ${name}, ${s.mode === "edit" ? "editing" : "preview"}`;
     }
     function sizeIframe(iframe) {

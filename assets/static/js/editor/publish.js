@@ -120,7 +120,7 @@ export function createPublishing({ store, saver, afterRestore }) {
             reload.addEventListener("click", () => window.location.reload());
             out.push(h("div", { class: "alert alert-error", attrs: { role: "alert" } }, icon("alert", "icon-sm"), h("span", { class: "grow", text: "This website was changed in another tab. Reload to see the latest version. " }), reload));
         }
-        const title = (text) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title" } : {} });
+        const title = (text) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title", tabindex: "-1" } : {} });
         const liveLine = live ? h("p", { class: "pub-meta", text: `Visitors see version ${live.number}, published ${dateTime(live.created_at).replace(/^Today/, "today").replace(/^Yesterday/, "yesterday")}.` }) : null;
         const addressRow = h("p", { class: "pub-address" }, icon("domain", "icon-sm"), h("a", { text: address, attrs: { href: s.project.site_url, target: "_blank", rel: "noopener noreferrer" } }));
         const summary = changeSummary(s);
@@ -268,6 +268,7 @@ export function createPublishing({ store, saver, afterRestore }) {
         if (!live)
             return;
         await loadReleases();
+        focusCurrentVersion();
         announce(`Version ${live.number} is now what visitors see`);
         toast(`Visitors now see version ${live.number}.`, { action: { label: "View website", run: viewWebsite } });
     }
@@ -305,13 +306,21 @@ export function createPublishing({ store, saver, afterRestore }) {
                 open.addEventListener("click", () => void openVersion(r));
                 actions.append(open);
             }
-            return h("li", { class: `release${isLive ? " is-live" : ""}` }, h("div", { class: "release-head" }, h("span", { class: "release-number", text: `Version ${r.number}` }), isLive ? h("span", { class: "pill pill-published", text: "Published" }) : null), h("p", { class: "release-meta" }, h("time", { text: dateTime(r.created_at), attrs: { datetime: r.created_at } }), h("span", { text: ` · ${timeAgo(r.created_at)}` })), actions);
+            return h("li", { class: `release${isLive ? " is-live" : ""}`, attrs: { tabindex: "-1" } }, h("div", { class: "release-head" }, h("span", { class: "release-number", text: `Version ${r.number}` }), isLive ? h("span", { class: "pill pill-published", text: "Published" }) : null), h("p", { class: "release-meta" }, h("time", { text: dateTime(r.created_at), attrs: { datetime: r.created_at } }), h("span", { text: ` · ${timeAgo(r.created_at)}` })), actions);
         });
+    }
+    function focusCurrentVersion() {
+        const target = historyList.querySelector(".is-live") ?? pop.querySelector("#ed-publish-title");
+        target?.focus({ preventScroll: true });
     }
     function renderHistory() {
         const s = store.get();
-        if (!historySheet.hidden)
+        if (!historySheet.hidden) {
+            const restoreFocus = historyList.contains(document.activeElement);
             historyList.replaceChildren(...releaseRows(s, false));
+            if (restoreFocus)
+                focusCurrentVersion();
+        }
         if (manageHistory)
             manageHistory.replaceChildren(...releaseRows(s, true));
     }

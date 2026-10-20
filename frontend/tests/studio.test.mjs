@@ -38,3 +38,35 @@ test('page labels recognize imported branding after a rename and reload', () => 
   assert.equal(pageLabel(pages[1], 'Northwind Renamed', pages), 'The studio');
   assert.equal(pageLabel({ path: 'a.html', title: 'Hours | Locations' }, 'Bakery', pages), 'Hours · Locations');
 });
+
+
+test('the touch bar reserves two fixed 44 px rows before scripts run', () => {
+  const css = readFileSync(new URL('../../assets/static/css/editor.css', import.meta.url), 'utf8');
+  const heights = [...css.matchAll(/--studio-bottom-height:\s*calc\((\d+)px \+ env\(safe-area-inset-bottom, 0px\)\)/g)].map(m => Number(m[1]));
+  assert.deepEqual(heights, [113, 113]);
+  for (const height of heights) assert.equal(height, 44 * 2 + 8 + 16 + 1);
+  assert.match(css, /\.ed-main \{ inset: 60px 0 var\(--studio-bottom-height\)/);
+  assert.match(css, /\.studio-bottom \{[^}]*height: var\(--studio-bottom-height\)/);
+  const topbar = readFileSync(new URL('../../assets/static/js/editor/topbar.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(topbar, /setProperty\(["']--studio-bottom-height/);
+});
+
+test('rollback focuses the new current-version row after bootstrap and release rendering finish', async () => {
+  const source = readFileSync(new URL('../../assets/static/js/editor/publish.js', import.meta.url), 'utf8');
+  const publishAgain = source.slice(source.indexOf('async function publishAgain('), source.indexOf('async function openVersion('));
+  const focus = source.slice(source.indexOf('function focusCurrentVersion('), source.indexOf('function renderHistory('));
+  let focused = null;
+  let current = null;
+  const row = { focus() { focused = this; } };
+  const context = {
+    confirmDialog: async () => true,
+    change: async run => run(),
+    api: { activate: async () => ({ release: { number: 1 } }), bootstrap: async () => ({}) },
+    pid: () => 'site', store: { dispatch() { current = null; } },
+    loadReleases: async () => { current = row; },
+    historyList: { querySelector: () => current }, pop: { querySelector: () => null },
+    announce() {}, toast() {}, viewWebsite() {},
+  };
+  await vm.runInNewContext(`${focus} ${publishAgain} publishAgain({number: 1})`, context);
+  assert.equal(focused, row);
+});

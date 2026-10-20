@@ -422,16 +422,20 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     const caption = document.querySelector<HTMLElement>("[data-toolbar]");
     if (!caption) return;
     const surface = store.get().surface;
+    const bounds = canvas.visibleBox();
+    panelView.style.width = "";
     if (surface.kind === "panel" && surface.panel === "page") {
       const anchor = must<HTMLElement>(document, "[data-page-switcher]").getBoundingClientRect();
-      panelView.style.left = `${anchor.left}px`; panelView.style.top = `${anchor.bottom + 8}px`;
-      panelView.style.maxHeight = `${innerHeight - anchor.bottom - 24}px`; return;
+      const top = Math.max(bounds.y + 8, anchor.bottom + 8);
+      panelView.style.left = `${anchor.left}px`; panelView.style.top = `${top}px`;
+      panelView.style.maxHeight = `${Math.max(0, bounds.y + bounds.height - top - 8)}px`; return;
     }
     const r = caption.getBoundingClientRect();
     panelView.style.maxHeight = "none";
     const selected = selection(store.get());
     const target = selected ? canvas.toApp(selected.rect) : { x: r.x, y: r.y - 20, width: r.width, height: 12 };
-    const position = panelPlacement({ caption: { x: r.x, y: r.y, width: r.width, height: r.height }, selection: target, canvas: { x: 0, y: 0, width: innerWidth, height: innerHeight }, size: { width: panelView.offsetWidth, height: panelView.scrollHeight } });
+    const position = panelPlacement({ caption: { x: r.x, y: r.y, width: r.width, height: r.height }, selection: target, canvas: canvas.visibleBox(), size: { width: panelView.offsetWidth, height: panelView.scrollHeight } });
+    panelView.style.width = `${position.width}px`;
     panelView.style.left = `${position.x}px`;
     panelView.style.top = `${position.y}px`;
     panelView.style.maxHeight = `${position.height}px`;
