@@ -507,6 +507,7 @@ dialog[data-dialog="page"][open] { z-index: 60; }
 .live-sheet :focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .live-address { display: block; padding: 12px 0; font-family: var(--font-mono); overflow-wrap: anywhere; color: #fff; }
 .live-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+@media (pointer: coarse), (max-width: 899px) { .live-sheet .btn, .live-close { min-height: 44px; min-width: 44px; } }
 @keyframes live-appear { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .live-sheet { animation: live-fade 160ms ease-out; } }
 @keyframes live-fade { from { opacity: 0; } to { opacity: 1; } }
