@@ -64,10 +64,10 @@ test('tap click selects; a second tap requests parent-authorized editing and nev
 test('text requests are bounded ids and cannot authorize text or editing reports', () => {
   assert.deepEqual(parseAgentMessage(envelope({ type: 'request_text', element: 'a' })), { type: 'request_text', element: 'a' });
   for (const element of ['', 'a'.repeat(11), 'a" onclick=']) assert.equal(parseAgentMessage(envelope({ type: 'request_text', element })), undefined);
-  const session = { path: 'index.html', mode: 'edit', loading: false, textElement: null };
+  const session = { path: 'index.html', mode: 'edit', loading: false, textElement: null, activated: true };
   const request = { type: 'request_text', element: 'a' };
   assert.equal(acceptsCanvasMessage(session, request), true);
-  for (const patch of [{ mode: 'preview' }, { loading: true }, { textElement: 'a' }]) assert.equal(acceptsCanvasMessage({ ...session, ...patch }, request), false);
+  for (const patch of [{ mode: 'preview' }, { loading: true }, { textElement: 'a' }, { activated: false }, { activated: undefined }]) assert.equal(acceptsCanvasMessage({ ...session, ...patch }, request), false);
   assert.equal(acceptsCanvasMessage(session, { type: 'text', element: 'a', html: 'forged' }), false);
 });
 test('canvas reserves its container content box without bootstrap or assumed chrome heights', () => {

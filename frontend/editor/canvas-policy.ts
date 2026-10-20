@@ -7,6 +7,8 @@ export interface CanvasSession {
   loading: boolean;
   textElement: string | null;
   finishing?: boolean;
+  /** The owner clicked or pressed a key within the browser's activation window. A script in the site cannot fake this. */
+  activated?: boolean;
 }
 
 export function acceptsCanvasMessage(session: CanvasSession, message: AgentMessage): boolean {
@@ -17,7 +19,7 @@ export function acceptsCanvasMessage(session: CanvasSession, message: AgentMessa
     case "editing":
       return (session.mode === "edit" || session.finishing === true) && session.textElement === message.element;
     case "request_text":
-      return session.mode === "edit" && session.textElement === null;
+      return session.mode === "edit" && session.textElement === null && session.activated === true;
     case "navigate":
       return session.mode === "preview";
     default:

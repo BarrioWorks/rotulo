@@ -256,7 +256,7 @@ export function createCanvas(store, handlers) {
         if (event.source !== source.contentWindow || event.origin !== originOf(source))
             return;
         const message = parseAgentMessage(event.data);
-        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false }, message))
+        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false, activated: navigator.userActivation?.isActive ?? false }, message))
             return;
         switch (message.type) {
             case "ready": {
