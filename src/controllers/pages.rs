@@ -92,7 +92,7 @@ async fn register(
                 .map_err(internal)?;
             Ok((
                 jar.add(auth::session_cookie(token, state.settings.secure_cookies)),
-                Redirect::to("/projects"),
+                Redirect::to("/projects/new"),
             )
                 .into_response())
         }

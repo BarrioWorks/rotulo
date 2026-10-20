@@ -14,7 +14,7 @@
     {% if can_create and count > 0 %}
     <a class="btn btn-primary btn-lg" href="/projects/new">
       <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-      New website
+      Import another website
     </a>
     {% endif %}
   </div>
@@ -133,15 +133,10 @@
     </form>
   </dialog>
   {% else %}
-  <section class="first-run" aria-labelledby="first-run-title">
-    <div class="first-run-sheet">
-      <svg class="icon first-run-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-      <h2 id="first-run-title">Bring your website into Pagehaven</h2>
-      <p>Import a ZIP of your finished website. Then change its words and pictures right on the page.</p>
-      {% if can_create %}<a class="btn btn-primary btn-lg" href="/projects/new">New website</a>{% endif %}
-      <p class="first-run-note">Nothing goes live until you publish.</p>
-    </div>
-    {% include "partials/export_help.html" %}
+  <section class="empty-import import" id="import" aria-label="Import your first website">
+    <h2>Bring your website into Pagehaven</h2>
+    <p class="empty-import-lead">Change its words and pictures right on the page. Nothing goes live until you publish.</p>
+    {% include "partials/import_area.html" %}
   </section>
   {% endif %}
 </main>

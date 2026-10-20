@@ -89,12 +89,6 @@
 .modal-body .field-error { margin-top: 0; color: var(--error); }
 .delete-dialog .label strong { font-weight: 700; overflow-wrap: anywhere; }
 
-.first-run-sheet { margin: 0 0 var(--s6); padding: var(--s10) var(--s7); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sheet); text-align: center; }
-.first-run-icon { width: 32px; height: 32px; color: var(--ink-2); margin: 0 auto var(--s6); }
-.first-run-sheet h2 { font-size: var(--fs-title-2); line-height: var(--lh-title-2); letter-spacing: var(--ls-title-2); }
-.first-run-sheet p { max-width: 43ch; margin: var(--s3) auto var(--s6); color: var(--ink-2); }
-.first-run-sheet .first-run-note { margin: var(--s4) auto 0; font-size: var(--fs-meta); }
-.first-run .export-help { max-width: 640px; margin: 0 auto; }
 .site-address { margin-top: var(--s2); font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--ink-2); overflow-wrap: anywhere; }
 .export-checks { margin: var(--s3) 0 0; padding-left: var(--s5); }
 .export-checks li + li { margin-top: var(--s2); }
@@ -132,7 +126,8 @@
 .dropzone-btn { margin-top: var(--s2); pointer-events: none; }
 .dropzone-limits { margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-2); text-wrap: balance; }
 [data-choose-error] { margin-top: var(--s3); }
-.import-name { margin-bottom: var(--s6); max-width: 420px; }
+.import-name { margin-bottom: var(--s4); max-width: 420px; }
+.import-name .field { margin-top: var(--s3); }
 [data-help-slot] { margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }
 
 .import-panel { padding: var(--s7); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-sheet); animation: fade var(--dur-panel) var(--ease-out); }
@@ -290,12 +285,10 @@
   .mock-bar { left: 0; right: 0; padding: 0 var(--s2); gap: var(--s2); }
   :root { --demo-title: 1.625rem; }
   .mock-word, .mock-caption span:nth-child(4) { display: none; }
-  .first-run-sheet { padding: var(--s8) var(--s5); }
   .auth-column { padding: var(--s6); }
   .auth-column h1 { font-size: 2rem; }
   .import-panel { padding: var(--s5); }
   .result-actions .btn { width: 100%; }
-  .first-run .export-help { margin: 0; }
   .dropzone { min-height: 280px; padding: var(--s7) var(--s4); }
   .panel-actions { margin-left: 0; }
   .export-help-body { padding-left: 0; }
@@ -324,4 +317,36 @@
 .notice h1 { font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem); }
 @media (pointer: coarse) {
   .brand, .auth-alt a, .home-cta p a { min-height: 44px; }
+}
+
+/* Import is the first useful action, on both import and the empty dashboard. */
+.empty-import { max-width: 712px; margin-inline: auto; }
+.empty-import h2 { font-size: var(--fs-title-2); line-height: var(--lh-title-2); }
+.empty-import-lead { margin-top: var(--s2); color: var(--ink-2); }
+.import-requirements { max-width: 66ch; margin-block: var(--s5) var(--s6); color: var(--ink-2); }
+.import-requirements p + p { margin-top: var(--s3); }
+.import-requirements code { color: var(--ink); overflow-wrap: anywhere; }
+.import-requirements a { display: inline-block; min-height: 24px; }
+.window-drop { position: fixed; inset: var(--s3); z-index: 110; pointer-events: none; display: grid; place-items: center; padding: var(--s6); border: 3px dashed var(--select); border-radius: var(--r-sheet); background: var(--surface); color: var(--ink); text-align: center; font-size: var(--fs-title-2); font-weight: 600; }
+.window-drop[hidden] { display: none; }
+.ready-label { color: var(--ink-2); margin-bottom: var(--s2); }
+@media (max-width: 520px) {
+  .auth-column .input, .import .input { font-size: 16px; }
+  .account-name { max-width: 14ch; }
+  .import-requirements { font-size: 1rem; line-height: 1.5; }
+}
+@media (max-width: 520px), (pointer: coarse) {
+  .site-actions .btn, .site-more > summary { min-height: 44px; }
+  .site-more > summary { min-width: 44px; }
+}
+@media (pointer: coarse) {
+  .import .btn, .export-help > summary, .import-requirements a { min-height: 44px; }
+  .site-more .menu-item, .account .menu-item { min-height: 44px; }
+}
+
+/* App actions stay neutral; selection, focus and publishing carry ultramarine. */
+@media (forced-colors: none) {
+  :where(.auth, .dash, .import) .btn-primary { --btn-bg: var(--ink); }
+  :where(.auth, .dash, .import) .btn-primary:hover { --btn-bg: var(--ink-2); }
+  :where(.auth, .dash, .import) .btn-primary:active { --btn-bg: var(--ink); }
 }

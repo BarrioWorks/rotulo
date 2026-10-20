@@ -306,6 +306,8 @@ function showFlash() {
     toast(message);
 }
 if (typeof document !== "undefined") {
+    if (document.querySelector("#import"))
+        void import("./import.js");
     wireMenus();
     wireForms();
     wireThumbnails();
