@@ -111,7 +111,7 @@ async fn home_shows_the_configured_sites_domain_without_a_port() {
             .unwrap()
             .text()
             .collect::<String>();
-        assert_eq!(address, format!("furnace-hill.{domain}"));
+        assert_eq!(address, format!("furnace-hill-coffee.{domain}"));
         assert!(!address.contains(':'));
     })
     .await;

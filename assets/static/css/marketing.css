@@ -141,6 +141,7 @@ html:has(.mk-body) { scroll-padding-top: var(--s6); }
 .mk-shot-pair-stagger figure + figure { justify-self: end; }
 .mk-step-caption { font-size: var(--fs-mk-lead); line-height: var(--lh-mk-lead); max-width: 56ch; }
 .mk-step-label { font-weight: 650; }
+.mk-address { font-family: var(--font-mono); font-size: 0.875em; overflow-wrap: anywhere; }
 .mk-demo-note { margin-top: var(--s7); font-size: var(--fs-control); color: var(--on-field-2); }
 
 .mk-cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s6); margin-top: var(--s7); }
