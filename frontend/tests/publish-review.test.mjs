@@ -33,7 +33,7 @@ test('review buttons reveal the saved element on its page and legacy rows stay t
       pages: [{ path: 'about.html', title: 'About' }], saves: {}, changes: [{ page: 'about.html', label: 'Edit text', element: 'abc' }, { page: 'about.html', label: 'Earlier edit' }] };
     function h(tag, props, ...children) { return { tag, ...props, children, events: {}, addEventListener(type, run) { this.events[type] = run; } }; }
     const context = { s, h, icon: () => null, siteState: () => ({ kind: 'changes' }), displayUrl: url => url, pageLabel: p => p.title,
-      publishing: false, publishError: null, store: { get: () => s, dispatch: action => calls.push(action) },
+      publishing: false, publishError: null, showAllChanges: false, REVIEW_ROWS: 8, store: { get: () => s, dispatch: action => calls.push(action) },
       closeReview: flag => calls.push(['close', flag]), canvas: { open: (...args) => calls.push(['open', ...args]), send: msg => calls.push(msg), surface: { focus() {} } } };
     const nodes = vm.runInNewContext(section(publishing, 'function review(', 'function renderReview(') + 'review(s, "manage")', context);
     const list = nodes.find(n => n.tag === 'ul');
@@ -78,17 +78,41 @@ test('Domains explains the disabled host feature and hides its form', () => {
   assert.equal(form.hidden, false); assert.equal(disabled.hidden, true);
 });
 
-test('history gets the full canvas height even with a selected part', async () => {
-  const { intersect } = await import('../../assets/static/js/editor/placement.js');
-  const pop = { offsetWidth: 380, style: {} }, historySheet = { hidden: true };
-  const context = { pop, historySheet, intersect, document: { querySelector: selector => selector === '.ed-top-right' ? { getBoundingClientRect: () => ({ bottom: 47, right: 1274 }) } : null },
-    window: { innerWidth: 1280 }, canvas: { visibleBox: () => ({ x: 0, y: 52, width: 1280, height: 748 }), toApp: r => r },
-    store: { get: () => ({ focus: { kind: 'selected', selection: { rect: { x: 1000, y: 300, width: 100, height: 100 } } } }) } };
-  const sandbox = vm.createContext(context);
-  vm.runInContext(section(publishing, 'function placeReview()', 'function onOutside(') + 'placeReview()', sandbox);
-  const limited = Number.parseInt(pop.style.maxHeight);
-  historySheet.hidden = false;
-  vm.runInContext('placeReview()', sandbox);
-  assert.ok(Number.parseInt(pop.style.maxHeight) > limited);
-  assert.equal(pop.style.maxHeight, '732px');
+function placeReviewWith({ scrollHeight, historyOpen = false }) {
+  return import('../../assets/static/js/editor/placement.js').then(({ intersect }) => {
+    const pop = { offsetWidth: 380, scrollHeight, style: {} }, historySheet = { hidden: !historyOpen };
+    const context = { pop, historySheet, intersect, document: { querySelector: selector => selector === '.ed-top-right' ? { getBoundingClientRect: () => ({ bottom: 47, right: 1274 }) } : null },
+      window: { innerWidth: 1280 }, canvas: { visibleBox: () => ({ x: 0, y: 52, width: 1280, height: 748 }), toApp: r => r },
+      store: { get: () => ({ focus: { kind: 'selected', selection: { rect: { x: 1000, y: 300, width: 100, height: 100 } } } }) } };
+    vm.runInNewContext(section(publishing, 'function placeReview()', 'function onOutside(') + 'placeReview()', context);
+    return pop.style.maxHeight;
+  });
+}
+
+test('the review steps above a selected part only when every change still shows', async () => {
+  assert.equal(await placeReviewWith({ scrollHeight: 200 }), '232px', 'a short review fits above the part');
+  assert.equal(await placeReviewWith({ scrollHeight: 383 }), '732px', 'a longer review covers the part instead of being cut');
+  assert.equal(await placeReviewWith({ scrollHeight: 200, historyOpen: true }), '732px', 'history always gets the full height');
+});
+
+test('the review opens at its top and can list every change', () => {
+  assert.match(section(publishing, 'function openReview(', 'function closeReview('), /focus\(\{ preventScroll: true \}\);\s*pop\.scrollTop = 0;/);
+  const s = { path: 'index.html', canvasLoading: false, project: { name: 'Site', site_url: 'http://site.localhost', live_release: null },
+    pages: [{ path: 'index.html', title: 'Home' }, { path: 'about.html', title: 'About' }], saves: {},
+    changes: Array.from({ length: 11 }, (_, i) => ({ page: 'index.html', label: `Change ${i + 1}` })) };
+  function h(tag, props, ...children) { return { tag, ...props, children: children.flat(), events: {}, addEventListener(type, run) { this.events[type] = run; } }; }
+  const context = { s, h, icon: () => null, siteState: () => ({ kind: 'never' }), displayUrl: url => url, pageLabel: p => p.title, dateTime: () => '',
+    publishing: false, publishError: null, showAllChanges: false, REVIEW_ROWS: 8, renderAll() {}, pop: { querySelector: () => null },
+    store: { get: () => s }, closeReview() {}, canvas: {} };
+  const render = () => vm.runInNewContext(section(publishing, 'function review(', 'function renderReview(') + 'review(s, "manage")', context);
+  const rows = (nodes) => nodes.find(n => n.tag === 'ul').children.length;
+  let nodes = render();
+  assert.equal(nodes[0].text, 'Publish your website?');
+  assert.ok(nodes.some(n => n.text === 'This publishes all 2 pages of your website, exactly as they show in the editor.'));
+  assert.equal(rows(nodes), 8);
+  const showAll = nodes.find(n => n.tag === 'button' && n.text === 'Show all 11 changes');
+  showAll.events.click();
+  nodes = render();
+  assert.equal(rows(nodes), 11);
+  assert.ok(!nodes.some(n => n.tag === 'button' && /^Show all/.test(n.text ?? '')));
 });

@@ -114,8 +114,13 @@
     </button>
 
     <div class="canvas-foot">
-      <p class="canvas-hint" data-canvas-hint><span data-canvas-hint-text></span> <button class="link-btn" type="button" data-show-editable>Show what I can edit</button></p>
-
+      <p class="canvas-hint" data-canvas-hint-text></p>
+    </div>
+    <div class="editable-tip material-float" role="note" aria-label="Tip" data-editable-tip hidden>
+      <p data-editable-tip-text>Click any highlighted text, then type to change it.</p>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="Close tip" data-editable-tip-close>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-close"/></svg>
+      </button>
     </div>
   </main>
 </div>

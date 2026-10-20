@@ -127,6 +127,8 @@ async fn create_import(
     ApiUser(user): ApiUser,
     mut multipart: Multipart,
 ) -> ApiResult<Response> {
+    // A refused request records nothing, so the limiter also bounds the event writes.
+    Pagehaven::from(&ctx).limit(state::IMPORT, &user.id.to_string())?;
     let mut reason = None;
     let result = import_request(&ctx, &user, &mut multipart, &mut reason).await;
     if !result
@@ -134,7 +136,6 @@ async fn create_import(
         .is_ok_and(|response| response.status().is_success())
     {
         let category = reason.unwrap_or(match &result {
-            Err(ApiError::RateLimited) => "rate_limited",
             Err(ApiError::Rejected {
                 code: "too_large", ..
             }) => "too_large",
@@ -160,7 +161,6 @@ async fn import_request(
 ) -> ApiResult<Response> {
     let state = Pagehaven::from(ctx);
     let limits = state.settings.limits.clone();
-    state.limit(state::IMPORT, &user.id.to_string())?;
     if projects::count(&ctx.db, user).await? >= limits.projects_per_user {
         return Err(ApiError::Rejected {
             code: "project_limit",
