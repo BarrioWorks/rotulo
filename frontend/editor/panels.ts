@@ -442,7 +442,7 @@ function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
   });
   body.append(group("Replace", drop));
 
-  const area = h("textarea", { class: "textarea", attrs: { id: "rail-alt", rows: "3", maxlength: "1000", "data-key": "alt", placeholder: "For example: Fresh sourdough loaves on a wooden table", ...(ctx.replaced ? {} : { "data-autofocus": "" }) } });
+  const area = h("textarea", { class: "textarea", attrs: { id: "rail-alt", rows: "3", maxlength: "1000", "data-key": "alt", placeholder: "For example: Fresh sourdough loaves on a wooden table", "data-autofocus": "" } });
   const original = sel.info.alt ?? "";
   area.value = original;
   const save = h("button", { class: "btn btn-secondary btn-sm", text: "Save description", attrs: { type: "submit", "data-key": "alt-save" } });
@@ -451,6 +451,7 @@ function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
       h("label", { class: "label", text: ctx.replaced ? "Describe the new picture" : "Describe this picture", attrs: { for: "rail-alt" } }),
       original.trim() ? null : h("span", { class: "pill pill-changes pill-plain", text: "Recommended" })),
     area,
+    ctx.replaced ? h("span", { class: "hint", text: "Check the description still matches the new photo." }) : null,
     h("span", { class: "hint", text: "Helps people who can't see the picture, and search engines." }),
     h("div", { class: "rail-actions" }, save));
   let saved = original;
@@ -477,7 +478,9 @@ function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
     }
   });
   area.addEventListener("blur", submit);
-  body.append(group("Description", form));
+  const description = group("Description", form);
+  if (ctx.replaced) body.prepend(description);
+  else body.append(description);
   return body;
 }
 

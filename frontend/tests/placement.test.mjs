@@ -18,10 +18,23 @@ test("the caption prefers below and starts with the selection", () => {
   assert.equal(intersect(box(p), target), null);
 });
 
-test("neighbouring content never changes the preferred side", () => {
+test("the initial caption avoids the excerpt when above has less coverage", () => {
   const target = { x: 400, y: 400, width: 500, height: 60 };
-  const p = placeToolbar({ target, canvas, obstructions: [nav], obstacles: [{ x: 400, y: 468, width: 500, height: 80 }], size, previous: "above-end" });
-  assert.equal(p.candidate, "below-start");
+  const input = { target, canvas, obstructions: [nav], obstacles: [{ x: 400, y: 468, width: 500, height: 80 }], size };
+  assert.equal(placeToolbar(input).candidate, "above-start");
+  assert.equal(placeToolbar({ ...input, previous: "below-start" }).candidate, "below-start");
+  assert.equal(placeToolbar({ ...input, previous: "above-start", obstacles: [] }).candidate, "above-start");
+  assert.equal(placeToolbar({ ...input, obstructions: [{ x: 400, y: 352, width: 500, height: 40 }] }).candidate, "below-start");
+});
+
+test("typing keeps the caption box fixed and yields if text grows into it", () => {
+  const target = { x: 400, y: 300, width: 500, height: 60 };
+  const locked = { x: 400, y: 368, ...size };
+  const input = { target, canvas, obstructions: [], size, locked, editing: true, previous: "below-start" };
+  assert.deepEqual(placeToolbar(input), { kind: "placed", x: 400, y: 368, candidate: "below-start" });
+  assert.deepEqual(placeToolbar({ ...input, target: { ...target, height: 100 } }), { kind: "hidden" });
+  const above = { x: 400, y: 252, ...size };
+  assert.equal(placeToolbar({ ...input, locked: above, previous: "above-start", target: { ...target, height: 300 } }).y, 252);
 });
 
 test("only the bottom canvas edge flips the caption above", () => {
@@ -30,6 +43,11 @@ test("only the bottom canvas edge flips the caption above", () => {
   assert.equal(p.candidate, "above-start");
   assert.equal(p.y + size.height, target.y - 8);
   assert.equal(intersect(box(p), target), null);
+});
+
+test("a chosen side yields at the canvas edge instead of changing sides", () => {
+  const target = { x: 400, y: 710, width: 500, height: 40 };
+  assert.deepEqual(placeToolbar({ target, canvas, obstructions: [], size, previous: "below-start" }), { kind: "hidden" });
 });
 
 test("the caption stays horizontally inside the visible canvas", () => {

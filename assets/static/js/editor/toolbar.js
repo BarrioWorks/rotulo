@@ -106,6 +106,8 @@ export function createToolbar({ store, canvas, edits }) {
     const offscreen = must(document, "[data-offscreen]");
     let renderedKey = "";
     let candidate = null;
+    let placed;
+    let typingBox;
     let busy = null;
     /** After choosing a link around an image, its Link panel opens once the selection arrives. */
     let pendingPanel = null;
@@ -211,21 +213,19 @@ export function createToolbar({ store, canvas, edits }) {
         b.onclick = (event) => onClick(event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : b);
         return b;
     }
-    function actionButton(id, sel, s, withDetail) {
+    function actionButton(id, sel, s) {
         const spec = ACTIONS[id];
         const open = s.surface.kind === "panel" && spec.panel !== undefined && s.surface.panel === spec.panel;
         const uploading = busy?.action === id && busy.element === sel.element;
-        const label = uploading ? `Uploading ${busy?.percent ?? 0}%` : spec.label;
+        let label = uploading ? `Uploading ${busy?.percent ?? 0}%` : spec.label;
         const opts = { disabled: uploading };
         if (spec.panel) {
             opts.expanded = open;
             opts.controls = "ed-rail-panel";
         }
         if (id === "link" && sel.info.href !== null) {
-            if (withDetail)
-                opts.detail = describeHref(sel.info.href, s);
-            else
-                opts.tip = `Link: ${describeHref(sel.info.href, s)}`;
+            label = `Link: ${describeHref(sel.info.href, s)}`;
+            opts.tip = label;
         }
         if (id === "description" && !(sel.info.alt ?? "").trim()) {
             opts.dot = true;
@@ -237,7 +237,10 @@ export function createToolbar({ store, canvas, edits }) {
             opts.tip = "Choose a new photo for the background";
         if (id === "banner-photo")
             opts.tip = `Choose a new photo for the banner behind this ${KIND_LABELS[sel.kind].toLowerCase()}`;
-        return button(id, label, spec.icon, () => run(id, sel), opts);
+        const action = button(id, label, spec.icon, () => run(id, sel), opts);
+        if (id === "link")
+            action.setAttribute("aria-label", label);
+        return action;
     }
     function sectionItems(sel) {
         const can = sel.can;
@@ -273,7 +276,7 @@ export function createToolbar({ store, canvas, edits }) {
         }
         const actions = actionsFor(sel);
         if (matchMedia("(max-width: 899px), (pointer: coarse)").matches) {
-            const candidates = actions.primary.map((id) => actionButton(id, sel, s, false));
+            const candidates = actions.primary.map((id) => actionButton(id, sel, s));
             const more = button("measure-more", "More", "more", () => { }, { menu: true });
             const measure = h("div", { class: "ftb-row studio-action-measure", attrs: { "aria-hidden": "true" } }, ...candidates, more);
             actionHost.append(measure);
@@ -292,7 +295,7 @@ export function createToolbar({ store, canvas, edits }) {
             actions.primary = primary;
         }
         return [
-            ...actions.primary.map((id) => actionButton(id, sel, s, false)),
+            ...actions.primary.map((id) => actionButton(id, sel, s)),
             button("more", "More", "more", (b) => openMenu(b, [
                 ...actions.overflow.map((id) => ({ label: ACTIONS[id].label, run: () => run(id, sel) })),
                 ...sectionItems(sel),
@@ -385,7 +388,11 @@ export function createToolbar({ store, canvas, edits }) {
         const box = canvas.visibleBox();
         const target = canvas.toApp(rect);
         root.style.maxWidth = `${Math.max(100, box.width - 8)}px`;
-        const placement = placeToolbar({ target, canvas: box, editing: s.editing.active, banner: f.kind === "selected" && f.selection.kind === "banner", obstructions: s.obstructions.map((r) => canvas.toApp(r)), size: { width: root.offsetWidth, height: root.offsetHeight } });
+        if (!s.editing.active)
+            typingBox = undefined;
+        else
+            typingBox ??= placed;
+        const placement = placeToolbar({ target, canvas: box, previous: candidate, ...(typingBox ? { locked: typingBox } : {}), obstacles: s.obstacles.map((r) => canvas.toApp(r)), editing: s.editing.active, banner: f.kind === "selected" && f.selection.kind === "banner", obstructions: s.obstructions.map((r) => canvas.toApp(r)), size: { width: root.offsetWidth, height: root.offsetHeight } });
         if (placement.kind === "hidden") {
             root.classList.add("is-offscreen");
             offscreen.hidden = true;
@@ -401,6 +408,7 @@ export function createToolbar({ store, canvas, edits }) {
         }
         offscreen.hidden = true;
         root.classList.remove("is-offscreen");
+        placed = { x: placement.x, y: placement.y, width: root.offsetWidth, height: root.offsetHeight };
         candidate = placement.candidate;
         root.dataset["placement"] = candidate;
         root.style.transform = `translate(${Math.round(placement.x)}px, ${Math.round(placement.y)}px)`;
@@ -433,6 +441,9 @@ export function createToolbar({ store, canvas, edits }) {
         const sel = selection(s);
         if ((sel?.element ?? null) !== lastSelection) {
             lastSelection = sel?.element ?? null;
+            candidate = null;
+            placed = undefined;
+            typingBox = undefined;
             const wanted = pendingPanel;
             pendingPanel = null;
             if (sel && wanted?.element === sel.element && panelApplies(wanted.panel, sel, false)) {

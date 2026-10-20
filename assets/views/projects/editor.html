@@ -148,7 +148,8 @@
     <form class="settings-group" data-settings-form>
       <div class="field">
         <label class="label" for="site-name">Website name</label>
-        <input class="input" id="site-name" type="text" maxlength="80" required data-settings-name>
+        <input class="input" id="site-name" type="text" maxlength="80" required data-settings-name aria-describedby="site-name-hint">
+        <span class="hint" id="site-name-hint">Only you see this name, in Pagehaven. Visitors see each page’s title and description; change those in Page settings.</span>
       </div>
       <div class="field">
         <label class="label" for="site-slug">Web address</label>

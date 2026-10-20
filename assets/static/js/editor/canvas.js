@@ -76,6 +76,7 @@ function makeIframe(title) {
 export function createCanvas(store, handlers) {
     const area = must(document, "[data-canvas-area]");
     const surface = must(document, "[data-canvas-frame]");
+    const loading = must(document, "[data-canvas-loading]");
     const loadingText = must(document, "[data-canvas-loading-text]");
     const zoomButton = must(document, "[data-zoom]");
     const zoomLabel = must(document, "[data-zoom-label]");
@@ -131,6 +132,7 @@ export function createCanvas(store, handlers) {
     initialSizing = null;
     new ResizeObserver(() => applyLayout()).observe(area);
     function setLoadingVeil(on) {
+        loading.setAttribute("aria-hidden", String(!on));
         window.clearTimeout(veilTimer);
         if (on)
             veilTimer = window.setTimeout(() => surface.classList.add("is-loading"), VEIL_DELAY_MS);
@@ -147,6 +149,7 @@ export function createCanvas(store, handlers) {
                     if (pending === frame && awaitingReady) {
                         window.clearTimeout(slowTimer);
                         swap();
+                        loading.removeAttribute("aria-hidden");
                         surface.classList.add("is-loading");
                         loadingText.textContent = "This page can't be edited. It may not be a web page.";
                     }
@@ -355,6 +358,8 @@ export function createCanvas(store, handlers) {
     zoomButton.addEventListener("click", () => {
         store.dispatch({ type: "zoom", zoom: store.get().zoom === "fit" ? "actual" : "fit" });
     });
+    let phoneHintShown = false;
+    let hintTimer = 0;
     store.subscribe((s, prev) => {
         if (!prev || s.mode !== prev.mode) {
             if (prev)
@@ -366,9 +371,14 @@ export function createCanvas(store, handlers) {
             syncFocusability(s);
         surface.toggleAttribute("data-has-selection", s.focus.kind !== "none");
         if (!prev || s.mode !== prev.mode || s.device !== prev.device) {
+            window.clearTimeout(hintTimer);
             hint.textContent = s.mode === "preview"
                 ? "Previewing. Links and buttons work like on your website."
-                : s.device === "mobile" ? "Phone view. Changes made here also apply on computers." : "";
+                : s.device === "mobile" && !phoneHintShown ? "Phone view. Changes made here also apply on computers." : "";
+            if (s.mode === "edit" && s.device === "mobile" && !phoneHintShown) {
+                phoneHintShown = true;
+                hintTimer = window.setTimeout(() => { hint.textContent = ""; }, 3500);
+            }
         }
         if (!prev) {
             area.dataset["device"] = s.device;

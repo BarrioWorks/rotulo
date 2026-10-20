@@ -17,6 +17,7 @@ const pid = root.dataset["pid"] ?? "";
 function showFatal(message: string): void {
   const retry = h("button", { class: "btn btn-secondary btn-sm", text: "Try again", attrs: { type: "button" } });
   retry.addEventListener("click", () => window.location.reload());
+  must<HTMLElement>(document, "[data-canvas-loading]").removeAttribute("aria-hidden");
   must<HTMLElement>(document, "[data-canvas-loading]").replaceChildren(icon("alert", "icon-lg"), h("span", { text: message }), retry);
   must<HTMLElement>(document, "[data-canvas-frame]").classList.add("is-loading");
 }
@@ -186,7 +187,6 @@ async function main(): Promise<void> {
     }
   }
 
-  const publishing = createPublishing({ store, saver, afterRestore: afterDraftReplaced });
   const undo = () => void history("undo");
   const redo = () => void history("redo");
 
@@ -207,6 +207,7 @@ async function main(): Promise<void> {
     },
   });
 
+  const publishing = createPublishing({ store, canvas, saver, afterRestore: afterDraftReplaced });
   const edits = createEdits({ store, canvas, change, undo });
   const toolbar = createToolbar({ store, canvas, edits });
   const surfaces = createSurfaces({

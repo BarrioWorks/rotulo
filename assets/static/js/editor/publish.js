@@ -1,5 +1,6 @@
 import { announce, confirmDialog, copyText, dateTime, h, icon, must, timeAgo, toast } from "../ui.js";
 import { ApiError, api } from "./api.js";
+import { intersect } from "./placement.js";
 import { pageLabel } from "./pages.js";
 import { changed, siteState } from "./state.js";
 export function displayUrl(url) {
@@ -23,7 +24,7 @@ export function changeSummary(s, limit = 8) {
     }
     return out;
 }
-export function createPublishing({ store, saver, afterRestore }) {
+export function createPublishing({ store, canvas, saver, afterRestore }) {
     const change = saver.change;
     const pid = () => store.get().project.pid;
     const pop = must(document, "[data-publish-pop]");
@@ -183,16 +184,35 @@ export function createPublishing({ store, saver, afterRestore }) {
             else if (inReview)
                 pop.querySelector("a, button")?.focus({ preventScroll: true });
         }
+        if (!pop.hidden)
+            placeReview();
         if (manageReview)
             manageReview.replaceChildren(...review(s, "manage"));
     }
     function placeReview() {
-        const anchor = popTrigger ?? document.querySelector('[data-action="publish"]');
-        if (!anchor)
+        const island = document.querySelector(".ed-top-right");
+        if (!island)
             return;
-        const r = anchor.getBoundingClientRect();
-        pop.style.top = `${Math.round(r.bottom + 8)}px`;
-        pop.style.right = `${Math.round(Math.max(8, window.innerWidth - r.right))}px`;
+        const r = island.getBoundingClientRect();
+        const bounds = canvas.visibleBox();
+        const top = Math.max(bounds.y + 8, r.bottom + 8);
+        const right = Math.max(8, window.innerWidth - r.right);
+        const x = window.innerWidth - right - pop.offsetWidth;
+        let height = bounds.y + bounds.height - top - 8;
+        const s = store.get();
+        if (s.focus.kind === "selected") {
+            const selected = canvas.toApp(s.focus.selection.rect);
+            const caption = document.querySelector("[data-toolbar].is-visible:not(.is-offscreen)");
+            const avoid = [selected, ...(caption ? [caption.getBoundingClientRect()] : [])];
+            // Keep enough room to use the review; smaller windows may need to overlap.
+            for (const box of avoid) {
+                if (intersect({ x, y: top, width: pop.offsetWidth, height }, box) && box.y - top - 8 >= 120)
+                    height = Math.min(height, box.y - top - 8);
+            }
+        }
+        pop.style.top = `${Math.round(top)}px`;
+        pop.style.right = `${Math.round(right)}px`;
+        pop.style.maxHeight = `${Math.max(0, Math.floor(height))}px`;
     }
     function onOutside(event) {
         if (event.target instanceof Element && event.target.closest("dialog"))
@@ -233,6 +253,10 @@ export function createPublishing({ store, saver, afterRestore }) {
         document.removeEventListener("pointerdown", onOutside, true);
         popTrigger?.setAttribute("aria-expanded", "false");
         if (restore) {
+            if (store.get().focus.kind === "selected") {
+                canvas.surface.focus({ preventScroll: true });
+                return true;
+            }
             const fallback = document.querySelector("[data-status-pill]");
             const target = popTrigger && !popTrigger.disabled ? popTrigger : fallback;
             target?.focus();
@@ -253,9 +277,9 @@ export function createPublishing({ store, saver, afterRestore }) {
     /* Version history */
     async function publishAgain(release) {
         const ok = await confirmDialog({
-            title: `Publish version ${release.number} again?`,
+            title: `Make version ${release.number} live?`,
             text: `Visitors will see version ${release.number} right away. Your editor keeps your newer changes, so you can publish them again later.`,
-            ok: `Publish version ${release.number}`,
+            ok: `Make version ${release.number} live`,
         });
         if (!ok)
             return;
@@ -274,9 +298,9 @@ export function createPublishing({ store, saver, afterRestore }) {
     }
     async function openVersion(release) {
         const ok = await confirmDialog({
-            title: `Open version ${release.number} in the editor?`,
+            title: `Edit from version ${release.number}?`,
             text: `Your editor will show version ${release.number}. Visitors see no change until you publish, and Undo brings your current changes back.`,
-            ok: `Open version ${release.number}`,
+            ok: `Edit from version ${release.number}`,
         });
         if (!ok)
             return;
@@ -297,12 +321,12 @@ export function createPublishing({ store, saver, afterRestore }) {
             const isLive = r.number === liveNumber;
             const actions = h("div", { class: "release-actions" });
             if (!isLive) {
-                const live = h("button", { class: "btn btn-secondary btn-sm", text: "Publish again", attrs: { type: "button", "aria-label": `Publish version ${r.number} again` } });
+                const live = h("button", { class: "btn btn-secondary btn-sm", text: "Make this version live", attrs: { type: "button", "aria-label": `Make version ${r.number} live` } });
                 live.addEventListener("click", () => void publishAgain(r));
                 actions.append(live);
             }
             if (!compact) {
-                const open = h("button", { class: "btn btn-ghost btn-sm", text: "Restore", attrs: { type: "button", "aria-label": `Open version ${r.number} in the editor` } });
+                const open = h("button", { class: "btn btn-ghost btn-sm", text: "Edit from this version", attrs: { type: "button", "aria-label": `Edit from version ${r.number}` } });
                 open.addEventListener("click", () => void openVersion(r));
                 actions.append(open);
             }
@@ -336,6 +360,7 @@ export function createPublishing({ store, saver, afterRestore }) {
         historySheet.hidden = false;
         pop.append(historySheet);
         renderHistory();
+        placeReview();
         historySheet.querySelector("button")?.focus();
         void loadReleases();
     }

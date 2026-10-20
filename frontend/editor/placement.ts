@@ -28,10 +28,12 @@ export interface PlacementInput {
   /** Words and pictures around the selection, in app pixels. The toolbar avoids covering them. */
   obstacles?: Box[];
   size: { width: number; height: number };
-  /** The candidate used last time. A spot next to the selection is kept while it stays clear, so the toolbar does not flip while scrolling. */
+  /** The side chosen when this selection began; surrounding content cannot change it. */
   previous?: Candidate | null;
   gap?: number;
   editing?: boolean;
+  /** The caption box at the start of typing. Yield rather than cover growing text. */
+  locked?: Box;
   banner?: boolean;
 }
 
@@ -67,8 +69,12 @@ function offscreenDirection(target: Box, canvas: Box): Direction {
   return target.x + target.width <= canvas.x ? "left" : "right";
 }
 
-export function placeToolbar({ target, canvas, size, obstructions, editing = false, banner = false, gap = 8 }: PlacementInput): Placement {
+export function placeToolbar({ target, canvas, size, obstructions, obstacles = [], previous = null, locked, editing = false, banner = false, gap = 8 }: PlacementInput): Placement {
   if (!intersect(target, canvas)) return { kind: "offscreen", direction: offscreenDirection(target, canvas) };
+  if (editing && locked) {
+    if (intersect(locked, target) || locked.y < canvas.y + INSET || locked.y + locked.height > canvas.y + canvas.height - INSET) return { kind: "hidden" };
+    return { kind: "placed", x: locked.x, y: locked.y, candidate: previous ?? "below-start" };
+  }
   const x = Math.max(canvas.x + INSET, Math.min(target.x, canvas.x + canvas.width - size.width - INSET));
   const top = canvas.y + INSET;
   const bottom = canvas.y + canvas.height - size.height - INSET;
@@ -79,6 +85,12 @@ export function placeToolbar({ target, canvas, size, obstructions, editing = fal
     const y = Math.max(navBottom, Math.min(bottom, target.y + target.height - size.height - gap));
     return { kind: "placed", x, y: Math.min(bottom, y), candidate: "pinned" };
   }
+  const aboveClear = above >= top && coverage({ x, y: above, ...size }, obstructions) === 0;
+  const preferAbove = previous === "above-start" || (previous === null && aboveClear &&
+    (below > bottom || coverage({ x, y: below, ...size }, [...obstacles, ...obstructions]) > coverage({ x, y: above, ...size }, [...obstacles, ...obstructions])));
+  if (preferAbove && aboveClear) return { kind: "placed", x, y: above, candidate: "above-start" };
+  if (previous === "above-start") return { kind: "hidden" };
+  if (previous === "below-start" && below > bottom) return { kind: "hidden" };
   if (below <= bottom) return { kind: "placed", x, y: below, candidate: "below-start" };
   if (above >= top) return { kind: "placed", x, y: above, candidate: "above-start" };
   // If neither vertical side fits, keep the caption away from the live text.
