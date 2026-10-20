@@ -1,10 +1,11 @@
 {% extends "layouts/base.html" %}
 {% block title %}Your websites · Pagehaven{% endblock title %}
+{% block body_class %}screens-body{% endblock body_class %}
 {% block body %}
 {% include "partials/app_header.html" %}
 <main id="main" class="page dash">
   {% set count = projects | length %}
-  <div class="page-head">
+  <div class="page-head screen-banner">
     <div>
       <h1>Your websites</h1>
       {% if count > 0 %}
@@ -140,4 +141,5 @@
   </section>
   {% endif %}
 </main>
+{% include "partials/app_footer.html" %}
 {% endblock body %}

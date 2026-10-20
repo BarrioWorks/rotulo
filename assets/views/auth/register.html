@@ -3,12 +3,8 @@
 {% block title %}Create your account · Pagehaven{% endblock title %}
 {% block body_class %}auth-body{% endblock body_class %}
 {% block body %}
-<header class="auth-header">
-  <a class="brand" href="/">
-    <img src="/static/img/logo.svg" alt="" width="28" height="28">
-    <span>Pagehaven</span>
-  </a>
-</header>
+<div class="auth-layout">
+{% include "partials/auth_story.html" %}
 <main id="main" class="auth">
   <div class="auth-column">
     <h1>Create your account</h1>
@@ -44,4 +40,6 @@
     <p class="auth-alt">Already have an account? <a href="/login">Sign in</a></p>
   </div>
 </main>
+</div>
+{% include "partials/app_footer.html" %}
 {% endblock body %}
