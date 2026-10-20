@@ -23,6 +23,7 @@ import {
   type StyleChanges,
   type StyleSnapshot,
 } from "../protocol.js";
+import { startSelection } from "./text-start.js";
 
 declare const PAGEHAVEN_APP_ORIGIN: string;
 
@@ -687,7 +688,7 @@ function startText(): void {
   const sel = document.getSelection();
   if (sel) {
     sel.selectAllChildren(el);
-    sel.collapseToEnd();
+    if (startSelection(kindOf(el), el.textContent ?? "") === "end") sel.collapseToEnd();
   }
   reportEditing(true);
   schedule();

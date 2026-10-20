@@ -328,3 +328,16 @@ test("undo puts away the 'Picture replaced' note and its fit choices", () => {
   assert.equal(store.get().rail.replaced, false);
   assert.equal(store.get().rail.panel, "image");
 });
+
+test("Edit text starts with short text selected, so typing replaces it, and long paragraphs with the caret at the end", async () => {
+  const { startSelection, REPLACE_MAX_CHARS } = await import("../../assets/static/js/agent/text-start.js");
+  assert.equal(startSelection("heading", "It's Nice To Meet You"), "all");
+  assert.equal(startSelection("button", "Tell Me More"), "all");
+  assert.equal(startSelection("text", "Lorem ipsum dolor sit amet consectetur."), "all");
+  const paragraph = "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Minima maxime quam architecto quo inventore harum ex magni, dicta impedit.";
+  assert.ok(paragraph.length > REPLACE_MAX_CHARS);
+  assert.equal(startSelection("text", paragraph), "end");
+  assert.equal(startSelection("list-item", paragraph), "end");
+  assert.equal(startSelection("heading", paragraph), "all", "a heading is always replaced whole");
+  assert.equal(startSelection("text", `  ${"word ".repeat(23)}  \n\n  `), "all", "whitespace does not count");
+});

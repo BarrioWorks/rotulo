@@ -5,6 +5,7 @@
  */
 import { OVERLAY } from "../overlay-theme.js";
 import { ANCHOR_ID, KIND_LABELS, MAX_OBSTACLES, MAX_OUTLINE_IMAGES, STYLE_KEYS, envelope, isSafeHref, parseEditorMessage, } from "../protocol.js";
+import { startSelection } from "./text-start.js";
 const appOrigin = typeof PAGEHAVEN_APP_ORIGIN === "string" ? PAGEHAVEN_APP_ORIGIN : "";
 const parentWindow = window.parent;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -669,7 +670,8 @@ function startText() {
     const sel = document.getSelection();
     if (sel) {
         sel.selectAllChildren(el);
-        sel.collapseToEnd();
+        if (startSelection(kindOf(el), el.textContent ?? "") === "end")
+            sel.collapseToEnd();
     }
     reportEditing(true);
     schedule();
