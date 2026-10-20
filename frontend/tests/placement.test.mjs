@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { coverage, intersect, placeToolbar } from "../../assets/static/js/editor/placement.js";
+import { collapseOrder, coverage, fitRow, intersect, placeToolbar, TOOLBAR_MAX_WIDTH } from "../../assets/static/js/editor/placement.js";
 
 const canvas = { x: 260, y: 68, width: 1008, height: 688 };
 const size = { width: 300, height: 40 };
@@ -111,4 +111,56 @@ test("while scrolling it keeps its side as long as that side stays clear", () =>
   assert.equal(covered.candidate, "above-start", "a side that now covers words is given up");
   const docked = placeToolbar({ target, canvas, obstructions: [], size, previous: "docked" });
   assert.equal(docked.candidate, "above-start", "a fallback spot is not sticky");
+});
+
+/* Fitting the toolbar row to the canvas. Widths measured from "Tell me more" in the Agency demo. */
+
+const buttonRow = collapseOrder([
+  { key: "edit-text", width: 90, detail: 0 },
+  { key: "link", width: 170, detail: 110 },
+  { key: "style", width: 71, detail: 0 },
+  { key: "banner-photo", width: 172, detail: 0 },
+  { key: "background", width: 115, detail: 0 },
+]);
+const crumbAndChrome = 75 + 10;
+const rowWidth = crumbAndChrome + 90 + 170 + 71 + 172 + 115;
+const more = 46;
+
+test("a button's toolbar wider than the 640 px cap moves its last action into More and keeps the link's destination", () => {
+  const fit = fitRow({ width: rowWidth, available: TOOLBAR_MAX_WIDTH, order: buttonRow, more, hasMore: false });
+  assert.deepEqual(fit, { collapsed: ["background"], fits: true });
+});
+
+test("in the phone view the row gives up actions, then the link's destination, until it fits the phone", () => {
+  const fit = fitRow({ width: rowWidth, available: 300, order: buttonRow, more, hasMore: false });
+  assert.deepEqual(fit.collapsed, ["background", "banner-photo", "style", "link:detail"]);
+  assert.equal(fit.fits, true);
+  const left = rowWidth - 115 - 172 - 71 - 110 + more;
+  assert.ok(left <= 300, `${left} px fits a 300 px phone`);
+});
+
+test("a row that already fits keeps everything and adds no More", () => {
+  assert.deepEqual(fitRow({ width: 400, available: 640, order: buttonRow, more, hasMore: false }), { collapsed: [], fits: true });
+});
+
+test("More is paid for once, and not at all when the row already shows it", () => {
+  const order = [{ key: "a", width: 40, into: "more" }, { key: "b", width: 40, into: "more" }];
+  assert.deepEqual(fitRow({ width: 200, available: 150, order, more: 30, hasMore: false }).collapsed, ["a", "b"], "200 - 40 + 30 = 190 still too wide, so b goes too");
+  assert.deepEqual(fitRow({ width: 200, available: 150, order, more: 30, hasMore: true }).collapsed, ["a", "b"], "230 - 80 = 150");
+  assert.deepEqual(fitRow({ width: 160, available: 150, order: [{ key: "label", width: 80, into: "drop" }], more: 30, hasMore: false }), { collapsed: ["label"], fits: true }, "dropping a label adds no More");
+});
+
+test("a canvas narrower than the shortest row is reported, so the toolbar wraps instead of spilling out", () => {
+  const fit = fitRow({ width: rowWidth, available: 100, order: buttonRow, more, hasMore: false });
+  assert.equal(fit.fits, false);
+  assert.equal(fit.collapsed.length, buttonRow.length);
+});
+
+test("an action with a detail loses the detail before it moves into More", () => {
+  assert.deepEqual(collapseOrder([{ key: "a", width: 50, detail: 0 }, { key: "link", width: 170, detail: 110 }, { key: "b", width: 60, detail: 0 }]), [
+    { key: "b", width: 60, into: "more" },
+    { key: "link:detail", width: 110, into: "drop" },
+    { key: "link", width: 60, into: "more" },
+    { key: "a", width: 50, into: "more" },
+  ]);
 });

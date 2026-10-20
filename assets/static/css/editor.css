@@ -175,6 +175,8 @@ body[data-review-open] .ed-publish { --btn-bg: var(--surface); --btn-fg: var(--i
 .ftb[data-placement="docked"] { border: 0; border-bottom: 1px solid var(--rule-strong); border-radius: 0; box-shadow: none; max-width: none; }
 .ftb[data-placement="docked"] .ftb-row { padding: var(--s1) var(--s2); }
 .ftb-row { display: flex; align-items: center; gap: var(--s0); padding: var(--s1); }
+/* Only when the canvas is narrower than the shortest row: wrap instead of drawing past the edge. */
+.ftb[data-wrap] .ftb-row { flex-wrap: wrap; }
 .ftb-label { font-size: var(--fs-meta); line-height: 1; font-weight: var(--fw-label); color: var(--ink-3); padding: 0 var(--s2) 0 6px; white-space: nowrap; }
 .ftb-sep { width: 1px; align-self: stretch; margin: 6px 3px; background: var(--rule-strong); }
 .tb-btn {
@@ -187,6 +189,8 @@ body[data-review-open] .ed-publish { --btn-bg: var(--surface); --btn-fg: var(--i
 .tb-btn:hover { background: var(--hover); color: var(--ink); }
 .tb-btn:active { background: var(--pressed); }
 .tb-btn.tb-icon { padding: 0; width: var(--control-h-sm); }
+/* More carries a caret beside its icon, so it grows to hold both instead of spilling past its box. */
+.tb-btn.tb-icon[aria-haspopup="menu"] { width: auto; padding: 0 var(--s1); }
 .tb-btn[aria-pressed="true"], .tb-btn[aria-expanded="true"] { background: var(--select-soft); color: var(--link); }
 .tb-btn.danger:hover { background: var(--error-soft); color: var(--error); }
 .tb-btn[disabled] { color: var(--ink-3); background: transparent; cursor: default; }

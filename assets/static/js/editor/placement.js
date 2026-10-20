@@ -1,7 +1,9 @@
 /** Where the floating toolbar goes. Pure, so the rules are tested without a browser. */
 /** Spots next to the selection, best first. Pinned is for selections taller than half the canvas. */
 const ORDER = ["above-start", "below-start", "above-end", "below-end", "right", "left", "pinned"];
-const INSET = 4;
+/** How far the toolbar stays inside the canvas edges. */
+export const TOOLBAR_INSET = 4;
+const INSET = TOOLBAR_INSET;
 /** An overlap this short (a descender, a hairline) does not count as covering content. */
 const GRAZE = 3;
 export function intersect(a, b) {
@@ -84,4 +86,46 @@ export function placeToolbar({ target, canvas, obstructions, obstacles = [], siz
     const bottomEdge = Math.min(canvas.y + canvas.height, ...bottomBars.map((o) => o.y));
     const docked = intersect(top, visible) ? strip(bottomEdge - size.height) : top;
     return { kind: "placed", x: docked.x, y: docked.y, candidate: "docked", width: docked.width };
+}
+/** The toolbar's widest size. Mirrors the `max-width` of `.ftb` in editor.css. */
+export const TOOLBAR_MAX_WIDTH = 640;
+/**
+ * Gives up items in `order` until the row fits `available`. `width` is the row as measured
+ * without the More button; `more` is what adding More costs, paid once, the first time an action
+ * moves into it, unless `hasMore` says the row already shows it.
+ */
+export function fitRow({ width, available, order, more, hasMore }) {
+    let total = width + (hasMore ? more : 0);
+    let withMore = hasMore;
+    const collapsed = [];
+    for (const item of order) {
+        if (total <= available)
+            break;
+        total -= item.width;
+        if (item.into === "more" && !withMore) {
+            withMore = true;
+            total += more;
+        }
+        collapsed.push(item.key);
+    }
+    return { collapsed, fits: total <= available };
+}
+/**
+ * The order a selection's toolbar gives things up: actions from the last (least used) back,
+ * except that an action showing a detail first loses the detail, so on a phone "Link" stays
+ * and only its destination goes.
+ */
+export function collapseOrder(actions) {
+    const order = [];
+    for (let i = actions.length - 1; i >= 0; i--) {
+        const a = actions[i];
+        if (a.detail > 0) {
+            order.push({ key: `${a.key}:detail`, width: a.detail, into: "drop" });
+            order.push({ key: a.key, width: a.width - a.detail, into: "more" });
+        }
+        else {
+            order.push({ key: a.key, width: a.width, into: "more" });
+        }
+    }
+    return order;
 }

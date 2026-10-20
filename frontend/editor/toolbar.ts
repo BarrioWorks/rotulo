@@ -3,7 +3,7 @@ import { h, icon, must, type IconName } from "../ui.js";
 import type { Canvas } from "./canvas.js";
 import type { Edits } from "./edits.js";
 import { closeMenus, openMenu, type MenuItem } from "./menu.js";
-import { placeToolbar, type Candidate, type Direction } from "./placement.js";
+import { collapseOrder, fitRow, placeToolbar, TOOLBAR_INSET, TOOLBAR_MAX_WIDTH, type Candidate, type Collapsible, type Direction } from "./placement.js";
 import { describeHref } from "./links.js";
 import { panelApplies, selection, type Panel, type Selection, type State, type Store } from "./state.js";
 
@@ -237,7 +237,7 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
 
   const sep = () => h("span", { class: "ftb-sep", attrs: { "aria-hidden": "true" } });
 
-  function actionButton(id: ActionId, sel: Selection, s: State): HTMLButtonElement {
+  function actionButton(id: ActionId, sel: Selection, s: State, withDetail: boolean): HTMLButtonElement {
     const spec = ACTIONS[id];
     const open = s.rail.kind === "panel" && spec.panel !== undefined && s.rail.panel === spec.panel;
     const uploading = busy?.action === id && busy.element === sel.element;
@@ -247,7 +247,10 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
       opts.expanded = open;
       opts.controls = "ed-rail-panel";
     }
-    if (id === "link" && sel.info.href !== null) opts.detail = describeHref(sel.info.href, s);
+    if (id === "link" && sel.info.href !== null) {
+      if (withDetail) opts.detail = describeHref(sel.info.href, s);
+      else opts.tip = `Link: ${describeHref(sel.info.href, s)}`;
+    }
     if (id === "description" && !(sel.info.alt ?? "").trim()) {
       opts.dot = true;
       opts.tip = "This image has no description yet";
@@ -273,9 +276,8 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     }, { menu: true, tip: "Select the part around this", kbd: "←" });
   }
 
-  function sectionGroup(sel: Selection): HTMLElement[] {
+  function sectionItems(sel: Selection): MenuItem[] {
     const can = sel.can;
-    if (!/[xudc]/.test(can)) return [];
     const items: MenuItem[] = [];
     if (can.includes("c")) items.push({ label: "Duplicate", icon: "duplicate", run: () => void edits.duplicateSection(sel) });
     if (can.includes("x")) {
@@ -284,19 +286,42 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
         : { label: "Hide on your website", icon: "hide", run: () => void edits.setHidden(sel, true) });
       items.push("separator", { label: "Remove section", icon: "remove", danger: true, run: () => void edits.removeSection(sel) });
     }
-    const out: HTMLElement[] = [sep()];
+    return items;
+  }
+
+  /**
+   * For a part that is itself a plain section, the kind label and the Section menu would both say
+   * "Section", so one menu leads the row: the section's actions, then the parts around it.
+   */
+  function sectionLead(sel: Selection, items: MenuItem[]): HTMLElement {
+    const around = sel.ancestors.map((a): MenuItem => ({
+      label: `Select ${KIND_LABELS[a.kind].toLowerCase()}${a.name ? ` · ${a.name}` : ""}`,
+      run: () => canvas.send({ type: "select_element", element: a.element }),
+    }));
+    return button("section", "Section", null, (b) => openMenu(b, [...items, ...(around.length > 0 ? ["separator" as const, ...around] : [])], { label: "Section" }), { menu: true, tip: "Duplicate, hide or remove this section" });
+  }
+
+  function sectionGroup(sel: Selection, withMenu: boolean): HTMLElement[] {
+    const can = sel.can;
+    if (!/[xudc]/.test(can)) return [];
+    const items = withMenu ? sectionItems(sel) : [];
+    const out: HTMLElement[] = [];
     if (items.length > 0) out.push(button("section", "Section", null, (b) => openMenu(b, items, { label: "Section" }), { menu: true }));
     if (can.includes("u")) out.push(button("move-up", "Move section up", "move-up", () => void edits.moveSection(sel, "up"), { iconOnly: true, kbd: "Alt+Shift+↑" }));
     if (can.includes("d")) out.push(button("move-down", "Move section down", "move-down", () => void edits.moveSection(sel, "down"), { iconOnly: true, kbd: "Alt+Shift+↓" }));
-    return out;
+    return out.length > 0 ? [sep(), ...out] : [];
   }
 
-  function rowFor(s: State, sel: Selection): HTMLElement[] {
+  /**
+   * The row for a selection. `collapsed` names what the canvas is too narrow for (see `fitRow`);
+   * `measuring` always adds More so its width can be read.
+   */
+  function rowFor(s: State, sel: Selection, collapsed: ReadonlySet<string> = new Set(), measuring = false): HTMLElement[] {
     if (s.editing.active) {
       const f = s.editing.formats;
       const linkOpen = s.rail.kind === "panel" && s.rail.panel === "text-link";
       return [
-        h("span", { class: "ftb-label", text: "Editing text" }),
+        collapsed.has("label") ? null : h("span", { class: "ftb-label", text: "Editing text", attrs: { "data-collapse": "label" } }),
         button("bold", "Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold, iconOnly: true, kbd: "Ctrl+B" }),
         button("italic", "Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic, iconOnly: true, kbd: "Ctrl+I" }),
         f.link
@@ -305,11 +330,15 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
         sep(),
         button("cancel", "Cancel", null, () => canvas.send({ type: "finish_text", commit: false }), { kbd: "Esc", tip: "Undo your typing" }),
         button("done", "Done", "check", () => canvas.send({ type: "finish_text", commit: true }), { kbd: "Enter", tip: "Keep the text" }),
-      ];
+      ].filter((el): el is HTMLElement => el !== null);
     }
-    const { primary, overflow } = actionsFor(sel);
-    const out: HTMLElement[] = [crumb(sel), ...primary.map((id) => actionButton(id, sel, s)), ...sectionGroup(sel)];
-    if (overflow.length > 0) {
+    const actions = actionsFor(sel);
+    const primary = actions.primary.filter((id) => !collapsed.has(id));
+    const overflow = [...actions.primary.filter((id) => collapsed.has(id)), ...actions.overflow];
+    const ownMenu = KIND_LABELS[sel.kind] === "Section" ? sectionItems(sel) : [];
+    const lead = ownMenu.length > 0 ? sectionLead(sel, ownMenu) : crumb(sel);
+    const out: HTMLElement[] = [lead, ...primary.map((id) => actionButton(id, sel, s, !collapsed.has(`${id}:detail`))), ...sectionGroup(sel, ownMenu.length === 0)];
+    if (overflow.length > 0 || measuring) {
       out.push(button("more", "More", "more", (b) => openMenu(b, overflow.map((id) => ({ label: ACTIONS[id].label, ...(ACTIONS[id].icon ? { icon: ACTIONS[id].icon as IconName } : {}), run: () => run(id, sel) })), { label: "More actions" }), { iconOnly: true, menu: true }));
     }
     return out;
@@ -369,7 +398,7 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
       root.replaceChildren(...blockedRow(f.around));
     } else if (f.kind === "selected") {
       root.setAttribute("aria-label", s.editing.active ? "Text editing tools" : `${KIND_LABELS[f.selection.kind]} tools`);
-      root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, f.selection)));
+      fitSelectionRow(s, f.selection);
     }
     const list = buttons();
     const restore = focusedKey ? list.find((b) => b.dataset["key"] === focusedKey) : undefined;
@@ -383,6 +412,58 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     root.classList.add("is-visible");
   }
 
+  /** The widest the toolbar may be: inside the visible canvas, and never past its cap. */
+  function availableWidth(): number {
+    return Math.floor(Math.min(TOOLBAR_MAX_WIDTH, canvas.visibleBox().width - 2 * TOOLBAR_INSET));
+  }
+
+  /** The width the current row was fitted to, so a narrower or wider canvas fits it again. */
+  let fittedWidth = 0;
+
+  /**
+   * Renders the selection's row so it fits the canvas: measures every button at full size, then
+   * moves the least used actions into More (and drops the link's destination or the "Editing
+   * text" label) until it fits. Buttons never wrap and labels are never cut.
+   */
+  function fitSelectionRow(s: State, sel: Selection): void {
+    const available = availableWidth();
+    fittedWidth = available;
+    root.style.width = "";
+    root.style.maxWidth = "";
+    delete root.dataset["placement"];
+    delete root.dataset["wrap"];
+    const row = h("div", { class: "ftb-row" }, ...rowFor(s, sel, new Set(), true));
+    root.replaceChildren(row);
+    const rowStyle = getComputedStyle(row);
+    const rootStyle = getComputedStyle(root);
+    const px = (value: string) => parseFloat(value) || 0;
+    const gap = px(rowStyle.columnGap);
+    const kids = [...row.children] as HTMLElement[];
+    const widthOf = (el: Element) => el.getBoundingClientRect().width;
+    const chrome = px(rowStyle.paddingLeft) + px(rowStyle.paddingRight) + px(rootStyle.borderLeftWidth) + px(rootStyle.borderRightWidth);
+    const total = chrome + kids.reduce((n, el) => n + widthOf(el), 0) + gap * Math.max(0, kids.length - 1);
+    const moreButton = kids.find((el) => el.dataset["key"] === "more");
+    const more = moreButton ? widthOf(moreButton) + gap : 0;
+    let order: Collapsible[];
+    if (s.editing.active) {
+      const label = kids.find((el) => el.dataset["collapse"] === "label");
+      order = label ? [{ key: "label", width: widthOf(label) + gap, into: "drop" }] : [];
+    } else {
+      const shown = actionsFor(sel).primary;
+      order = collapseOrder(shown.map((id) => {
+        const el = kids.find((k) => k.dataset["key"] === id);
+        const detail = el?.querySelector(".tb-detail");
+        const inner = el ? px(getComputedStyle(el).columnGap) : 0;
+        return { key: id, width: el ? widthOf(el) + gap : 0, detail: detail ? widthOf(detail) + inner : 0 };
+      }));
+    }
+    const hasMore = !s.editing.active && actionsFor(sel).overflow.length > 0;
+    const fit = fitRow({ width: total - more, available, order, more, hasMore });
+    if (fit.collapsed.length > 0 || !hasMore) root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, sel, new Set(fit.collapsed))));
+    // Narrower than even the shortest row (a tiny phone preview): wrap rather than spill out.
+    if (!fit.fits) root.dataset["wrap"] = "";
+  }
+
   function position(s: State, glide: boolean): void {
     const f = s.focus;
     const rect = f.kind === "selected" ? f.selection.rect : f.kind === "blocked" ? f.rect : null;
@@ -392,7 +473,12 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     const box = canvas.visibleBox();
     const obstructions = s.obstructions.map((o) => canvas.toApp(o));
     const obstacles = f.kind === "selected" ? s.obstacles.map((o) => canvas.toApp(o)) : [];
+    if (f.kind === "selected" && Math.abs(availableWidth() - fittedWidth) >= 1 && root.childElementCount > 0) {
+      render(true);
+      return;
+    }
     root.style.width = "";
+    root.style.maxWidth = `${availableWidth()}px`;
     const placement = placeToolbar({ target, canvas: box, obstructions, obstacles, size: { width: root.offsetWidth, height: root.offsetHeight }, previous: candidate });
     if (placement.kind === "offscreen") {
       root.classList.add("is-offscreen");
@@ -413,7 +499,10 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     root.classList.remove("is-offscreen");
     candidate = placement.candidate;
     root.dataset["placement"] = placement.candidate;
-    if (placement.width !== undefined) root.style.width = `${Math.round(placement.width)}px`;
+    if (placement.width !== undefined) {
+      root.style.maxWidth = "none";
+      root.style.width = `${Math.round(placement.width)}px`;
+    }
     if (glide) {
       root.classList.add("is-gliding");
       window.setTimeout(() => root.classList.remove("is-gliding"), 180);
@@ -454,6 +543,8 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     render(prev === null);
   });
   window.addEventListener("resize", () => render(true));
+  // The phone view and zoom change the canvas width without a window resize.
+  new ResizeObserver(() => render(true)).observe(canvas.surface);
 
   return {
     activatePrimary() {
