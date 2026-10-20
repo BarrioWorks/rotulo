@@ -31,6 +31,11 @@ function folderOf(path: string): string {
   return i < 0 ? "" : path.slice(0, i + 1);
 }
 
+/** Whether the owner has typed or chosen something in this field since the panel was built. */
+function edited(el: HTMLElement): boolean {
+  return el.matches("input, textarea, select") && el.dataset["edited"] !== undefined;
+}
+
 export function createRail({ store, canvas, change, edits, returnFocus, openSettings, openHistory }: RailDeps): Rail {
   const pid = () => store.get().project.pid;
   const pagesView = must<HTMLElement>(document, "[data-rail-pages]");
@@ -299,7 +304,9 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     const kind = s.rail.kind === "panel" ? `${s.rail.panel}:${String(s.rail.replaced)}` : null;
     const element = s.rail.kind === "panel" ? s.rail.element : null;
     // Never rebuild a form under the owner's typing; it re-renders once focus leaves the panel.
-    if (inPanel && active.matches("input, textarea, select") && kind === renderedPanel && element === renderedElement) return;
+    // A field that only holds focus (the description box is focused when the panel opens) is
+    // rebuilt, so undo and redo show the restored part's facts at once.
+    if (inPanel && edited(active) && kind === renderedPanel && element === renderedElement) return;
     const kindChanged = kind !== renderedPanel;
     renderedPanelKey = key;
     renderedPanel = kind;
@@ -335,6 +342,12 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     } else if (focusedKey) {
       panelView.querySelector<HTMLElement>(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
     }
+  }
+
+  for (const type of ["input", "change"]) {
+    panelView.addEventListener(type, (event) => {
+      if (event.target instanceof HTMLElement) event.target.dataset["edited"] = "";
+    });
   }
 
   panelView.addEventListener("focusout", (event) => {
