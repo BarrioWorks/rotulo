@@ -126,8 +126,6 @@ export function createCanvas(store, handlers) {
     let expectedPath = store.get().path;
     let awaitingReady = true;
     let textSession = null;
-    /** The text the owner clicked a second time, so the session they start next opens at that point. */
-    let clickedText = null;
     /**
      * The preview origin each frame was loaded from. The preview address changes every time the
      * editor reloads its state (publishing again, undo), so a frame already on screen keeps
@@ -327,14 +325,12 @@ export function createCanvas(store, handlers) {
             case "request_text": {
                 const sel = selection(store.get());
                 if (sel?.element === message.element && sel.can.includes("t")) {
-                    clickedText = message.element;
-                    handlers.onRequestText();
+                    announce("Press Enter or choose Edit text to edit");
                 }
                 break;
             }
             case "select":
                 handlers.onPageClick();
-                clickedText = null;
                 if (textSession?.element !== message.element)
                     textSession = null;
                 store.dispatch({
@@ -346,14 +342,12 @@ export function createCanvas(store, handlers) {
                 break;
             case "blocked":
                 handlers.onPageClick();
-                clickedText = null;
                 textSession = null;
                 store.dispatch({ type: "blocked", rect: message.rect, around: message.around });
                 reclaimFocus();
                 break;
             case "deselect":
                 handlers.onPageClick();
-                clickedText = null;
                 textSession = null;
                 store.dispatch({ type: "deselected" });
                 reclaimFocus();
@@ -463,10 +457,8 @@ export function createCanvas(store, handlers) {
             const sel = selection(s);
             if (!sel || !sel.can.includes("t") || textSession || awaitingReady || s.mode !== "edit")
                 return false;
-            const caret = clickedText === sel.element ? "click" : "auto";
-            clickedText = null;
             active.focus();
-            send({ type: "start_text", element: sel.element, caret, input });
+            send({ type: "start_text", element: sel.element, input });
             return true;
         },
         open(path, reveal) {

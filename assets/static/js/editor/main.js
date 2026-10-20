@@ -225,10 +225,6 @@ async function main() {
             publishing.closeReview(false);
             closeMenus();
         },
-        onRequestText() {
-            if (toolbar.focusEditText())
-                announce("Press Enter or type to edit");
-        },
     });
     const publishing = createPublishing({ store, canvas, saver, afterRestore: afterDraftReplaced });
     const edits = createEdits({ store, canvas, change, undo });

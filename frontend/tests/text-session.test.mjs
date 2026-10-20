@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 import { createCanvas } from '../../assets/static/js/editor/canvas.js';
-import { createStore, initialState } from '../../assets/static/js/editor/state.js';
+import { typedCharacter } from '../../assets/static/js/editor/canvas-policy.js';
+import { createStore, initialState, selection } from '../../assets/static/js/editor/state.js';
 import { envelope, parseEditorMessage } from '../../assets/static/js/protocol.js';
 
 const ORIGIN = 'https://token.preview.example';
@@ -23,6 +26,12 @@ class FakeElement {
   focus() { globalThis.document.activeElement = this; }
   getBoundingClientRect() { return { left: 0, top: 0, right: 1000, bottom: 700, width: 1000, height: 700 }; }
   click() { for (const listener of this.listeners.click ?? []) listener({}); }
+  press(key, target = this) {
+    for (const listener of this.listeners.keydown ?? []) listener({
+      key, target, preventDefault() {}, stopPropagation() {},
+      ctrlKey: false, metaKey: false, altKey: false, isComposing: false,
+    });
+  }
 }
 
 /** The editor page around the canvas, and the frame whose script posts what it likes. */
@@ -42,8 +51,9 @@ function editorPage() {
     '[data-canvas-hint-text]': new FakeElement(), '[data-editable-tip]': tip,
   };
   const windowListeners = {};
+  const announcer = new FakeElement();
   Object.assign(globalThis, {
-    document: { querySelector: (selector) => elements[selector] ?? null, getElementById: () => null, activeElement: null, addEventListener() {} },
+    document: { querySelector: (selector) => elements[selector] ?? null, getElementById: (id) => id === 'editor-announcer' ? announcer : null, activeElement: null, addEventListener() {} },
     window: {
       location: { href: 'http://127.0.0.1:5194/projects/p/edit' }, history: { state: null, replaceState() {} },
       addEventListener: (type, listener) => { (windowListeners[type] ??= []).push(listener); },
@@ -59,7 +69,7 @@ function editorPage() {
   const fromFrame = (message) => {
     for (const listener of windowListeners.message ?? []) listener({ source: iframe.contentWindow, origin: ORIGIN, data: envelope(message) });
   };
-  return { toFrame, fromFrame, surface, iframe, tip };
+  return { toFrame, fromFrame, surface, iframe, tip, announcer };
 }
 
 async function openEditor() {
@@ -70,15 +80,28 @@ async function openEditor() {
     history: { can_undo: false, can_redo: false, undo_label: null, redo_label: null }, draft_changed_since_publish: false,
   }, Date.now()));
   const saved = [];
-  let focusRequests = 0;
   const canvas = createCanvas(store, {
     onText: (element, html, page) => saved.push({ element, html, page }),
-    refreshPreview: async () => {}, onPageClick() {}, onRequestText: () => { focusRequests++; },
+    refreshPreview: async () => {}, onPageClick() {},
   });
   canvas.open('index.html');
   await new Promise((resolve) => setImmediate(resolve));
   page.fromFrame({ type: 'ready', path: 'index.html', title: 'Home', description: '', scrollY: 0 });
-  return { ...page, store, canvas, saved, focusRequests: () => focusRequests };
+  const actionHost = new FakeElement();
+  const editText = new FakeElement();
+  // Run the shipped keyboard wiring, including bubbling keys from caption controls.
+  const main = readFileSync(new URL('../../assets/static/js/editor/main.js', import.meta.url), 'utf8');
+  const toolbar = readFileSync(new URL('../../assets/static/js/editor/toolbar.js', import.meta.url), 'utf8');
+  const context = {
+    document, window, canvas, store, typedCharacter, selection, actionHost,
+    must: () => new FakeElement(), offscreen: new FakeElement(),
+    buttons: () => [editText], rove: (button) => button?.focus(),
+  };
+  vm.runInNewContext(main.slice(main.indexOf('function wireKeys('), main.indexOf('async function main()')) +
+    'wireKeys({ store, canvas, toolbar: { activatePrimary: () => canvas.startText() } });', context);
+  vm.runInNewContext(toolbar.slice(toolbar.indexOf('offscreen.addEventListener("click"'),
+    toolbar.indexOf('store.subscribe(', toolbar.indexOf('offscreen.addEventListener("click"'))), context);
+  return { ...page, store, canvas, saved, actionHost, editText };
 }
 
 const rect = { x: 10, y: 10, width: 200, height: 40 };
@@ -96,19 +119,52 @@ test('a forged select, request_text and text from the frame never saves an edit'
   editor.fromFrame({ type: 'text', element: 'a', html: 'forged' });
   assert.deepEqual(editor.saved, []);
   assert.deepEqual(startsSent(editor.toFrame), []);
-  assert.equal(editor.focusRequests(), 1, 'the request only asks the app to move focus to Edit text');
+  assert.equal(editor.announcer.textContent, 'Press Enter or choose Edit text to edit');
 });
 
-test('a second click then a typed key starts at the click and saves the session text', async () => {
+test('forged select and request_text cannot steer focus and a printable key on Edit text cannot start a session', async () => {
   const editor = await openEditor();
+  // The owner is using another app control; the hostile frame cannot reclaim its focus.
+  const appControl = new FakeElement();
+  appControl.focus();
   editor.fromFrame(select);
   editor.fromFrame({ type: 'request_text', element: 'a' });
-  assert.equal(editor.canvas.startText('N'), true);
-  assert.deepEqual(startsSent(editor.toFrame), [{ type: 'start_text', element: 'a', caret: 'click', input: 'N' }]);
+  assert.equal(document.activeElement, appControl);
+  editor.surface.press('N', document.activeElement);
+  assert.deepEqual(startsSent(editor.toFrame), []);
+
+  // Even if Edit text already has focus, a key there is not explicit activation.
+  editor.editText.focus();
+  editor.fromFrame({ ...select, element: 'b' });
+  editor.fromFrame({ type: 'request_text', element: 'b' });
+  assert.equal(document.activeElement, editor.editText);
+  editor.actionHost.press('N', document.activeElement);
+  editor.fromFrame({ type: 'text', element: 'b', html: 'forged' });
+  assert.deepEqual(startsSent(editor.toFrame), []);
+  assert.deepEqual(editor.saved, []);
+});
+
+test('click then type while the canvas surface has focus starts and saves the session text once', async () => {
+  const editor = await openEditor();
+  editor.iframe.focus();
+  editor.fromFrame(select);
+  assert.equal(document.activeElement, editor.surface, 'selection returns focus to the canvas surface');
+  editor.fromFrame({ type: 'request_text', element: 'a' });
+  assert.equal(document.activeElement, editor.surface, 'the hint leaves focus alone');
+  editor.surface.press('N');
+  assert.deepEqual(startsSent(editor.toFrame), [{ type: 'start_text', element: 'a', input: 'N' }]);
   editor.fromFrame({ type: 'text', element: 'a', html: 'New welcome' });
   assert.deepEqual(editor.saved, [{ element: 'a', html: 'New welcome', page: 'index.html' }]);
   editor.fromFrame({ type: 'text', element: 'a', html: 'replayed' });
   assert.equal(editor.saved.length, 1, 'a session saves once');
+});
+
+test('Enter on the canvas after selecting a heading starts a session without another click', async () => {
+  const editor = await openEditor();
+  editor.iframe.focus();
+  editor.fromFrame(select);
+  editor.surface.press('Enter');
+  assert.deepEqual(startsSent(editor.toFrame), [{ type: 'start_text', element: 'a', input: null }]);
 });
 
 test('Edit text or Enter without a second click starts with the default caret, and only on text', async () => {
@@ -118,7 +174,7 @@ test('Edit text or Enter without a second click starts with the default caret, a
   assert.equal(editor.canvas.startText(), false, 'a photo has no text');
   editor.fromFrame(select);
   assert.equal(editor.canvas.startText(), true);
-  assert.deepEqual(startsSent(editor.toFrame), [{ type: 'start_text', element: 'a', caret: 'auto', input: null }]);
+  assert.deepEqual(startsSent(editor.toFrame), [{ type: 'start_text', element: 'a', input: null }]);
   assert.equal(editor.canvas.startText(), false, 'one session at a time');
 });
 
@@ -137,11 +193,12 @@ test('the first-edit tip lives exactly as long as the tint', async () => {
   assert.equal(editor.toFrame.at(-1).type, 'hide_editable');
 });
 
-test('start_text carries at most one short typed character and a known caret', () => {
-  const start = { type: 'start_text', element: 'a', caret: 'click', input: 'é' };
+test('start_text input stays bounded and unused caret fields are discarded', () => {
+  const start = { type: 'start_text', element: 'a', input: 'é' };
   assert.deepEqual(parseEditorMessage(envelope(start)), start);
+  assert.deepEqual(parseEditorMessage(envelope({ ...start, caret: 'click' })), start);
   assert.deepEqual(parseEditorMessage(envelope({ ...start, input: null })), { ...start, input: null });
-  for (const patch of [{ input: 'abcde' }, { input: '\u0007' }, { input: ' ' }, { caret: 'anywhere' }, { caret: undefined }]) {
+  for (const patch of [{ input: 'abcde' }, { input: '\u0007' }, { input: ' ' }]) {
     assert.equal(parseEditorMessage(envelope({ ...start, ...patch })), undefined);
   }
 });

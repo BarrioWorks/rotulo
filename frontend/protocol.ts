@@ -177,7 +177,7 @@ const agentMessages = {
   }),
   /** A click on something the site's code made. `around` is the nearest editable ancestor. */
   blocked: obj({ type: lit("blocked"), rect: parseRect, around: opt(elementId) }),
-  /** A second click on selected text. The parent only moves focus to its own Edit text control; it never starts a session from this. */
+  /** A second click on selected text. The parent only announces a hint; it never moves focus or starts a session from this. */
   request_text: obj({ type: lit("request_text"), element: elementId }),
   deselect: obj({ type: lit("deselect") }),
   /** Sent every frame that moves. `obstructions` are the site's own fixed or sticky bars; `obstacles` as in `select`. */
@@ -220,11 +220,10 @@ const editorMessages = {
   reveal: obj({ type: lit("reveal"), element: elementId, pulse: bool }),
   deselect: obj({ type: lit("deselect") }),
   /**
-   * Sent only after the owner's own input in the app. `caret: "click"` puts the caret where the
-   * owner last clicked in that element, if the agent saw the click. `input` is the key the owner
-   * typed to start, inserted as the first change.
+   * Sent only after the owner's own input in the app. `input` is the key the owner
+   * typed on the canvas surface to start, inserted as the first change.
    */
-  start_text: obj({ type: lit("start_text"), element: elementId, caret: lit("click", "auto"), input: opt(str(TYPED_MAX, TYPED)) }),
+  start_text: obj({ type: lit("start_text"), element: elementId, input: opt(str(TYPED_MAX, TYPED)) }),
   finish_text: obj({ type: lit("finish_text"), commit: bool }),
   format: obj({ type: lit("format"), command: lit("bold", "italic", "link", "unlink"), href: opt(str(2048)) }),
   preview_style: obj({ type: lit("preview_style"), element: elementId, styles: parseStyleChanges }),

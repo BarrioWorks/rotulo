@@ -9,7 +9,7 @@ export function acceptsCanvasMessage(session, message) {
         case "text":
         case "editing":
             return (session.mode === "edit" || session.finishing === true) && session.textElement === message.element;
-        // Accepted only to move focus to the app's Edit text control. Editing starts from the owner's input in the app.
+        // Accepted only to announce an editing hint. Editing starts from the owner's input in the app.
         case "request_text":
             return session.mode === "edit" && session.textElement === null;
         case "navigate":

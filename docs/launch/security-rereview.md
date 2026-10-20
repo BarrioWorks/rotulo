@@ -24,6 +24,8 @@ For stronger target assurance, capture the selected element when the app control
 
 The suggested last-click match and selection age of a few hundred milliseconds reduce accidental races. They are useful UX checks, but do not authenticate a click. Both the reported click and selection come from the hostile frame. A script can forge both, wait out the delay, and request focus again. A delay alone does not close this finding.
 
+Resolution: `request_text` now only announces a hint without moving focus; printable keys start editing only on the canvas surface, Edit text requires explicit activation, and the unused click-caret protocol path is removed. Regression tests cover forged messages followed by typing on Edit text and preserve canvas typing and Enter.
+
 ### 2. Event storage still grows indefinitely
 
 Severity: Info. Unchanged from the earlier review. Locations: `migration/src/m20261020_000002_events.rs:10`, `src/events.rs:50`, and `src/controllers/api.rs:878`.

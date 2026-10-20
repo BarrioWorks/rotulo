@@ -11,8 +11,6 @@ export interface CanvasHandlers {
   refreshPreview(): Promise<void>;
   /** A click or key in the page. The app document never sees those, so popovers close here. */
   onPageClick(): void;
-  /** A second click on the selected text. Moves focus to the app's own Edit text control; it never starts editing. */
-  onRequestText(): void;
 }
 
 export interface Canvas {
@@ -27,7 +25,7 @@ export interface Canvas {
   dismissEditable(): boolean;
   /**
    * Starts editing the selected text. Call only from the owner's own input in the app: a click or
-   * Enter on Edit text, Enter on the canvas, or a typed key, passed as `input`.
+   * Enter on Edit text, Enter on the canvas, or a typed key while the canvas surface itself has focus, passed as `input`.
    */
   startText(input?: string | null): boolean;
   /** Reloads the current page, keeping the scroll position and, if given, the selection. */
@@ -180,8 +178,6 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
   let expectedPath = store.get().path;
   let awaitingReady = true;
   let textSession: { element: string; path: string; finishing: boolean } | null = null;
-  /** The text the owner clicked a second time, so the session they start next opens at that point. */
-  let clickedText: string | null = null;
 
   /**
    * The preview origin each frame was loaded from. The preview address changes every time the
@@ -375,14 +371,12 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
       case "request_text": {
         const sel = selection(store.get());
         if (sel?.element === message.element && sel.can.includes("t")) {
-          clickedText = message.element;
-          handlers.onRequestText();
+          announce("Press Enter or choose Edit text to edit");
         }
         break;
       }
       case "select":
         handlers.onPageClick();
-        clickedText = null;
         if (textSession?.element !== message.element) textSession = null;
         store.dispatch({
           type: "selected",
@@ -393,14 +387,12 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
         break;
       case "blocked":
         handlers.onPageClick();
-        clickedText = null;
         textSession = null;
         store.dispatch({ type: "blocked", rect: message.rect, around: message.around });
         reclaimFocus();
         break;
       case "deselect":
         handlers.onPageClick();
-        clickedText = null;
         textSession = null;
         store.dispatch({ type: "deselected" });
         reclaimFocus();
@@ -500,10 +492,8 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
       const s = store.get();
       const sel = selection(s);
       if (!sel || !sel.can.includes("t") || textSession || awaitingReady || s.mode !== "edit") return false;
-      const caret = clickedText === sel.element ? "click" : "auto";
-      clickedText = null;
       active.focus();
-      send({ type: "start_text", element: sel.element, caret, input });
+      send({ type: "start_text", element: sel.element, input });
       return true;
     },
     open(path, reveal) {
