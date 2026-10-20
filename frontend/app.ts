@@ -191,7 +191,7 @@ function wireDelete(): void {
       }
       result = deleteOutcome(response.status, body);
     } catch {
-      result = { kind: "failed", message: "You seem to be offline. Check your connection and try again." };
+      result = { kind: "failed", message: "We couldn't reach Pagehaven. Check your internet connection and try again." };
     }
     submit.removeAttribute("aria-busy");
     switch (result.kind) {
