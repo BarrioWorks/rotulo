@@ -31,6 +31,7 @@ export type Outcome =
 
 type Step =
   | { kind: "choose"; error: string | null }
+  | { kind: "review"; file: File; message: string; continueLabel: string }
   | { kind: "uploading"; file: File; percent: number }
   | { kind: "checking"; file: File }
   | { kind: "folders"; file: File; folders: string[]; message: string }
@@ -65,6 +66,117 @@ export function precheck(file: { name: string; size: number }, limitBytes: numbe
     return `This file is ${(file.size / MB).toFixed(1)} MB. The most Pagehaven can import is ${limitBytes / MB} MB.`;
   }
   return null;
+}
+
+export const SOURCE_ONLY = "This ZIP contains source code rather than a finished website. Export the built static website files and try again.";
+const SCRIPT_BUILT = "This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.";
+const UNSURE = "We couldn't finish the quick check. You can upload anyway and let Pagehaven check the files.";
+
+type ZipEntry = { name: string; method: number; flags: number; size: number; compressedSize: number; offset: number };
+export type ZipCheck = { kind: "ready" } | { kind: "refused" | "warning" | "unsure"; message: string };
+
+/** Read standard ZIP central headers. Unsupported or inconsistent archives go to the server. */
+export function zipDirectory(buffer: ArrayBuffer): ZipEntry[] | null {
+  const view = new DataView(buffer);
+  const length = view.byteLength;
+  for (let end = length - 22; end >= Math.max(0, length - 65557); end--) {
+    if (view.getUint32(end, true) !== 0x06054b50 || end + 22 + view.getUint16(end + 20, true) !== length) continue;
+    const count = view.getUint16(end + 10, true);
+    const size = view.getUint32(end + 12, true);
+    const start = view.getUint32(end + 16, true);
+    if (view.getUint16(end + 4, true) !== 0 || view.getUint16(end + 6, true) !== 0 ||
+        view.getUint16(end + 8, true) !== count || count === 65535 || start + size !== end) return null;
+    const entries: ZipEntry[] = [];
+    let cursor = start;
+    for (let i = 0; i < count; i++) {
+      if (cursor + 46 > end || view.getUint32(cursor, true) !== 0x02014b50) return null;
+      const nameLength = view.getUint16(cursor + 28, true);
+      const next = cursor + 46 + nameLength + view.getUint16(cursor + 30, true) + view.getUint16(cursor + 32, true);
+      if (next > end || view.getUint16(cursor + 34, true) !== 0) return null;
+      const entry = {
+        name: new TextDecoder().decode(buffer.slice(cursor + 46, cursor + 46 + nameLength)),
+        method: view.getUint16(cursor + 10, true), flags: view.getUint16(cursor + 8, true),
+        size: view.getUint32(cursor + 24, true), compressedSize: view.getUint32(cursor + 20, true),
+        offset: view.getUint32(cursor + 42, true),
+      };
+      if (entry.name.includes("\uFFFD") || entry.size === 0xffffffff || entry.compressedSize === 0xffffffff || entry.offset + 30 > start ||
+          (entry.flags & 1) !== 0 || ![0, 8].includes(entry.method)) return null;
+      const local = entry.offset;
+      if (view.getUint32(local, true) !== 0x04034b50) return null;
+      const data = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true);
+      if (data + entry.compressedSize > start) return null;
+      entries.push(entry);
+      cursor = next;
+    }
+    return cursor === end ? entries : null;
+  }
+  return null;
+}
+
+async function indexText(buffer: ArrayBuffer, entry: ZipEntry): Promise<string | null> {
+  // Bound both compressed input and streamed output; a dishonest ZIP cannot expand without limit.
+  if (entry.size > MB || entry.compressedSize > MB) return null;
+  const view = new DataView(buffer);
+  const start = entry.offset + 30 + view.getUint16(entry.offset + 26, true) + view.getUint16(entry.offset + 28, true);
+  const bytes = buffer.slice(start, start + entry.compressedSize);
+  if (entry.method === 0) return entry.size === bytes.byteLength ? new TextDecoder().decode(bytes) : null;
+  if (typeof DecompressionStream === "undefined") return null;
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      length += chunk.value.length;
+      if (length > MB) return null;
+      chunks.push(chunk.value);
+    }
+  } finally {
+    await reader.cancel();
+  }
+  if (length !== entry.size) return null;
+  const output = new Uint8Array(length);
+  let cursor = 0;
+  for (const chunk of chunks) { output.set(chunk, cursor); cursor += chunk.length; }
+  return new TextDecoder().decode(output);
+}
+
+/** Advisory only: the server validates paths, content, sizes and CRCs after upload. */
+export async function inspectZip(buffer: ArrayBuffer): Promise<ZipCheck> {
+  try {
+    const entries = zipDirectory(buffer);
+    if (!entries) return { kind: "unsure", message: UNSURE };
+    const source = entries.some(({ name }) => /(^|\/)(package\.json|vite\.config\.[^/]+)$|(^|\/)src\/.*\.(jsx|tsx|vue|svelte)$/i.test(name));
+    const indexes = entries.filter(({ name }) => /(^|\/)index\.html$/i.test(name));
+    if (indexes.length === 0) return source ? { kind: "refused", message: SOURCE_ONLY } :
+      { kind: "unsure", message: "We couldn't find index.html. Put it at the top of the ZIP or in dist/ or build/. You can still upload for a full check." };
+    // Prefer a distribution over a source index, and read at most one HTML file.
+    const index = indexes.find(({ name }) => /(^|\/)(dist|build)\/index\.html$/i.test(name)) ?? indexes[0];
+    if (!index) return { kind: "unsure", message: UNSURE };
+    const html = await indexText(buffer, index);
+    if (html === null) return { kind: "unsure", message: UNSURE };
+    const clean = html.replace(/<!--[\s\S]*?-->/g, "");
+    if (source && indexes.length === 1 && /<script\b[^>]*\bsrc\s*=\s*["']?[^"'\s>]*\.(?:ts|jsx|tsx|vue|svelte)(?=[?#"'\s>])/i.test(clean)) {
+      return { kind: "refused", message: SOURCE_ONLY };
+    }
+    if (/<script\b[^>]*\btype\s*=\s*(?:"module"|'module'|module(?=[\s>]))/i.test(clean) && /<(?:div|main)\b[^>]*\bid\s*=\s*(?:"(?:root|app|__next)"|'(?:root|app|__next)'|(?:root|app|__next)(?=[\s>]))[^>]*>\s*<\/(?:div|main)>/i.test(clean)) {
+      return { kind: "warning", message: SCRIPT_BUILT };
+    }
+    return { kind: "ready" };
+  } catch {
+    return { kind: "unsure", message: UNSURE };
+  }
+}
+
+export function editorDestination(result: Success): string | null {
+  const report = result.report;
+  if (report.warnings.length || report.skipped.length || report.missing.length) return null;
+  return welcomeUrl(result.editor_url);
+}
+
+function welcomeUrl(url: string): string {
+  return `${url}${url.includes("?") ? "&" : "?"}welcome=1`;
 }
 
 /** Maps the server's answer to what the page shows. The server's message is shown as it is. */
@@ -146,14 +258,19 @@ function boot(root: HTMLElement): void {
   const help = must<HTMLDetailsElement>(root, "[data-export-help]");
   const sections = {
     choose: must<HTMLElement>(root, '[data-step="choose"]'),
+    review: must<HTMLElement>(root, '[data-step="review"]'),
     progress: must<HTMLElement>(root, '[data-step="progress"]'),
     folders: must<HTMLElement>(root, '[data-step="folders"]'),
     error: must<HTMLElement>(root, '[data-step="error"]'),
     done: must<HTMLElement>(root, '[data-step="done"]'),
   };
   let current: XMLHttpRequest | null = null;
+  let selection = 0;
+  let pending: File | null = null;
+  let busy = false;
 
   function show(step: Step): void {
+    busy = step.kind === "uploading" || step.kind === "checking";
     const visible: keyof typeof sections =
       step.kind === "uploading" || step.kind === "checking" ? "progress" : step.kind;
     for (const [key, el] of Object.entries(sections)) el.hidden = key !== visible;
@@ -167,6 +284,13 @@ function boot(root: HTMLElement): void {
         fileInput.setAttribute("aria-invalid", String(step.error !== null));
         break;
       }
+      case "review":
+        pending = step.file;
+        must<HTMLElement>(root, "[data-review-message]").textContent = step.message;
+        must<HTMLButtonElement>(root, "[data-continue]").textContent = step.continueLabel;
+        must<HTMLButtonElement>(root, "[data-continue]").disabled = false;
+        must<HTMLElement>(root, "#review-title").focus();
+        break;
       case "uploading":
       case "checking": {
         const bar = must<HTMLElement>(root, "[data-progress-bar]");
@@ -181,7 +305,7 @@ function boot(root: HTMLElement): void {
         if (checking) {
           bar.style.width = "";
           track.removeAttribute("aria-valuenow");
-          label.textContent = "Checking your files…";
+          label.textContent = "Checking files…";
         } else {
           bar.style.width = `${step.percent}%`;
           track.setAttribute("aria-valuenow", String(step.percent));
@@ -219,7 +343,7 @@ function boot(root: HTMLElement): void {
     must<HTMLElement>(root, "[data-result-name]").textContent = result.project.name;
     must<HTMLElement>(root, "[data-result-summary]").textContent = summary(report);
     const open = must<HTMLAnchorElement>(root, "[data-open-editor]");
-    open.href = result.editor_url;
+    open.href = welcomeUrl(result.editor_url);
     open.focus();
 
     const thumb = must<HTMLElement>(root, "[data-result-thumb]");
@@ -238,17 +362,28 @@ function boot(root: HTMLElement): void {
     details.hidden = details.childElementCount === 0;
   }
 
-  function choose(file: File | undefined): void {
-    if (!file) return;
+  async function choose(file: File | undefined): Promise<void> {
+    if (!file || busy) return;
+    const token = ++selection;
     const problem = precheck(file, uploadLimit);
-    if (problem) {
-      show({ kind: "choose", error: problem });
-      return;
-    }
-    upload(file, null);
+    if (problem) { show({ kind: "choose", error: problem }); return; }
+    show({ kind: "review", file, message: "Checking the ZIP before upload…", continueLabel: "Upload anyway" });
+    must<HTMLButtonElement>(root, "[data-continue]").disabled = true;
+    let check: ZipCheck;
+    try { check = await inspectZip(await file.arrayBuffer()); }
+    catch { check = { kind: "unsure", message: UNSURE }; }
+    if (token !== selection) return;
+    if (check.kind === "ready") upload(file, null);
+    else if (check.kind === "refused") {
+      pending = null;
+      show({ kind: "error", title: "This ZIP needs a finished website", message: check.message, help: true });
+    } else show({ kind: "review", file, message: check.message, continueLabel: check.kind === "warning" ? "Continue with this website" : "Upload anyway" });
   }
 
   function upload(file: File, folder: string | null): void {
+    if (current) return;
+    ++selection;
+    pending = null;
     const form = new FormData();
     form.append("file", file, file.name);
     const name = nameInput.value.trim();
@@ -283,7 +418,11 @@ function boot(root: HTMLElement): void {
       const next = outcome(xhr.status, body);
       if (next.kind === "signed_out") window.location.assign("/login");
       else if (next.kind === "folders") show({ ...next, file });
-      else show(next);
+      else if (next.kind === "done") {
+        show(next);
+        const destination = editorDestination(next.result);
+        if (destination) window.location.assign(destination);
+      } else show(next);
     });
     xhr.addEventListener("error", () => {
       if (current !== xhr) return;
@@ -294,6 +433,8 @@ function boot(root: HTMLElement): void {
   }
 
   function reset(): void {
+    ++selection;
+    pending = null;
     current?.abort();
     current = null;
     fileInput.value = "";
@@ -305,28 +446,34 @@ function boot(root: HTMLElement): void {
   must<HTMLButtonElement>(root, "[data-cancel]").addEventListener("click", reset);
   for (const retry of root.querySelectorAll<HTMLButtonElement>("[data-retry]")) retry.addEventListener("click", reset);
 
+  must<HTMLButtonElement>(root, "[data-continue]").addEventListener("click", () => {
+    if (pending) upload(pending, null);
+  });
+  const overlay = must<HTMLElement>(root, "[data-window-drop]");
+  const dragLabel = must<HTMLElement>(root, "[data-drag-label]");
   let depth = 0;
-  dropzone.addEventListener("dragenter", (event) => {
+  const clearDrag = () => { depth = 0; overlay.hidden = true; };
+  window.addEventListener("dragenter", (event) => {
+    if (!event.dataTransfer?.types.includes("Files") || busy) return;
     event.preventDefault();
-    depth += 1;
-    dropzone.classList.add("is-over");
+    depth++;
+    overlay.hidden = false;
+    const types = [...event.dataTransfer.items].filter((item) => item.kind === "file").map((item) => item.type);
+    const wrong = types.length > 0 && types.every((type) => type !== "" && !["application/zip", "application/x-zip-compressed", "application/octet-stream"].includes(type));
+    dragLabel.textContent = wrong ? "That isn't a ZIP" : "Drop your website ZIP anywhere";
   });
-  dropzone.addEventListener("dragover", (event) => {
+  window.addEventListener("dragover", (event) => {
     event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    if (event.dataTransfer) event.dataTransfer.dropEffect = busy ? "none" : "copy";
   });
-  dropzone.addEventListener("dragleave", () => {
-    depth = Math.max(0, depth - 1);
-    if (depth === 0) dropzone.classList.remove("is-over");
-  });
-  dropzone.addEventListener("drop", (event) => {
+  window.addEventListener("dragleave", () => { if (--depth <= 0) clearDrag(); });
+  window.addEventListener("drop", (event) => {
     event.preventDefault();
-    depth = 0;
-    dropzone.classList.remove("is-over");
-    choose(event.dataTransfer?.files[0]);
+    clearDrag();
+    void choose(event.dataTransfer?.files[0]);
   });
-  window.addEventListener("dragover", (event) => event.preventDefault());
-  window.addEventListener("drop", (event) => event.preventDefault());
+  window.addEventListener("blur", clearDrag);
+  window.addEventListener("keydown", (event) => { if (event.key === "Escape") clearDrag(); });
 
   show({ kind: "choose", error: null });
 }

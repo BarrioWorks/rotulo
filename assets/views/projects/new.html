@@ -12,86 +12,10 @@
   <div class="page-head">
     <div>
       <h1>Import a website</h1>
-      <p>Bring the finished pages, pictures and fonts together in one ZIP. Nothing goes live until you publish.</p>
+      <p>Change your website right on the page. Nothing goes live until you publish.</p>
     </div>
   </div>
 
-  <section data-step="choose" aria-label="Choose a file">
-    <div class="field import-name">
-      <div class="label-row">
-        <label class="label" for="site-name">Website name</label>
-        <span class="hint">Optional</span>
-      </div>
-      <input class="input" id="site-name" type="text" maxlength="80" aria-describedby="site-name-hint" data-name-input>
-      <span class="hint" id="site-name-hint">Leave it empty to use your home page title. You can change it later.</span>
-    </div>
-    <label class="dropzone" data-dropzone>
-      <input type="file" accept=".zip,application/zip,application/x-zip-compressed" data-file-input aria-label="Choose your website ZIP file" aria-describedby="drop-limits choose-error">
-      <span class="dropzone-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg></span>
-      <span class="dropzone-title">Drop your website ZIP here</span>
-      <span class="dropzone-or">or</span>
-      <span class="btn btn-secondary dropzone-btn" aria-hidden="true">Choose a ZIP file</span>
-      <span class="dropzone-limits" id="drop-limits">A ZIP of your finished website · up to {{ limits.upload_mb }} MB · up to {{ limits.file_count_text }} files</span>
-    </label>
-    <div class="alert alert-error" role="alert" id="choose-error" data-choose-error hidden>
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
-      <span data-choose-error-text></span>
-    </div>
-  </section>
-
-  <section class="import-panel progress-panel" data-step="progress" hidden>
-    <div class="progress-file">
-      <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-zip"/></svg>
-      <span class="truncate" data-progress-file></span>
-      <span class="progress-size" data-progress-size></span>
-    </div>
-    <div class="progress" data-progress role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="progress-label">
-      <div class="progress-bar" data-progress-bar></div>
-    </div>
-    <div class="progress-foot">
-      <p class="progress-label" id="progress-label" data-progress-label aria-live="polite">Uploading…</p>
-      <button class="btn btn-ghost btn-sm" type="button" data-cancel>Cancel</button>
-    </div>
-    <p class="progress-note" data-progress-note hidden>Pagehaven is checking every file. Server code and private files are left out.</p>
-  </section>
-
-  <section class="import-panel" data-step="folders" hidden aria-labelledby="folders-title">
-    <h2 class="panel-title" id="folders-title" tabindex="-1">Which folder is your website?</h2>
-    <p class="panel-text" data-folders-message></p>
-    <div class="folder-list" data-folder-list></div>
-    <button class="btn btn-ghost" type="button" data-retry>Choose another file</button>
-  </section>
-
-  <section class="import-panel error-panel" data-step="error" hidden aria-labelledby="error-title">
-    <div class="error-head" role="alert">
-      <svg class="icon icon-lg error-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
-      <h2 class="panel-title" id="error-title" data-error-title>We couldn't import this file</h2>
-      <p class="panel-text" data-error-message></p>
-    </div>
-    <div class="panel-actions">
-      <button class="btn btn-primary" type="button" data-retry>Try another file</button>
-      <a class="btn btn-ghost" href="/projects">Back to your websites</a>
-    </div>
-  </section>
-
-  <div data-help-slot>
-    {% include "partials/export_help.html" %}
-  </div>
-
-  <section class="import-panel result-panel" data-step="done" hidden aria-labelledby="result-name">
-    <div class="result-thumb" data-result-thumb></div>
-    <div class="result-body">
-      <h2 class="panel-title" id="result-name" data-result-name></h2>
-      <p class="panel-text" data-result-summary></p>
-      <div class="result-actions">
-        <a class="btn btn-primary btn-lg" href="/projects" data-open-editor>
-          Open editor
-          <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg>
-        </a>
-        <a class="btn btn-ghost btn-lg" href="/projects">Back to your websites</a>
-      </div>
-    </div>
-    <div class="result-details" data-result-details hidden></div>
-  </section>
+  {% include "partials/import_area.html" %}
 </main>
 {% endblock body %}
