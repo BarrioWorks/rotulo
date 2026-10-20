@@ -187,6 +187,19 @@ async fn dashboard_distinguishes_draft_published_changes_and_offline() {
             .text()
             .contains(&badge("Not published yet")));
         p.publish(&server, &cookie).await;
+        let project = projects::reload(&ctx.db, project_id(&ctx, &p.pid).await)
+            .await
+            .unwrap();
+        let release = pagehaven::publish::live(&ctx.db, &project)
+            .await
+            .unwrap()
+            .unwrap();
+        let dashboard = get(&server, "/projects", &cookie).await.text();
+        assert!(dashboard.contains(&format!(
+            "datetime=\"{}\" data-published-time",
+            release.created_at
+        )));
+
         assert!(get(&server, "/projects", &cookie)
             .await
             .text()

@@ -125,6 +125,81 @@ function wireThumbnails(): void {
   }, true);
 }
 
+export function renameRequest(name: string, slug: string): RequestInit {
+  return {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ name: name.trim(), slug }),
+    credentials: "same-origin",
+    cache: "no-store",
+  };
+}
+
+function wireRename(): void {
+  const dialog = document.querySelector<HTMLDialogElement>("[data-rename-dialog]");
+  if (!dialog) return;
+  const form = must<HTMLFormElement>(dialog, "[data-rename-form]");
+  const input = must<HTMLInputElement>(dialog, "[data-rename-input]");
+  const error = must<HTMLElement>(dialog, "[data-rename-error]");
+  const submit = must<HTMLButtonElement>(dialog, "[data-rename-submit]");
+  let target: { pid: string; slug: string; trigger: HTMLElement } | null = null;
+  const showError = (message: string | null) => {
+    error.textContent = message ?? "";
+    error.hidden = message === null;
+    input.setAttribute("aria-invalid", String(message !== null));
+  };
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-rename]")) {
+    const site = button.closest<HTMLElement>("[data-site]");
+    if (!site) continue;
+    button.addEventListener("click", () => {
+      const menu = site.querySelector<HTMLDetailsElement>("details[data-menu]");
+      menu?.removeAttribute("open");
+      target = { pid: site.dataset["pid"] ?? "", slug: site.dataset["slug"] ?? "", trigger: menu?.querySelector("summary") ?? button };
+      input.value = site.dataset["name"] ?? "";
+      showError(null);
+      dialog.showModal();
+      input.focus();
+      input.select();
+    });
+  }
+  must<HTMLButtonElement>(dialog, "[data-rename-cancel]").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("close", () => target?.trigger.focus());
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!target || submit.getAttribute("aria-busy") === "true") return;
+    if (!input.value.trim()) {
+      showError("Enter a name for your website.");
+      input.focus();
+      return;
+    }
+    submit.setAttribute("aria-busy", "true");
+    try {
+      const response = await fetch(`/api/projects/${encodeURIComponent(target.pid)}/settings`, renameRequest(input.value, target.slug));
+      if (response.status === 401) { window.location.assign("/login"); return; }
+      if (response.ok) {
+        sessionStorage.setItem(FLASH_KEY, "Website renamed.");
+        window.location.reload();
+        return;
+      }
+      const body: unknown = await response.json();
+      showError(parseError(body)?.message ?? "We couldn’t save the name. Please try again.");
+    } catch {
+      showError("We couldn’t reach Pagehaven. Check your connection and try again.");
+    } finally {
+      submit.removeAttribute("aria-busy");
+    }
+    input.focus();
+  });
+}
+
+function formatPublicationTimes(): void {
+  for (const time of document.querySelectorAll<HTMLTimeElement>("[data-published-time]")) {
+    const date = new Date(time.dateTime);
+    if (Number.isNaN(date.getTime())) continue;
+    time.textContent = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  }
+}
+
 function wireDelete(): void {
   const dialog = document.querySelector<HTMLDialogElement>("dialog[data-delete-dialog]");
   if (!dialog) return;
@@ -223,5 +298,7 @@ if (typeof document !== "undefined") {
   wireForms();
   wireThumbnails();
   wireDelete();
+  wireRename();
+  formatPublicationTimes();
   showFlash();
 }

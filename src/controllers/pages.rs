@@ -15,7 +15,7 @@ use crate::{
     drafts,
     error::ApiError,
     import::policy::FileKind,
-    preview, projects,
+    preview, projects, publish,
     state::{self, Pagehaven},
 };
 
@@ -256,6 +256,10 @@ async fn dashboard(
             .iter()
             .filter(|f| drafts::is_page(&f.path))
             .count();
+        let published_at = publish::live(&ctx.db, project)
+            .await
+            .map_err(internal)?
+            .map(|release| release.created_at);
         cards.push(json!({
             "pid": project.pid,
             "name": project.name,
@@ -264,6 +268,7 @@ async fn dashboard(
             "live": project.live_release_id.is_some() && project.suspended_at.is_none(),
             "updated_at": chrono::DateTime::from_timestamp(project.updated_at, 0).map(|t| t.to_rfc3339()),
             "updated_human": ago(project.updated_at),
+            "published_at": published_at,
             "site_url": state.settings.site_origin(&project.slug),
             "site_host": site_host(&state.settings.site_origin(&project.slug)),
             "domains": domains.iter().filter(|d| d.status == "verified").map(|d| d.hostname.clone()).collect::<Vec<_>>(),

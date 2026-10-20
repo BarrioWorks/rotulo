@@ -14,7 +14,7 @@
     {% if can_create and count > 0 %}
     <a class="btn btn-primary btn-lg" href="/projects/new">
       <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-      Import a website
+      New website
     </a>
     {% endif %}
   </div>
@@ -29,7 +29,7 @@
   {% if count > 0 %}
   <ul class="site-grid" role="list">
     {% for p in projects %}
-    <li class="site" data-site data-pid="{{ p.pid }}" data-name="{{ p.name }}" data-live="{% if p.live %}true{% else %}false{% endif %}" data-address="{{ p.site_host }}">
+    <li class="site" data-site data-pid="{{ p.pid }}" data-name="{{ p.name }}" data-slug="{{ p.slug }}" data-live="{% if p.live %}true{% else %}false{% endif %}" data-address="{{ p.site_host }}">
       <div class="site-thumb" data-tone="{{ p.name | length % 4 }}">
         {% if p.thumbnail_url %}
         <img src="{{ p.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-thumb>
@@ -41,6 +41,7 @@
           <h2 class="site-name"><a class="site-link" href="/projects/{{ p.pid }}">{{ p.name }}<span class="visually-hidden">, open in the editor</span></a></h2>
           {% if p.status == "published" %}<span class="pill pill-published">Published</span>{% elif p.status == "changes" %}<span class="pill pill-changes">Changes not published</span>{% elif p.status == "offline" %}<span class="pill pill-offline">Offline</span>{% else %}<span class="pill pill-draft">Not published yet</span>{% endif %}
         </div>
+        {% if p.status == "published" and p.published_at %}<p class="site-meta">Published <time datetime="{{ p.published_at }}" data-published-time>{{ p.published_at }}</time></p>{% endif %}
         <p class="site-meta"><time datetime="{{ p.updated_at }}">Edited {{ p.updated_human }}</time> · {{ p.page_count }} {% if p.page_count == 1 %}page{% else %}pages{% endif %}</p>
         {% if p.live or p.domains | length > 0 %}
         <ul class="site-links" role="list">
@@ -57,8 +58,9 @@
           </a></li>
           {% endfor %}
         </ul>
-        {% elif p.status == "offline" %}
-        <p class="site-note">Visitors can't see this website right now.</p>
+        {% else %}
+        <p class="site-address">{{ p.site_host }}</p>
+        {% if p.status == "offline" %}<p class="site-note">Visitors can't see this website right now.</p>{% else %}<p class="site-note">Your address when you publish.</p>{% endif %}
         {% endif %}
         <div class="site-actions">
           <a class="btn btn-secondary btn-sm" href="/projects/{{ p.pid }}">
@@ -76,6 +78,7 @@
               <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg>
             </summary>
             <div class="menu">
+              <button class="menu-item" type="button" data-rename>Rename website…</button>
               <button class="menu-item danger" type="button" data-delete>
                 <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-remove"/></svg>
                 Delete website…
@@ -87,6 +90,24 @@
     </li>
     {% endfor %}
   </ul>
+
+  <dialog class="modal" data-rename-dialog aria-labelledby="rename-title" aria-describedby="rename-hint">
+    <form data-rename-form>
+      <div class="modal-body">
+        <h2 id="rename-title">Rename website</h2>
+        <p id="rename-hint">This changes the name in Pagehaven. Your web address stays the same.</p>
+        <div class="field">
+          <label class="label" for="rename-name">Website name</label>
+          <input class="input" id="rename-name" required maxlength="80" autocomplete="off" aria-describedby="rename-error" data-rename-input>
+          <p class="field-error" id="rename-error" data-rename-error role="alert" hidden></p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-rename-cancel>Cancel</button>
+        <button class="btn btn-primary" type="submit" data-rename-submit>Save name</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog class="modal delete-dialog" data-delete-dialog aria-labelledby="delete-title" aria-describedby="delete-consequence">
     <form method="dialog" data-delete-form novalidate>
@@ -113,19 +134,12 @@
   </dialog>
   {% else %}
   <section class="first-run" aria-labelledby="first-run-title">
-    <div class="first-run-sheet crop">
-      <h2 id="first-run-title">Your first website goes here</h2>
-      <ol class="first-run-steps">
-        <li><span><strong>Get a ZIP of your website</strong> from the tool or person that made it.</span></li>
-        <li><span><strong>Import it here.</strong> Pagehaven checks every file. Nothing is published yet.</span></li>
-        <li><span><strong>Click any text or picture to change it,</strong> then publish when you're happy.</span></li>
-      </ol>
-      {% if can_create %}
-      <a class="btn btn-primary btn-lg" href="/projects/new">
-        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-        Import a website
-      </a>
-      {% endif %}
+    <div class="first-run-sheet">
+      <svg class="icon first-run-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
+      <h2 id="first-run-title">Bring your website into Pagehaven</h2>
+      <p>Import a ZIP of your finished website. Then change its words and pictures right on the page.</p>
+      {% if can_create %}<a class="btn btn-primary btn-lg" href="/projects/new">New website</a>{% endif %}
+      <p class="first-run-note">Nothing goes live until you publish.</p>
     </div>
     {% include "partials/export_help.html" %}
   </section>
