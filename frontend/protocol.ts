@@ -195,6 +195,8 @@ const agentMessages = {
 } as const;
 
 const editorMessages = {
+  /** Fixed four-second discovery tint; no caller-controlled duration or element list. */
+  show_editable: obj({ type: lit("show_editable") }),
   init: obj({
     type: lit("init"),
     mode: lit("edit", "preview"),
