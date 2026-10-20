@@ -75,8 +75,16 @@ body[data-review-open] .ed-publish { --btn-bg: var(--surface); --btn-fg: var(--i
 .page-open .icon { color: var(--ink-3); }
 .page-open[aria-current="page"] { color: var(--link); }
 .page-open[aria-current="page"] .icon { color: var(--select); }
-.rail-start { display: flex; flex-direction: column; gap: var(--s2); margin: var(--s3) var(--s3) var(--s1); padding: var(--s3) 0 var(--s3); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
-.rail-start[hidden] { display: none; }
+.rail-start {
+  display: flex; flex-direction: column; gap: var(--s2); margin: var(--s3) var(--s3) var(--s1); padding: var(--s3) 0 var(--s3); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule);
+  interpolate-size: allow-keywords; height: auto; overflow: hidden;
+  transition: height var(--dur-panel) var(--ease-out), margin var(--dur-panel) var(--ease-out), padding var(--dur-panel) var(--ease-out), border-width var(--dur-panel) var(--ease-out), opacity var(--dur-pop) var(--ease-out), visibility 0s;
+}
+/* Folds away while something is selected, so the rows below glide up instead of jumping. Reduced motion makes it instant. */
+.rail-start.is-collapsed {
+  height: 0; margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border-width: 0; opacity: 0; visibility: hidden;
+  transition: height var(--dur-panel) var(--ease-out), margin var(--dur-panel) var(--ease-out), padding var(--dur-panel) var(--ease-out), border-width var(--dur-panel) var(--ease-out), opacity var(--dur-pop) var(--ease-out), visibility 0s linear var(--dur-panel);
+}
 .rail-start-title { font-size: var(--fs-label); line-height: var(--lh-label); font-weight: var(--fw-title-3); color: var(--ink); }
 .rail-start-text { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--ink-2); }
 .rail-shortcuts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }

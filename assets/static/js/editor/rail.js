@@ -226,7 +226,9 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     });
     drawer.addEventListener("change", () => setDrawer(false));
     function renderStart(s) {
-        start.hidden = s.mode !== "edit" || s.focus.kind !== "none";
+        const away = s.mode !== "edit" || s.focus.kind !== "none";
+        start.classList.toggle("is-collapsed", away);
+        start.inert = away;
         startHeading.hidden = s.outline.heading === null;
         startPicture.hidden = s.outline.images.length === 0;
     }
