@@ -10,6 +10,8 @@ import { createStore, initialState, selection, type Store } from "./state.js";
 import { createToolbar, describeSelection, type Toolbar } from "./toolbar.js";
 import { createTopBar, type TopBar } from "./topbar.js";
 
+import { publicationShortcut } from "./shortcuts.js";
+
 const root = must<HTMLElement>(document, "#editor");
 const pid = root.dataset["pid"] ?? "";
 function showFatal(message: string): void {
@@ -53,6 +55,12 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }: Shell
     if (mod && key === ".") { event.preventDefault(); topBar.toggleFocus(); return; }
     if (mod && key === "k" && !store.get().editing.active) {
       event.preventDefault(); topBar.openPalette(); return;
+    }
+    const publication = publicationShortcut(event);
+    if (publication) {
+      event.preventDefault();
+      if (publication === "review") publishing.openReview(); else publishing.openHistory();
+      return;
     }
     if (isTyping(event.target)) return;
     if (mod && (key === "z" || key === "y")) {
@@ -218,7 +226,8 @@ async function main(): Promise<void> {
   let lastAnnounced: string | null = null;
   store.subscribe((s) => {
     const sel = selection(s);
-    const key = sel ? sel.element : s.focus.kind === "blocked" ? "blocked" : null;
+    if (s.editing.active) return;
+    const key = sel ? `${sel.element}:${sel.name}` : s.focus.kind === "blocked" ? "blocked" : null;
     if (key === lastAnnounced) return;
     lastAnnounced = key;
     if (sel) {

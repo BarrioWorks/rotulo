@@ -13,6 +13,11 @@ export function frameLayout(device, zoom, available) {
     const width = Math.max(1, available.width);
     const height = Math.max(1, available.height);
     if (device === "mobile") {
+        // On a phone this is the real viewport, not a miniature device mockup.
+        if (width < 600) {
+            const viewport = { width: Math.min(PHONE.width, width), height };
+            return { scale: 1, viewport, frame: { ...viewport } };
+        }
         const fit = Math.min(1, (width - 2 * BEZEL) / PHONE.width, (height - 2 * BEZEL) / PHONE.height);
         const scale = zoom === "actual" ? 1 : Math.max(0.2, fit);
         return { scale, viewport: { ...PHONE }, frame: { width: PHONE.width * scale, height: PHONE.height * scale } };

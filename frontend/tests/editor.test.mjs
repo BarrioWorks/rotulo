@@ -373,3 +373,13 @@ test("one Surface replaces any other surface and panels retain their subject", (
   store.dispatch({ type: "open_surface", surface: "settings" });
   assert.deepEqual(store.get().surface, { kind: "settings" });
 });
+
+test("phone editing uses the real phone viewport at readable actual size", () => {
+  for (const width of [320, 390, 599]) {
+    const p = frameLayout('mobile', 'fit', { width, height: 540 });
+    assert.equal(p.scale, 1);
+    assert.equal(p.viewport.width, Math.min(390, width));
+    assert.equal(p.viewport.height, 540);
+    assert.ok(p.frame.width <= width);
+  }
+});

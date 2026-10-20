@@ -208,7 +208,7 @@ function linkForm(ctx: PanelContext, initialHref: string, opts: { newTab: boolea
   typeSelect.value = kind;
 
   const pageSelect = h("select", { class: "select input-sm", attrs: { id: "rail-link-page", "data-key": "link-page" } },
-    ...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name), attrs: { value: p.path } })));
+    ...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name, s.pages), attrs: { value: p.path } })));
   if (initial.kind === "page") pageSelect.value = initial.path;
   const anchorSelect = h("select", { class: "select input-sm", attrs: { id: "rail-link-anchor", "data-key": "link-anchor" } },
     h("option", { text: "Top of the page", attrs: { value: "" } }),

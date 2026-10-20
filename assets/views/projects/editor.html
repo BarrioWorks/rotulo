@@ -52,7 +52,7 @@
 
     <div class="ed-top-right material-float">
       <button class="ed-status" type="button" data-status-pill data-tone="neutral" aria-haspopup="dialog" aria-expanded="false">
-        <span class="ed-status-mark" data-status-mark aria-hidden="true"></span><span class="ed-status-text" data-status-text></span>
+        <span class="ed-status-mark" data-status-mark aria-hidden="true"></span><span class="ed-status-text" data-status-text>Loading…</span>
       </button>
       <button class="btn btn-primary ed-publish" type="button" data-action="publish" aria-haspopup="dialog" aria-expanded="false">Publish</button>
     </div>
@@ -143,7 +143,7 @@
       </button>
     </div>
     <nav class="settings-nav" aria-label="Settings sections"><button class="btn btn-ghost btn-sm" type="button" data-settings-section="general">General</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="pages">Pages</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="assets">Assets</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="domains">Domains</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="publishing">Publishing</button><button class="btn btn-ghost btn-sm" type="button" data-settings-section="versions">Versions</button></nav>
-    <div data-settings-content="general"><h3>General</h3><button class="btn btn-ghost btn-sm" type="button" data-settings-shortcuts>Keyboard shortcuts</button>
+    <div data-settings-content="general"><h3>General</h3>
     <form class="settings-group" data-settings-form>
       <div class="field">
         <label class="label" for="site-name">Website name</label>
@@ -173,6 +173,7 @@
       </form>
       <p class="field-error" id="domain-error" role="alert" data-domain-error hidden></p>
     </section>
+    <footer><button class="btn btn-ghost btn-sm" type="button" data-settings-shortcuts>Keyboard shortcuts</button></footer>
   </div>
 </section>
 
@@ -193,6 +194,8 @@
       <dt><span class="kbd">Alt</span> <span class="kbd">Shift</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move the selected section up or down</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Z</span></dt><dd>Undo</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">Z</span></dt><dd>Redo</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">P</span></dt><dd>Open publish review</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">H</span></dt><dd>Open version history</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">K</span></dt><dd>Open command palette</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">.</span></dt><dd>Toggle focus mode</dd>
       <dt><span class="kbd">F6</span></dt><dd>Jump between the islands, open surface, canvas and caption</dd>

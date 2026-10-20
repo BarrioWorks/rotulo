@@ -29,22 +29,53 @@ function offscreenDirection(target, canvas) {
         return "below";
     return target.x + target.width <= canvas.x ? "left" : "right";
 }
-export function placeToolbar({ target, canvas, size, gap = 8 }) {
+export function placeToolbar({ target, canvas, size, obstructions, editing = false, banner = false, gap = 8 }) {
     if (!intersect(target, canvas))
         return { kind: "offscreen", direction: offscreenDirection(target, canvas) };
     const x = Math.max(canvas.x + INSET, Math.min(target.x, canvas.x + canvas.width - size.width - INSET));
+    const top = canvas.y + INSET;
+    const bottom = canvas.y + canvas.height - size.height - INSET;
+    const above = target.y - size.height - gap;
     const below = target.y + target.height + gap;
-    if (below + size.height <= canvas.y + canvas.height - INSET)
+    // Text grows downwards. Keep its tools above the edited element when possible.
+    if (editing && above >= top)
+        return { kind: "placed", x, y: above, candidate: "above-start" };
+    if (banner && target.y <= canvas.y + gap && target.width >= canvas.width * .9) {
+        const navBottom = Math.max(top, ...obstructions.map((o) => o.y + o.height + gap));
+        const y = Math.max(navBottom, Math.min(bottom, target.y + target.height - size.height - gap));
+        return { kind: "placed", x, y: Math.min(bottom, y), candidate: "pinned" };
+    }
+    if (below <= bottom)
         return { kind: "placed", x, y: below, candidate: "below-start" };
-    return { kind: "placed", x, y: Math.max(canvas.y + INSET, target.y - size.height - gap), candidate: "above-start" };
+    if (above >= top)
+        return { kind: "placed", x, y: above, candidate: "above-start" };
+    // If neither vertical side fits, keep the caption away from the live text.
+    if (editing) {
+        if (target.x - size.width - gap >= canvas.x + INSET)
+            return { kind: "placed", x: target.x - size.width - gap, y: top, candidate: "left" };
+        if (target.x + target.width + size.width + gap <= canvas.x + canvas.width - INSET)
+            return { kind: "placed", x: target.x + target.width + gap, y: top, candidate: "right" };
+    }
+    if (editing)
+        return { kind: "hidden" };
+    return { kind: "placed", x, y: Math.max(top, Math.min(bottom, above)), candidate: "above-start" };
 }
-/** Properties open beyond the caption, away from the selected element. */
+/** Prefer the far side of the caption; flip to the roomier side and constrain the scroll box. */
 export function placePanel({ caption, selection, canvas, size, gap = 8 }) {
-    const above = caption.y < selection.y;
+    const inset = 8;
+    const top = canvas.y + inset;
+    const bottom = canvas.y + canvas.height - inset;
+    const aboveRoom = Math.max(0, caption.y - gap - top);
+    const belowRoom = Math.max(0, bottom - caption.y - caption.height - gap);
+    const preferAbove = caption.y < selection.y;
+    const preferredRoom = preferAbove ? aboveRoom : belowRoom;
+    const above = preferredRoom >= size.height ? preferAbove : aboveRoom > belowRoom;
+    const width = Math.min(size.width, Math.max(0, canvas.width - inset * 2));
+    const height = Math.min(size.height, above ? aboveRoom : belowRoom);
     return {
-        x: Math.max(canvas.x + INSET, Math.min(caption.x, canvas.x + canvas.width - size.width - INSET)),
-        y: above ? caption.y - gap - size.height : caption.y + caption.height + gap,
-        width: size.width, height: size.height,
+        x: Math.max(canvas.x + inset, Math.min(caption.x, canvas.x + canvas.width - width - inset)),
+        y: Math.max(top, Math.min(bottom - height, above ? caption.y - gap - height : caption.y + caption.height + gap)),
+        width, height,
     };
 }
 /** The toolbar's widest size. Mirrors the `max-width` of `.ftb` in editor.css. */

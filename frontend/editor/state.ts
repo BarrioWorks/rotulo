@@ -146,7 +146,7 @@ export function initialState(data: Bootstrap, now: number): State {
     draftChanged: data.draft_changed_since_publish,
     changes: [],
     mode: "edit",
-    device: "desktop",
+    device: typeof matchMedia !== "undefined" && matchMedia("(max-width: 599px)").matches ? "mobile" : "desktop",
     zoom: "fit",
     saves: { pending: 0, problem: null, savedAt: null },
     focus: { kind: "none" },
