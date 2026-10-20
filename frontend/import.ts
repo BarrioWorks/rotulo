@@ -329,6 +329,7 @@ function boot(root: HTMLElement): void {
       case "error":
         must<HTMLElement>(root, "[data-error-title]").textContent = step.title;
         must<HTMLElement>(root, "[data-error-message]").textContent = step.message;
+        must<HTMLElement>(root, "[data-source-recovery]").hidden = step.message !== SOURCE_ONLY;
         help.open = step.help;
         must<HTMLButtonElement>(sections.error, "[data-retry]").focus();
         break;
