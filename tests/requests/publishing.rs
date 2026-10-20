@@ -258,7 +258,10 @@ async fn unchanged_drafts_cannot_create_duplicate_live_releases() {
                 .await;
             r.assert_status_unprocessable_entity();
             assert_eq!(r.json::<Value>()["error"], "nothing_to_publish");
-            assert_eq!(r.json::<Value>()["message"], "Everything is already published.");
+            assert_eq!(
+                r.json::<Value>()["message"],
+                "Everything is already published."
+            );
         }
         assert_eq!(
             get(&server, &p.api("releases"), &cookie)
