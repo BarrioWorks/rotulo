@@ -1,11 +1,13 @@
 import type { Page } from "./api.js";
 
 /** "Our story | Harbor Bakery" shows as "Our story"; the home page is always "Home". */
-export function pageLabel(page: Pick<Page, "path" | "title">, siteName: string): string {
+export function pageLabel(page: Pick<Page, "path" | "title">, siteName: string, pages: Pick<Page, "path" | "title">[] = []): string {
   if (page.path === "index.html") return "Home";
-  const name = siteName.trim().toLowerCase();
+  // Imported titles retain their original branding after the website is renamed.
+  const home = pages.find((p) => p.path === "index.html");
+  const names = [siteName, ...(home?.title.split(/\s+[|·•–—-]\s+/) ?? [])].map((p) => p.trim().toLowerCase());
   const parts = page.title.split(/\s+[|·•–—-]\s+/).map((p) => p.trim()).filter(Boolean);
-  const kept = parts.length > 1 ? parts.filter((p) => p.toLowerCase() !== name) : parts;
+  const kept = parts.length > 1 ? parts.filter((p) => !names.includes(p.toLowerCase())) : parts;
   return kept.join(" · ") || page.path.replace(/\.html$/, "");
 }
 

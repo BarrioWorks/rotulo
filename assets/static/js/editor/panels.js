@@ -160,7 +160,7 @@ function linkForm(ctx, initialHref, opts) {
         kind = "web";
     const typeSelect = h("select", { class: "select input-sm", attrs: { id: "rail-link-type", "data-key": "link-type", "data-autofocus": "" } }, ...DESTINATIONS.filter(([d]) => d !== "anchor" || anchors.length > 0 || initial.kind === "anchor").map(([value, text]) => h("option", { text, attrs: { value } })));
     typeSelect.value = kind;
-    const pageSelect = h("select", { class: "select input-sm", attrs: { id: "rail-link-page", "data-key": "link-page" } }, ...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name), attrs: { value: p.path } })));
+    const pageSelect = h("select", { class: "select input-sm", attrs: { id: "rail-link-page", "data-key": "link-page" } }, ...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name, s.pages), attrs: { value: p.path } })));
     if (initial.kind === "page")
         pageSelect.value = initial.path;
     const anchorSelect = h("select", { class: "select input-sm", attrs: { id: "rail-link-anchor", "data-key": "link-anchor" } }, h("option", { text: "Top of the page", attrs: { value: "" } }), ...anchors.map((a) => h("option", { text: a.name, attrs: { value: a.id } })));

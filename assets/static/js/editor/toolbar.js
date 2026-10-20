@@ -313,7 +313,7 @@ export function createToolbar({ store, canvas, edits }) {
         root.classList.add("is-visible");
         actionHost.hidden = false;
         const problem = s.saves.problem;
-        const save = problem ? "Not saved" : s.saves.pending > 0 ? "Saving…" : "Saved";
+        const save = s.editing.active ? "Editing" : problem ? "Not saved" : s.saves.pending > 0 ? "Saving…" : "Saved";
         labelHost.textContent = f.kind === "blocked" ? "Can't edit this part" : `${f.kind === "selected" ? KIND_LABELS[f.selection.kind] : "Part"} · ${save}`;
         if (problem) {
             const retry = h("button", { class: "btn btn-ghost btn-sm", text: problem.kind === "conflict" ? "Reload" : "Retry", attrs: { type: "button" } });
@@ -325,7 +325,7 @@ export function createToolbar({ store, canvas, edits }) {
             const fresh = f.kind === "selected" ? rowFor(s, f.selection) : f.kind === "blocked" && f.around ? [button("around", "Select the part around it", "select-parent", () => canvas.send({ type: "select_element", element: f.around ?? "" }))] : [];
             for (const b of persistent.values())
                 b.hidden = true;
-            for (const [order, node] of fresh.entries()) {
+            for (const node of fresh) {
                 if (!(node instanceof HTMLButtonElement))
                     continue;
                 const id = node.dataset["key"] ?? "";
@@ -345,7 +345,7 @@ export function createToolbar({ store, canvas, edits }) {
                     kept.onclick = node.onclick;
                 }
                 kept.hidden = false;
-                kept.style.order = String(order);
+                actionHost.append(kept);
             }
             const visible = buttons();
             const first = visible.find((b) => b.dataset["key"] === focusedKey) ?? visible[0];
@@ -355,8 +355,6 @@ export function createToolbar({ store, canvas, edits }) {
         position(s, false);
     }
     function position(s, _glide) {
-        if (s.editing.active && candidate !== null)
-            return;
         const f = s.focus;
         const rect = f.kind === "selected" ? f.selection.rect : f.kind === "blocked" ? f.rect : null;
         if (!rect)
@@ -364,7 +362,12 @@ export function createToolbar({ store, canvas, edits }) {
         const box = canvas.visibleBox();
         const target = canvas.toApp(rect);
         root.style.maxWidth = `${Math.max(100, box.width - 8)}px`;
-        const placement = placeToolbar({ target, canvas: box, obstructions: s.obstructions.map((r) => canvas.toApp(r)), size: { width: root.offsetWidth, height: root.offsetHeight } });
+        const placement = placeToolbar({ target, canvas: box, editing: s.editing.active, banner: f.kind === "selected" && f.selection.kind === "banner", obstructions: s.obstructions.map((r) => canvas.toApp(r)), size: { width: root.offsetWidth, height: root.offsetHeight } });
+        if (placement.kind === "hidden") {
+            root.classList.add("is-offscreen");
+            offscreen.hidden = true;
+            return;
+        }
         if (placement.kind === "offscreen") {
             root.classList.add("is-offscreen");
             offscreen.hidden = false;

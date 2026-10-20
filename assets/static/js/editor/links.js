@@ -49,7 +49,7 @@ export function describeHref(href, s) {
         }
         case "page": {
             const page = s.pages.find((p) => p.path === k.path);
-            return page ? `${pageLabel(page, s.project.name)} page` : "A page";
+            return page ? `${pageLabel(page, s.project.name, s.pages)} page` : "A page";
         }
         case "web":
             try {

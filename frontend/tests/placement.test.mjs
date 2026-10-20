@@ -104,3 +104,36 @@ test("an action with a detail loses the detail before it moves into More", () =>
     { key: "a", width: 50, into: "more" },
   ]);
 });
+
+test("a lower caption flips its Link panel above and keeps every edge in the window", () => {
+  const caption = { x: 1100, y: 685, width: 170, height: 40 };
+  const p = placePanel({ caption, selection: { x: 500, y: 600, width: 220, height: 69 }, canvas: { x: 0, y: 0, width: 1280, height: 800 }, size: { width: 320, height: 297 } });
+  assert.equal(p.y + p.height, caption.y - 8);
+  assert.ok(p.x >= 8 && p.x + p.width <= 1272);
+  assert.ok(p.y >= 8 && p.y + p.height <= 792);
+});
+
+test("an oversized panel scrolls within the roomier side without a minimum-height overflow", () => {
+  const p = placePanel({ caption: { x: 8, y: 90, width: 300, height: 40 }, selection: { x: 8, y: 50, width: 100, height: 30 }, canvas: { x: 0, y: 0, width: 390, height: 220 }, size: { width: 500, height: 600 } });
+  assert.ok(p.y >= 8 && p.y + p.height <= 212);
+  assert.equal(p.width, 374);
+  assert.equal(p.height, 74);
+});
+
+test("typing tools stay above downward-growing text, or yield when neither side fits", () => {
+  for (const height of [60, 150, 320]) {
+    const target = { x: 400, y: 300, width: 500, height };
+    const p = placeToolbar({ target, canvas, size, editing: true, obstructions: [] });
+    assert.equal(p.candidate, "above-start");
+    assert.equal(p.y, 252);
+    assert.equal(intersect(box(p), target), null);
+  }
+  assert.deepEqual(placeToolbar({ target: { ...canvas }, canvas, size, editing: true, obstructions: [] }), { kind: "hidden" });
+});
+
+test("a full-width top banner puts its caption inside its bottom edge, below the site's navigation", () => {
+  const p = placeToolbar({ target: { ...canvas, height: 680 }, canvas, size, obstructions: [nav], banner: true });
+  assert.equal(p.candidate, "pinned");
+  assert.ok(p.y > nav.y + nav.height);
+  assert.ok(p.y + size.height < canvas.y + 680);
+});

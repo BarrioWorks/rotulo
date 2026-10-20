@@ -48,9 +48,9 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     let renderedPanelKey = "";
     function renderPages() {
         const s = store.get();
-        list.replaceChildren(...s.pages.filter((p) => `${pageLabel(p, s.project.name)} ${p.path}`.toLowerCase().includes(search.value.toLowerCase())).map((page, index) => {
+        list.replaceChildren(...s.pages.filter((p) => `${pageLabel(p, s.project.name, s.pages)} ${p.path}`.toLowerCase().includes(search.value.toLowerCase())).map((page, index) => {
             const isHome = page.path === "index.html";
-            const label = pageLabel(page, s.project.name);
+            const label = pageLabel(page, s.project.name, s.pages);
             const open = h("button", { class: "page-open", attrs: { type: "button", "data-tip": `/${page.path}` } }, icon(isHome ? "home-page" : "page", "icon-sm"), h("span", { class: "truncate", text: label }));
             if (page.path === s.path)
                 open.setAttribute("aria-current", "page");
@@ -120,7 +120,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
             title.textContent = "Add a page";
             text.textContent = "The new page starts as a copy, so it keeps your header, footer and style.";
             fromField.hidden = false;
-            fromSelect.replaceChildren(...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name), attrs: { value: p.path } })));
+            fromSelect.replaceChildren(...s.pages.map((p) => h("option", { text: pageLabel(p, s.project.name, s.pages), attrs: { value: p.path } })));
             fromSelect.value = page?.path ?? s.path;
             nameInput.value = "";
             submit.textContent = "Add page";
@@ -187,7 +187,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     }
     async function deletePage(page) {
         const ok = await confirmDialog({
-            title: `Delete "${pageLabel(page, store.get().project.name)}"?`,
+            title: `Delete "${pageLabel(page, store.get().project.name, store.get().pages)}"?`,
             text: "The page is removed from your website. You can bring it back with Undo.",
             ok: "Delete page",
             danger: true,
@@ -207,6 +207,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     function selectInCanvas(element) {
         if (!element)
             return;
+        store.dispatch({ type: "close_panel" });
         canvas.send({ type: "select_element", element });
         canvas.surface.focus({ preventScroll: true });
     }
@@ -286,7 +287,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     function renderImages(s) {
         const images = s.outline.images;
         const page = s.pages.find((p) => p.path === s.path);
-        imagesSubject.textContent = images.length === 0 ? "No pictures you can change on this page." : `${images.length === 1 ? "1 picture" : `${images.length} pictures`} on ${page ? pageLabel(page, s.project.name) : s.path}. Choose one to select it.`;
+        imagesSubject.textContent = images.length === 0 ? "No pictures you can change on this page." : `${images.length === 1 ? "1 picture" : `${images.length} pictures`} on ${page ? pageLabel(page, s.project.name, s.pages) : s.path}. Choose one to select it.`;
         const current = selection(s)?.element ?? null;
         const focusedKey = document.activeElement instanceof HTMLElement && imageList.contains(document.activeElement) ? document.activeElement.dataset["key"] : undefined;
         imageList.replaceChildren(...images.map((img) => {
@@ -362,7 +363,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         back.addEventListener("click", closePanel);
         const page = s.pages.find((p) => p.path === s.path);
         const subject = s.surface.panel === "page"
-            ? (page ? pageLabel(page, s.project.name) : s.path)
+            ? (page ? pageLabel(page, s.project.name, s.pages) : s.path)
             : sel ? `${KIND_LABELS[sel.kind]}${sel.name ? ` · ${sel.name}` : ""}` : "";
         const body = renderPanel(s.surface.panel, { store, canvas, change, edits, close: closePanel, replaced: s.surface.replaced });
         panelView.replaceChildren(h("div", { class: "rail-panel-head" }, back, h("h2", { class: "rail-title", text: PANEL_TITLES[s.surface.panel], attrs: { id: "ed-rail-title" } }), subject ? h("p", { class: "rail-subject truncate", text: subject, attrs: { "data-tip": subject } }) : null), body);
@@ -415,14 +416,13 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
             return;
         }
         const r = caption.getBoundingClientRect();
-        const box = canvas.visibleBox();
-        const above = caption.dataset["placement"] === "above-start";
-        panelView.style.left = `${Math.max(8, Math.min(r.left, innerWidth - panelView.offsetWidth - 8))}px`;
-        panelView.style.maxHeight = `${Math.max(120, above ? r.top - box.y - 16 : box.y + box.height - r.bottom - 16)}px`;
+        panelView.style.maxHeight = "none";
         const selected = selection(store.get());
         const target = selected ? canvas.toApp(selected.rect) : { x: r.x, y: r.y - 20, width: r.width, height: 12 };
-        const position = panelPlacement({ caption: { x: r.x, y: r.y, width: r.width, height: r.height }, selection: target, canvas: box, size: { width: panelView.offsetWidth, height: panelView.offsetHeight } });
+        const position = panelPlacement({ caption: { x: r.x, y: r.y, width: r.width, height: r.height }, selection: target, canvas: { x: 0, y: 0, width: innerWidth, height: innerHeight }, size: { width: panelView.offsetWidth, height: panelView.scrollHeight } });
+        panelView.style.left = `${position.x}px`;
         panelView.style.top = `${position.y}px`;
+        panelView.style.maxHeight = `${position.height}px`;
     }
     window.addEventListener("resize", placePanel);
     store.subscribe((s, prev) => {

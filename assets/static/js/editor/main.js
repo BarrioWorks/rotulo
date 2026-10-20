@@ -9,6 +9,7 @@ import { createSaver, editRecovery } from "./saves.js";
 import { createStore, initialState, selection } from "./state.js";
 import { createToolbar, describeSelection } from "./toolbar.js";
 import { createTopBar } from "./topbar.js";
+import { publicationShortcut } from "./shortcuts.js";
 const root = must(document, "#editor");
 const pid = root.dataset["pid"] ?? "";
 function showFatal(message) {
@@ -45,6 +46,15 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
         if (mod && key === "k" && !store.get().editing.active) {
             event.preventDefault();
             topBar.openPalette();
+            return;
+        }
+        const publication = publicationShortcut(event);
+        if (publication) {
+            event.preventDefault();
+            if (publication === "review")
+                publishing.openReview();
+            else
+                publishing.openHistory();
             return;
         }
         if (isTyping(event.target))
@@ -227,7 +237,9 @@ async function main() {
     let lastAnnounced = null;
     store.subscribe((s) => {
         const sel = selection(s);
-        const key = sel ? sel.element : s.focus.kind === "blocked" ? "blocked" : null;
+        if (s.editing.active)
+            return;
+        const key = sel ? `${sel.element}:${sel.name}` : s.focus.kind === "blocked" ? "blocked" : null;
         if (key === lastAnnounced)
             return;
         lastAnnounced = key;

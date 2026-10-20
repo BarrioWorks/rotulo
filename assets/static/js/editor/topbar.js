@@ -31,6 +31,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
             must(document, "[data-toolbar]").append(actions);
         }
     }
+    new ResizeObserver(() => document.documentElement.style.setProperty("--studio-bottom-height", `${bottom.offsetHeight}px`)).observe(bottom);
     layout();
     touch.addEventListener("change", layout);
     undoBtn.addEventListener("click", undo);
@@ -71,7 +72,9 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     function commands() {
         const s = store.get();
         return [
-            ...s.pages.map((page) => ({ label: `Open page: ${pageLabel(page, s.project.name)}`, run: () => canvas.open(page.path) })),
+            ...s.pages.map((page) => ({ label: `Open page: ${pageLabel(page, s.project.name, s.pages)}`, run: () => canvas.open(page.path) })),
+            { label: "Change the main heading", run: () => must(document, '[data-start="heading"]').click() },
+            { label: "Replace a picture", run: () => must(document, '[data-start="picture"]').click() },
             { label: "Pages", run: surfaces.openPages },
             { label: "Add a page…", run: surfaces.openAddPage },
             { label: "Images", run: () => must(document, "[data-open-images]").click() },
@@ -88,10 +91,16 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
             { label: "Keyboard shortcuts", run: () => must(document, '[data-dialog="shortcuts"]').showModal() },
         ];
     }
-    function runCommand(i) { const command = filtered[i]; if (command) {
+    let ranCommand = false;
+    function runCommand(i) {
+        const command = filtered[i];
+        if (!command)
+            return;
+        ranCommand = true;
         palette.close();
+        canvas.surface.focus({ preventScroll: true });
         command.run();
-    } }
+    }
     function renderCommands() {
         filtered = commands().filter((c) => c.label.toLowerCase().includes(query.value.toLowerCase()));
         index = Math.max(0, Math.min(index, filtered.length - 1));
@@ -124,7 +133,8 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
         }
     });
     must(palette, "[data-command-close]").addEventListener("click", () => palette.close());
-    palette.addEventListener("close", () => paletteOpener?.focus({ preventScroll: true }));
+    palette.addEventListener("close", () => { if (!ranCommand)
+        paletteOpener?.focus({ preventScroll: true }); ranCommand = false; });
     store.subscribe((s, previous) => {
         if (changed(s, previous, "history")) {
             for (const [b, available, label, word] of [[undoBtn, s.history.can_undo, s.history.undo_label, "Undo"], [redoBtn, s.history.can_redo, s.history.redo_label, "Redo"]]) {
@@ -135,14 +145,18 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
                 b.dataset["tip"] = name;
             }
         }
-        if (previous && s.changes !== previous.changes && s.draftChanged)
+        if (previous && ((s.changes !== previous.changes && s.draftChanged) || s.project.live_release?.number !== previous.project.live_release?.number))
             delete pillText.dataset["publicationFeedback"];
         pillText.textContent = pillText.dataset["publicationFeedback"] ?? publishText(siteState(s));
         pill.setAttribute("aria-label", `${pillText.textContent}. Publishing and versions`);
         publishBtn.textContent = s.changes.length ? `Publish · ${s.changes.length}` : "Publish";
         pageButton.setAttribute("aria-expanded", String(s.surface.kind === "pages"));
         siteName.textContent = s.project.name;
-        pageName.textContent = pageLabel(s.pages.find((p) => p.path === s.path) ?? { path: s.path, title: "" }, s.project.name);
+        pageName.textContent = pageLabel(s.pages.find((p) => p.path === s.path) ?? { path: s.path, title: "" }, s.project.name, s.pages);
+        const fullName = `${s.project.name} / ${pageName.textContent}`;
+        pageButton.setAttribute("aria-label", `Switch page: ${fullName}`);
+        pageButton.title = fullName;
+        pageButton.dataset["tip"] = fullName;
         document.title = `${s.project.name} · Pagehaven`;
         for (const b of modeButtons)
             b.setAttribute("aria-pressed", String(b.dataset["mode"] === s.mode));

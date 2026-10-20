@@ -32,7 +32,7 @@ export function changeSummary(s: Pick<State, "changes" | "pages" | "project">, l
   const out: { page: string; labels: string[] }[] = [];
   for (const c of s.changes.slice(-limit).reverse()) {
     const page = s.pages.find((p) => p.path === c.page);
-    const name = page ? pageLabel(page, s.project.name) : c.page;
+    const name = page ? pageLabel(page, s.project.name, s.pages) : c.page;
     const row = out.find((r) => r.page === name);
     const label = c.label.charAt(0).toUpperCase() + c.label.slice(1);
     if (row) row.labels.push(label);
@@ -196,11 +196,16 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
   function renderReview(): void {
     const s = store.get();
     if (!pop.hidden) {
-      const focusedConfirm = document.activeElement instanceof HTMLElement && document.activeElement.hasAttribute("data-publish-confirm");
+      const focused = document.activeElement;
+      const inHistory = focused instanceof HTMLElement && historySheet.contains(focused);
+      const inReview = focused instanceof HTMLElement && pop.contains(focused);
+      const focusedConfirm = focused instanceof HTMLElement && focused.hasAttribute("data-publish-confirm");
       const hadHistory = !historySheet.hidden && historySheet.parentElement === pop;
       pop.replaceChildren(...review(s, "popover"));
       if (hadHistory) pop.append(historySheet);
-      if (focusedConfirm) pop.querySelector<HTMLElement>("[data-publish-confirm]")?.focus();
+      if (inHistory && focused instanceof HTMLElement) focused.focus({ preventScroll: true });
+      else if (focusedConfirm) pop.querySelector<HTMLElement>("[data-publish-confirm]")?.focus();
+      else if (inReview) pop.querySelector<HTMLElement>("a, button")?.focus({ preventScroll: true });
     }
     if (manageReview) manageReview.replaceChildren(...review(s, "manage"));
   }
