@@ -121,7 +121,7 @@ pub fn initialize_not_found(ctx: &AppContext, view: &TeraView) -> loco_rs::Resul
     let render = |missing_page: bool| {
         view.render(
             "errors/site_not_found.html",
-            json!({"abuse_email": email, "missing_page": missing_page}),
+            json!({"abuse_email": email, "missing_page": missing_page, "app_origin": state.settings.app_origin}),
         )
     };
     ctx.shared_store.insert(NotFoundPages {

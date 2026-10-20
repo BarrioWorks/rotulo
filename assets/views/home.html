@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
-{% block title %}Pagehaven · Your AI-built website. Yours to edit.{% endblock title %}
-{% block head %}<meta name="description" content="Import the website a tool made for you, change any text or picture by clicking on it, and publish it. No coding, no prompts, no AI credits.">{% endblock head %}
+{% block title %}Pagehaven · Your website. Yours to edit.{% endblock title %}
+{% block head %}<meta name="description" content="Import your finished website, change its words and pictures right on the page, and publish when you’re ready. No coding needed.">{% endblock head %}
 {% block body_class %}home-body{% endblock body_class %}
 {% block body %}
 <header class="home-header">
@@ -13,9 +13,9 @@
 
 <main id="main" class="home">
   <section class="home-hero" aria-labelledby="home-title">
-    <h1 id="home-title">Your AI&#8209;built website. <span>Yours to edit.</span></h1>
+    <h1 id="home-title">Your website. <span>Yours to edit.</span></h1>
     <div class="home-intro">
-      <p class="home-lead">Import the website a tool made for you, change any text or picture by clicking on it, and publish it. No coding, no prompts, no AI credits.</p>
+      <p class="home-lead">Import your finished website, change its words and pictures right on the page, and publish when you’re ready. No coding needed.</p>
       <div class="home-cta">
         <a class="btn btn-primary btn-lg" href="/register">Create your account</a>
         <p>Have an account? <a href="/login">Sign in</a></p>
@@ -24,8 +24,8 @@
   </section>
 
   <figure class="home-proof">
-    <div class="proof-sheet crop" aria-hidden="true">
-      <div class="mock-bar">
+    <div class="proof-sheet" aria-hidden="true">
+      <div class="mock-bar material-float material-capsule">
         <span class="mock-back"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg></span>
         <span class="mock-name">Harbor Bakery</span>
         <span class="mock-page">Home</span>
@@ -36,24 +36,17 @@
         </span>
       </div>
       <div class="mock-body">
-        <div class="mock-side">
-          <span class="mock-side-title">Pages</span>
-          <span class="mock-row is-current"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-home-page"/></svg>Home</span>
-          <span class="mock-row"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-page"/></svg>Menu</span>
-          <span class="mock-row"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-page"/></svg>Our story</span>
-          <span class="mock-row"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-page"/></svg>Visit us</span>
-        </div>
         <div class="mock-canvas">
           <div class="demo-site">
             <div class="demo-nav"><b>Harbor Bakery</b><span>Menu</span><span>Our story</span><span>Visit us</span></div>
             <div class="demo-hero">
               <div class="demo-selected">
-                <div class="mock-toolbar">
+                <div class="mock-toolbar material-float">
                   <span class="is-on"><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit-text"/></svg>Edit text</span>
                   <span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-text-style"/></svg>Style</span>
                   <span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg></span>
                 </div>
-                <p class="demo-title crop crop-select">Bread worth getting up early for.</p>
+                <p class="demo-title">Bread worth getting up early for.</p>
                 <span class="mock-slug">Heading</span>
               </div>
               <p class="demo-text">Open today from 7am on Wharf Lane. We are a small neighbourhood bakery by the harbour. Our sourdough rests for 36 hours, and the coffee is roasted two streets away.</p>
@@ -71,7 +64,7 @@
     <ol class="steps">
       <li class="step">
         <h3>Import</h3>
-        <p>Download your website as a ZIP from the tool that made it, then drop it into Pagehaven.</p>
+        <p>Get a ZIP of your finished website from its designer or website tool, then import it into Pagehaven.</p>
       </li>
       <li class="step">
         <h3>Edit</h3>
@@ -96,14 +89,14 @@
         <dd>Each time you publish, Pagehaven saves a version. Publish an earlier one again whenever you like.</dd>
       </div>
       <div>
-        <dt>Uploaded code never runs on our servers</dt>
-        <dd>Pagehaven checks every file you import and leaves out server code and private files.</dd>
+        <dt>A finished website is all you need</dt>
+        <dd>Bring your HTML pages, pictures and fonts together in a ZIP. Pagehaven checks the files before you start.</dd>
       </div>
     </dl>
   </section>
 </main>
 <footer class="home-foot">
   <span class="brand brand-small"><img src="/static/img/logo.svg" alt="" width="20" height="20"><span>Pagehaven</span></span>
-  <p>Works with websites made in Lovable, Bolt, v0 and Claude, and with HTML templates.</p>
+  <p>For finished static websites and HTML templates.</p>
 </footer>
 {% endblock body %}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { confirmsName, deleteOutcome, deleteRequest, fieldMessage } from "../../assets/static/js/app.js";
+import { confirmsName, deleteOutcome, deleteRequest, fieldMessage, renameRequest } from "../../assets/static/js/app.js";
 import { outcome, precheck, summary } from "../../assets/static/js/import.js";
 
 const MB = 1024 * 1024;
@@ -75,4 +75,13 @@ test("the result sentence says what was left out without sounding like data loss
   assert.equal(summary(report), "1 page imported and ready to edit.");
   const skipped = { ...report, pages: ["index.html", "about.html"], skipped: [{ path: "a", reason: "source" }, { path: "b", reason: "system_junk" }] };
   assert.equal(summary(skipped), "2 pages imported and ready to edit. We left out 2 files your website doesn't need.");
+});
+
+
+test("rename preserves the address and submits the trimmed name with the session", () => {
+  const init = renameRequest("  Harbor Bakery  ", "harbor-bakery");
+  assert.equal(init.method, "POST");
+  assert.equal(init.credentials, "same-origin");
+  assert.equal(init.headers["Content-Type"], "application/json");
+  assert.deepEqual(JSON.parse(init.body), { name: "Harbor Bakery", slug: "harbor-bakery" });
 });

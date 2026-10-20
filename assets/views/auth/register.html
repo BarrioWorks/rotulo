@@ -11,7 +11,7 @@
 <main id="main" class="auth">
   <div class="auth-column">
     <h1>Create your account</h1>
-    <p class="auth-lead">Then import your website and change it by clicking on it.</p>
+    <p class="auth-lead">A place to edit and publish your website.</p>
     {% if error %}
     <div class="alert alert-error auth-error" role="alert" id="form-error">
       <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-alert"/></svg>
@@ -31,11 +31,11 @@
       </div>
       <div class="field">
         <label class="label" for="password">Password</label>
+        <p class="hint" id="password-hint">Use at least 10 characters. Keep your password safe: Pagehaven can’t reset it yet.</p>
         <div class="password-field">
           <input class="input" id="password" name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="200"{% if name %} autofocus{% endif %} aria-describedby="password-hint password-error" data-validate>
           <button class="btn btn-ghost btn-sm password-toggle" type="button" aria-controls="password" aria-pressed="false" data-show-password hidden><span data-show-word>Show</span><span class="visually-hidden"> password</span></button>
         </div>
-        <p class="hint" id="password-hint">At least 10 characters. Keep it somewhere safe: Pagehaven can't reset passwords yet.</p>
         <p class="field-error" id="password-error" data-error-for="password" hidden></p>
       </div>
       <button class="btn btn-primary btn-lg btn-block auth-submit" type="submit">Create account</button>

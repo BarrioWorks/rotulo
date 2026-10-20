@@ -310,6 +310,10 @@ async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_
         ] {
             let response = hosted(&server, host, path).await;
             assert_site_miss(&response, &email, "No website here yet");
+            let origin = &pagehaven::state::Pagehaven::from(&ctx).settings.app_origin;
+            assert!(response
+                .text()
+                .contains(&format!("href=\"{origin}/projects\"")));
         }
         p.publish(&server, &cookie).await;
         let response = hosted(&server, &p.site, "/missing.html").await;

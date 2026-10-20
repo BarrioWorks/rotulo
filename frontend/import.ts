@@ -164,6 +164,7 @@ function boot(root: HTMLElement): void {
         must<HTMLElement>(root, "[data-choose-error]").hidden = step.error === null;
         must<HTMLElement>(root, "[data-choose-error-text]").textContent = step.error ?? "";
         dropzone.classList.toggle("has-error", step.error !== null);
+        fileInput.setAttribute("aria-invalid", String(step.error !== null));
         break;
       }
       case "uploading":

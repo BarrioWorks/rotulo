@@ -128,6 +128,87 @@ function wireThumbnails() {
             placeholder.hidden = false;
     }, true);
 }
+export function renameRequest(name, slug) {
+    return {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), slug }),
+        credentials: "same-origin",
+        cache: "no-store",
+    };
+}
+function wireRename() {
+    const dialog = document.querySelector("[data-rename-dialog]");
+    if (!dialog)
+        return;
+    const form = must(dialog, "[data-rename-form]");
+    const input = must(dialog, "[data-rename-input]");
+    const error = must(dialog, "[data-rename-error]");
+    const submit = must(dialog, "[data-rename-submit]");
+    let target = null;
+    const showError = (message) => {
+        error.textContent = message ?? "";
+        error.hidden = message === null;
+        input.setAttribute("aria-invalid", String(message !== null));
+    };
+    for (const button of document.querySelectorAll("[data-rename]")) {
+        const site = button.closest("[data-site]");
+        if (!site)
+            continue;
+        button.addEventListener("click", () => {
+            const menu = site.querySelector("details[data-menu]");
+            menu?.removeAttribute("open");
+            target = { pid: site.dataset["pid"] ?? "", slug: site.dataset["slug"] ?? "", trigger: menu?.querySelector("summary") ?? button };
+            input.value = site.dataset["name"] ?? "";
+            showError(null);
+            dialog.showModal();
+            input.focus();
+            input.select();
+        });
+    }
+    must(dialog, "[data-rename-cancel]").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", () => target?.trigger.focus());
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!target || submit.getAttribute("aria-busy") === "true")
+            return;
+        if (!input.value.trim()) {
+            showError("Enter a name for your website.");
+            input.focus();
+            return;
+        }
+        submit.setAttribute("aria-busy", "true");
+        try {
+            const response = await fetch(`/api/projects/${encodeURIComponent(target.pid)}/settings`, renameRequest(input.value, target.slug));
+            if (response.status === 401) {
+                window.location.assign("/login");
+                return;
+            }
+            if (response.ok) {
+                sessionStorage.setItem(FLASH_KEY, "Website renamed.");
+                window.location.reload();
+                return;
+            }
+            const body = await response.json();
+            showError(parseError(body)?.message ?? "We couldn’t save the name. Please try again.");
+        }
+        catch {
+            showError("We couldn’t reach Pagehaven. Check your connection and try again.");
+        }
+        finally {
+            submit.removeAttribute("aria-busy");
+        }
+        input.focus();
+    });
+}
+function formatPublicationTimes() {
+    for (const time of document.querySelectorAll("[data-published-time]")) {
+        const date = new Date(time.dateTime);
+        if (Number.isNaN(date.getTime()))
+            continue;
+        time.textContent = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+    }
+}
 function wireDelete() {
     const dialog = document.querySelector("dialog[data-delete-dialog]");
     if (!dialog)
@@ -229,5 +310,7 @@ if (typeof document !== "undefined") {
     wireForms();
     wireThumbnails();
     wireDelete();
+    wireRename();
+    formatPublicationTimes();
     showFlash();
 }
