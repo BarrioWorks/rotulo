@@ -1,5 +1,129 @@
 # Studio evaluation: Phases G and H
 
+## After the fix round
+
+This section rechecks the editor after the fix round merged in `8193d76` (commits `cfd7dd2` and `4e8d242`). It ran on `main` against `http://127.0.0.1:5150` on 2026-10-20. Everything below this section is the original record, left as it was.
+
+No participants took part. Every result is an expert walkthrough by one agent in the T3 preview browser. Labels are as before: measured, observed, read, inferred.
+
+Test data. A fresh account (`studio-verify-h2@example.com`) imported `startbootstrap-agency.zip`, `northwind-studio.zip` and `landwind.zip` from `fixtures/zips`. Task 2 used `fixtures/images/replacement-hero.jpg` at 1280 and `replacement-banner.jpg` at 834.
+
+### Tasks at 1280 x 800
+
+The counting rule is the baseline's. Agency was used for every task except 4 and 5, which ran on Northwind.
+
+| # | Task | Baseline | Before the fixes | Now (pointer) | Now (keyboard) | Did it land | Notes |
+|---|---|---|---|---|---|---|---|
+| 1 | Edit the homepage heading | 4 | 4 | **4**: click, click again, type, Enter (observed) | **6**: Ctrl+K, type "main heading", Enter, Enter, type, Enter. Was 8 (observed) | Yes. curl of the live host returned "Hello from the verifier after fixes" (measured) | While typing, the caption reads "Heading · Editing" and sits above the heading at y 344 to 384. The heading starts at y 392 (measured). It clips the lower edge of the line above, "Welcome To Our Studio!" (observed, `editor-editing-1280.png`). The announcer named the new text after Enter (observed) |
+| 2 | Replace the hero image | 3 | 3 | **3**: click the banner, Change background photo, choose file (observed) | Not walked | Yes. The live file `images/uploads/b82e0e8e45bd0c4c.jpg` has the same SHA-256 prefix as the upload (measured) | The banner caption is pinned at y 756 to 796, clear of the site nav at y 52 to 146 (measured) |
+| 3 | Change a button's destination | 4 | 6, dead end | **4**: click "Tell me more", Link, choose Contact Us, Save link (observed) | Not walked | Yes. Live `href="#contact"` (measured) | The popover opened at y 372 to 669. Save link was at y 627 to 657 and was clicked by pointer (measured). It covers the button it edits (observed, `editor-link-popover-1280.png`) |
+| 4 | Switch page (Northwind) | 2 | 2 | **2**: page switcher, The studio (observed) | Not walked | Yes, `about.html` loaded (measured) | The switcher shows "The studio" without truncation. The site name is hidden at every width now (measured, `display: none`) |
+| 5 | Rename the website | 3 (+1) | 3 (+1) | **3** (+1 close): Settings, type the name, Save (observed) | Not walked | Yes. Toast "Website settings saved" (observed) | The switcher kept "The studio" and its name became "Switch page: Northwind Verified / The studio" (measured) |
+| 6 | Preview the mobile version | 1 | 1 | **1**: Phone screen (observed) | Not walked | Yes, Fit 81% (measured) | None |
+| 7 | Publish a change | 2 | 2 | **2**: Publish, Publish (observed) | **2**: Ctrl+Shift+P, Enter. Was 5 (observed). Focus started on the confirm button (measured) | Yes. Versions 1 and 2 went live (measured with curl) | The review listed "Home: Text change" on the second publish (observed) |
+| 8 | Restore a previous version | 3 (+1) | 4 | **4**: Publish, Version history, Publish again, Publish version 1 (observed) | Not walked. Ctrl+Shift+H opens the history with focus on its close button (measured) | Yes. curl returned version 1's heading (measured) | The pill read "Visitors see version 1" at once, with no reload (measured). Focus fell to `BODY` after the confirm closed (measured) |
+
+### Tasks at 834 x 1112
+
+| # | Now (834) | Did it land | Drift of the global controls |
+|---|---|---|---|
+| 1 | 4: click, click again, type, Enter (observed) | Yes, "Undo: text change", then undone (observed) | **52 px** while selected. See below |
+| 2 | 3: banner, Change background photo in the bottom bar, choose file (observed) | Yes. Live upload `1786cc6a0e174518.jpg` matches `replacement-banner.jpg` (measured) | **52 px** while selected |
+| 3 | 4: button, Link in the bottom bar, choose About, Save link (observed) | Yes. Live `href="#about"` in version 3 (measured) | **52 px** while selected. The Link sheet sat at y 632 to 985, above the bar (measured) |
+| 4 | 2: page switcher, The studio (observed) | Yes, `about.html` (measured) | **0 px**. Was 44 px (measured) |
+| 5 | 3 (+1 close) (observed) | Yes (measured from the switcher's name) | 0 px |
+| 6 | 1 (observed) | Yes, Fit 100% (measured) | 0 px |
+| 7 | 2 (observed) | Yes, version 3 (measured) | 0 px |
+| 8 | 4 (observed) | Yes. Version 2 live again, `href="#contact"` (measured) | 0 px. Focus fell to `BODY` again (measured) |
+
+### Measurements at rest
+
+Method. A fresh navigation to the Agency editor, then the same computations as `/tmp/eval/wrap.js` around `scripts/studio/measure.js`. The script was condensed to the fields reported here. It waits for `[data-canvas-frame]` to lose `is-loading`, then 500 ms. Times are milliseconds from navigation start. All values are measured.
+
+| Viewport | canvasShare: before fixes → now | Layout shift: before fixes → now | Runs | DCL | bootstrapEnd | iframeDocEnd | DOM nodes | Chrome over canvas |
+|---|---|---|---|---|---|---|---|---|
+| 1280 x 800 | 0.935 → **0.935** | 0 → **0** | 1 | 185 | 229 | 615 | 386 | 0 px |
+| 1024 x 768 | 0.932 → **0.932** | 0 → **0** | 1 | 202 | 233 | 416 | 386 | 0 px |
+| 834 x 1112 | 0.842 → **0.886** | 0 → **0.0391** | 2, both 0.0391 | 208 | 246 | 411 | 386 | 0 px |
+| 390 x 844 | 0.791 → **0.788** | 0.0001 → **0.0107** | 1 | 203 | 238 | 394 | 386 | 0 px |
+
+What explains them:
+
+- 1280 and 1024 are unchanged. The 52 px band is still the only limit (1280 x 748 / 1280 x 800 = 0.935).
+- At 834 the share rose because the bottom bar is now 67 px at rest instead of a fixed 116 px. 834 x 985 / (834 x 1112) = 0.886 (measured).
+- At 390 the bar is 119 px at rest, so the canvas is 665 px tall. 390 x 665 / (390 x 844) = 0.788 (measured).
+- **Layout shift came back below 900 px.** The shift entries name `DIV.studio-bottom`, `DIV.canvas-frame` and the iframe. At 834 the canvas frame is first 936 px tall, then 985 px (measured from the entries' rects). `.ed-main` reserves `var(--studio-bottom-height, 116px)` in CSS. The real height (67 px) arrives only when a `ResizeObserver` in `topbar.ts` writes the variable after the script runs (read). The 0.0391 is that 49 px jump.
+- DOM nodes rose from 375 to 386 (measured). The two new shortcut rows add 2 `dt`, 2 `dd` and 6 `kbd` spans, and the settings footer adds 1. That makes 11 (inferred from the diff in `editor.html`).
+- Load times are single runs on one machine. iframeDocEnd at 1280 (615) is above the earlier range of 364 to 416. It is one unrepeated run with no profile, so I cannot name its limiter, and I claim no change in load time.
+- Selection latency and heap were not re-measured.
+
+### Zero drift
+
+Method as before. The 17 rects of the three islands and their buttons were logged at rest and after each task. All values are measured.
+
+| Width | Tasks | Result |
+|---|---|---|
+| 1280 | 1 to 8 | **0 px** on all 17 rects in every task |
+| 834 | 4, 5, 6, 7, 8 | **0 px**. Task 4 was the failing case before |
+| 834 | 1, 2, 3 | **Fails while something is selected.** The center island and its 8 buttons move up 52 px (Undo y 1057 → 1005). They return to their rest position on deselect |
+| 390 | 1 (spot check) | **Fails.** Undo sits at y 737 at rest, 633 with the heading selected and 685 while editing |
+
+Cause (read). The fix made `.studio-bottom` `height: auto` with wrapping rows in `editor.css`. The caption's actions join the bar when something is selected, so the bar grows and pushes the tools row up. Decision 2 asks for zero drift.
+
+### The five worst, rechecked
+
+| # | Problem | Status | Evidence |
+|---|---|---|---|
+| 1 | Link popover off screen | **Fixed** | Popover y 372 to 669, Save link y 627 to 657, focused field y 513 to 543, all inside 800 px. No inner scroll (measured) |
+| 2 | Caption covers typed text | **Fixed** | Caption above the heading while editing at 1280 and 834. Label "Editing" (measured) |
+| 3 | Phone opens at 30 % with tools off screen | **Fixed** | Phone layout at Fit 100%. Every control inside 390 x 844, at rest and with the heading selected. Back link visible (measured). New side effects are listed below |
+| 4 | Caption focus order | **Fixed** | Tab lands on Edit text. ArrowRight walks the visual order and wraps (measured) |
+| 5 | Longer keyboard routes, lost shortcuts | **Partly fixed** | Ctrl+Shift+P and Ctrl+Shift+H work and are in the sheet. Publish is 2 keys again. The heading edit is 6 keys against the baseline's 4 (measured) |
+
+### Lesser items the fix round claimed
+
+| Item | Status | Evidence |
+|---|---|---|
+| Stale announcer | **Fixed** | After Enter it said "Heading selected: Hello from the verifier after fixes" at 1280, and named the new text at 834 (observed). Text saves still raise no toast (observed) |
+| Island drift at 834 on page switch | **Fixed** | 0 px. The left island is a fixed 370 px (measured) |
+| Switcher truncation at 1024 and 1280 | **Fixed, with a trade-off** | Page names show in full. The site name is now hidden at every width and appears only in the button's name, its tooltip and the tab title (measured) |
+| Pill stale after rollback | **Fixed** | "Visitors see version 1" at once (measured) |
+| Count gone after reload | **Not fixed** | After a reload with unpublished edits the button read "Publish" (observed, twice). It still counts the session-only `s.changes` list, and the fix commits do not touch it (read, `topbar.ts`) |
+| Shortcut rows | **Fixed** | The sheet lists Ctrl Shift P and Ctrl Shift H (measured) |
+| Rename label | **Fixed** | "The studio" after renaming Northwind (measured) |
+| Start here leaves the pages popover open | **Fixed** | No popover open and `aria-expanded="false"` after "Change the main heading" (measured) |
+| Palette focus | **Fixed** | Focus went to the canvas after a command ran (measured) |
+| Loading chrome | **Fixed** | The server HTML ships "Loading…" in the pill (read from the served page) |
+| Banner caption over the nav | **Fixed** | Pinned at y 756 to 796 at 1280 (measured). The Landwind half was not rechecked |
+
+### Found after the fix round
+
+1. **Global controls drift on selection below 900 px (decision 2).** At 834 the tools row moves 52 px whenever something is selected. At 390 it moves 104 px, and again during a text session (measured). The canvas resizes with it.
+2. **Layout shift is back below 900 px.** 0.0391 at 834 (n=2) and 0.0107 at 390 (measured). The CSS fallback of 116 px is replaced by the measured bar height after the script runs (read).
+3. **Panels can cover the top islands.** `surfaces.ts` now places panels against the whole window instead of the canvas (read). At 1280 x 640 the Style panel on "Tell me more" ran from y 8 to 472 over the center island. The element at (640, 30) was the panel head (measured).
+4. **A flipped panel covers its own selection.** When the panel flips above the caption, it lands on the selected element. The Link popover and the Style panel both covered "Tell me more" (observed).
+5. **Focus falls to the page body after a rollback.** After "Publish version 1" closed its confirm, `document.activeElement` was `BODY` while the publish popover stayed open. This happened at 1280 and 834 (measured). The before record did not check this. The `renderReview` change in `publish.ts` refocuses an element that is replaced during the same render (inferred from the diff).
+6. **The phone bottom bar grows to a third of the screen.** With the heading selected it is 223 px. With the button selected it is 275 px of 844. The canvas shrinks to 509 px (measured).
+7. **The editing caption clips the line above.** At 1280 it covers the lower edge of "Welcome To Our Studio!" (observed). This is minor next to the problem it replaced.
+8. **The site name left the editor chrome.** This is the cost of the truncation fix. An owner with several sites sees only the page name (observed).
+
+Also seen, and possibly older than the fix round: the canvas's spoken name uses the raw title "Your page: The studio | Northwind Studio" (measured). "Area · Saved" is still the caption for an unnamed container (observed).
+
+### Screenshots retaken
+
+Overwritten in `../final/screens/`: `editor-editing-1280`, `editor-editing-834`, `editor-heading-selected-390`, `editor-resting-390`, `editor-heading-selected-834`, `editor-heading-selected-1280`, `editor-page-switcher-1280`, `editor-palette-1280`, `editor-heading-selected-1024` and `editor-resting-1024`. New: `editor-link-popover-1280`. The palette shot shows the query "main heading" and the new command.
+
+### Limits of this recheck
+
+- No participants. One walkthrough per task.
+- Single cold loads except 834 (n=2). No coarse-pointer, media-feature or screen-reader runs this time.
+- Tasks 2 to 6 and 8 were not walked by keyboard. The 1024 and 390 drift checks were spot checks, not all eight tasks.
+- The Agency heading was changed several times during the run, so later screenshots show "Version two heading".
+
+---
+
+## Original record
+
 This is the "after" record for the Studio redesign. It repeats the methods in `../baseline/README.md` on `main` at commit `0c6a3aa`, against the dev server at `http://127.0.0.1:5150`, on 2026-10-20. The ranked problems are in `five-worst.md`. Screenshots are in `../final/screens/`.
 
 No participants took part. Every task result below is an expert walkthrough by one agent in an automated browser. Discoverability notes are judgments and hypotheses, not user data.
