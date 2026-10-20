@@ -35,8 +35,9 @@ Concurrency stays at five agents. Each implementing agent works in its own git w
 
 ## Progress
 
-- A to B done: baseline, research, identity, editor model (`baseline/`, `research/`, `identity/`, `editor/`).
-- D done: Studio foundation merged (Onest, ultramarine, materials, motion, icon sizes, glass contrast gate).
+- A to D done: baseline, research, identity, editor model, Studio foundation (Onest, ultramarine, materials, glass contrast gate).
 - C done: three prototypes, two critiques on different models, pick A with grafts (`direction/README.md`).
-- E and F merged: editor shell and caption, agent and canvas fixes (text sessions from the canvas now also need a real click), other screens. `check.sh` exit 0.
-- G and H running: one evaluator walks the eight tasks, measures, audits accessibility and ranks the five worst problems (`evaluation/`).
+- E and F done: editor shell and caption, canvas and preview fixes, other screens.
+- G done in three fix rounds, each from an independent browser evaluation (`evaluation/`).
+- H done on a realistic blog, Furnace Hill Coffee, against the old editor run side by side (`evaluation/blog.md`, `before-after.md`).
+- Deliverables index and implementation summary: `README.md`.
