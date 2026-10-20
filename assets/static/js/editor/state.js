@@ -71,10 +71,10 @@ function retarget(surface, focus, editing) {
         return { kind: "none" };
     return selection.element === surface.element ? surface : { ...surface, element: selection.element, replaced: false };
 }
-function logChange(changes, log, previous, next, page) {
+function logChange(changes, log, previous, next, page, element = null) {
     switch (log) {
         case "edit":
-            return next.undo_label ? [...changes, { label: next.undo_label, page }] : changes;
+            return next.undo_label ? [...changes, { label: next.undo_label, page, ...(element ? { element } : {}) }] : changes;
         case "undo":
             return changes.slice(0, -1);
         case "redo":
@@ -155,7 +155,7 @@ export function reduce(state, action) {
             return { ...state, saves: { ...state.saves, pending: state.saves.pending + 1 } };
         case "save_ok": {
             const draftChanged = action.draftChanged;
-            const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
+            const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page, action.element) : [];
             // Undo and redo make "Picture replaced" and its choices out of date.
             const stepped = action.log === "undo" || action.log === "redo";
             const surface = stepped && state.surface.kind === "panel" && state.surface.replaced ? { ...state.surface, replaced: false } : state.surface;

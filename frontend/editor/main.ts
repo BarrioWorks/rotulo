@@ -194,6 +194,7 @@ async function main(): Promise<void> {
     onText(element, html, page) {
       void change((base) => api.edit(pid, base, page, { op: "set_text", element, html }), {
         page,
+        element,
         recover: editRecovery,
         onRejected: () => canvas?.reload(element),
       });

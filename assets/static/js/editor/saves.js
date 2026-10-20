@@ -56,6 +56,7 @@ export function createSaver(store, fetchState) {
                             draftChanged: result.draft_changed_since_publish,
                             log: options.log ?? "edit",
                             page: options.page ?? store.get().path,
+                            element: options.element ?? null,
                             at: Date.now(),
                         });
                     }
@@ -91,6 +92,7 @@ export function createSaver(store, fetchState) {
                                     draftChanged: fresh.draft_changed_since_publish,
                                     log: options.log ?? "edit",
                                     page: options.page ?? store.get().path,
+                                    element: options.element ?? null,
                                     at: Date.now(),
                                 });
                                 return options.recover(fresh);

@@ -18,6 +18,7 @@ export interface ChangeOptions {
   log?: SaveLog;
   /** The page the change was made on, for the change list. Defaults to the current page. */
   page?: string;
+  element?: string | null;
   /**
    * Builds the change's result from the server's state when a retry finds the change already
    * applied (the first attempt timed out after the server saved it). Without it, that case
@@ -95,6 +96,7 @@ export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>):
               draftChanged: result.draft_changed_since_publish,
               log: options.log ?? "edit",
               page: options.page ?? store.get().path,
+              element: options.element ?? null,
               at: Date.now(),
             });
           } else {
@@ -128,6 +130,7 @@ export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>):
                   draftChanged: fresh.draft_changed_since_publish,
                   log: options.log ?? "edit",
                   page: options.page ?? store.get().path,
+                  element: options.element ?? null,
                   at: Date.now(),
                 });
                 return options.recover(fresh) as T;

@@ -90,6 +90,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     const s = store.get();
     return [
       ...s.pages.map((page) => ({ label: `Open page: ${pageLabel(page, s.project.name, s.pages)}`, run: () => canvas.open(page.path) })),
+      { label: "Show what I can edit", run: () => canvas.showEditable() },
       { label: "Change the main heading", run: () => must<HTMLButtonElement>(document, '[data-start="heading"]').click() },
       { label: "Replace a picture", run: () => must<HTMLButtonElement>(document, '[data-start="picture"]').click() },
       { label: "Pages", run: surfaces.openPages },

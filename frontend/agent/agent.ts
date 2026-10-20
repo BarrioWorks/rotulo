@@ -128,6 +128,29 @@ function div(className: string, parent: Node = shadow): HTMLDivElement {
   parent.appendChild(el);
   return el;
 }
+const editableLayer = div("editable-parts");
+const MAX_EDITABLE_BOXES = 120;
+let editableTimer = 0;
+let showingEditable = false;
+function clearEditable(): void {
+  showingEditable = false;
+  window.clearTimeout(editableTimer);
+  editableLayer.replaceChildren();
+}
+function drawEditable(): void {
+  if (!showingEditable || mode !== "edit") { editableLayer.replaceChildren(); return; }
+  const parts = stops().filter((el) => {
+    const r = el.getBoundingClientRect();
+    const style = getComputedStyle(el);
+    return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth
+      && style.visibility === "visible" && style.opacity !== "0";
+  }).slice(0, MAX_EDITABLE_BOXES);
+  while (editableLayer.childElementCount > parts.length) editableLayer.lastElementChild?.remove();
+  parts.forEach((el, i) => {
+    const box = editableLayer.children[i] ?? div("ring hover editable", editableLayer);
+    if (box instanceof HTMLElement) place(box, el, 1 * k);
+  });
+}
 const veilLayer = div("veils");
 const hoverBox = div("ring hover");
 const blockedBox = div("ring blocked-box");
@@ -244,6 +267,7 @@ function redraw(): void {
   selectBox.classList.toggle("editing", editing !== null);
   place(blockedBox, active ? blocked : null, 2 * k);
   drawHiddenSections(bars);
+  drawEditable();
   const viewport = {
     type: "viewport" as const,
     scrollY: Math.max(0, window.scrollY),
@@ -542,6 +566,7 @@ function ancestorsOf(el: HTMLElement): Ancestor[] {
 }
 
 function select(el: HTMLElement | null, _glide = true): void {
+  clearEditable();
   if (editing && editing.el !== el) commitText();
   blocked = null;
   hovered = null;
@@ -774,7 +799,16 @@ function handle(message: EditorMessage): void {
         }
       }
       break;
+    case "show_editable":
+      clearEditable();
+      if (mode === "edit") {
+        showingEditable = true;
+        editableTimer = window.setTimeout(() => { clearEditable(); schedule(); }, 4000);
+        schedule();
+      }
+      break;
     case "mode":
+      clearEditable();
       setMode(message.mode);
       break;
     case "scale":

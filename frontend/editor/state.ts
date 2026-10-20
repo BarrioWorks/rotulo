@@ -57,6 +57,7 @@ export interface Saves {
 
 /** A change made in this session that is not live yet, named by its undo label. */
 export interface LoggedChange {
+  element?: string | null;
   label: string;
   page: string;
 }
@@ -119,7 +120,7 @@ export type Action =
   | { type: "open_panel"; panel: Panel; replaced?: boolean }
   | { type: "close_panel" }
   | { type: "save_queued" }
-  | { type: "save_ok"; revision: number; history: History; draftChanged: boolean; log: SaveLog; page: string; at: number }
+  | { type: "save_ok"; revision: number; history: History; draftChanged: boolean; log: SaveLog; page: string; element?: string | null; at: number }
   | { type: "save_settled" }
   | { type: "save_offline" }
   | { type: "save_failed"; message: string }
@@ -204,10 +205,10 @@ function retarget(surface: Surface, focus: Focus, editing: boolean): Surface {
   return selection.element === surface.element ? surface : { ...surface, element: selection.element, replaced: false };
 }
 
-function logChange(changes: LoggedChange[], log: SaveLog, previous: History, next: History, page: string): LoggedChange[] {
+function logChange(changes: LoggedChange[], log: SaveLog, previous: History, next: History, page: string, element: string | null = null): LoggedChange[] {
   switch (log) {
     case "edit":
-      return next.undo_label ? [...changes, { label: next.undo_label, page }] : changes;
+      return next.undo_label ? [...changes, { label: next.undo_label, page, ...(element ? { element } : {}) }] : changes;
     case "undo":
       return changes.slice(0, -1);
     case "redo":
@@ -288,7 +289,7 @@ export function reduce(state: State, action: Action): State {
       return { ...state, saves: { ...state.saves, pending: state.saves.pending + 1 } };
     case "save_ok": {
       const draftChanged = action.draftChanged;
-      const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
+      const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page, action.element) : [];
       // Undo and redo make "Picture replaced" and its choices out of date.
       const stepped = action.log === "undo" || action.log === "redo";
       const surface: Surface = stepped && state.surface.kind === "panel" && state.surface.replaced ? { ...state.surface, replaced: false } : state.surface;

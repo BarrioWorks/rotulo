@@ -1,6 +1,6 @@
 import { pageLabel } from "./pages.js";
 import { envelope, parseAgentMessage, type EditorMessage, type Rect } from "../protocol.js";
-import { must } from "../ui.js";
+import { announce, must } from "../ui.js";
 import type { Box } from "./placement.js";
 import { changed, type State, type Store } from "./state.js";
 import { acceptsCanvasMessage, canvasNavigation } from "./canvas-policy.js";
@@ -18,7 +18,8 @@ export interface Canvas {
   frame(): HTMLIFrameElement;
   /** The focusable canvas region the keyboard selects parts through. */
   surface: HTMLElement;
-  open(path: string): void;
+  open(path: string, reveal?: string): void;
+  showEditable(): void;
   /** Reloads the current page, keeping the scroll position and, if given, the selection. */
   reload(select?: string | null, pulse?: boolean): void;
   send(message: EditorMessage): void;
@@ -127,6 +128,22 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
   const zoomButton = must<HTMLButtonElement>(document, "[data-zoom]");
   const zoomLabel = must<HTMLElement>(document, "[data-zoom-label]");
   const hint = must<HTMLElement>(document, "[data-canvas-hint]");
+  const hintText = must<HTMLElement>(hint, "[data-canvas-hint-text]");
+  const welcomeUrl = new URL(window.location.href);
+  let welcome = welcomeUrl.searchParams.get("welcome") === "1";
+  if (welcome) {
+    welcomeUrl.searchParams.delete("welcome");
+    window.history.replaceState(window.history.state, "", welcomeUrl);
+  }
+  function showEditable(): void {
+    store.dispatch({ type: "mode", mode: "edit" });
+    if (store.get().canvasLoading) welcome = true;
+    else send({ type: "show_editable" });
+    window.clearTimeout(hintTimer);
+    hintText.textContent = "Click any highlighted text to edit it.";
+    announce(hintText.textContent);
+  }
+  must<HTMLButtonElement>(hint, "[data-show-editable]").addEventListener("click", showEditable);
 
   /** The frame on screen, and the one loading behind it until its agent says it is ready. */
   let active = must<HTMLIFrameElement>(surface, "[data-canvas]");
@@ -327,6 +344,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
         swap();
         store.dispatch({ type: "page_ready", path: expectedPath, title: message.title, description: message.description, origin: originOf(active) });
         active.contentWindow?.postMessage(envelope({ type: "init", mode: store.get().mode, scrollY: restore.scrollY, select: restore.select, scale: layout.scale }), originOf(active));
+        if (welcome) { welcome = false; showEditable(); }
         const ready = active;
         void loadUiFont().then((data) => {
           if (data && ready === active) send({ type: "font", data });
@@ -416,14 +434,15 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
     }
     if (prev && changed(s, prev, "pages", "path")) syncFocusability(s);
     surface.toggleAttribute("data-has-selection", s.focus.kind !== "none");
+    if (prev && s.focus !== prev.focus && s.focus.kind !== "none" && hintText.textContent === "Click any highlighted text to edit it.") hintText.textContent = "";
     if (!prev || s.mode !== prev.mode || s.device !== prev.device) {
       window.clearTimeout(hintTimer);
-      hint.textContent = s.mode === "preview"
+      hintText.textContent = s.mode === "preview"
         ? "Previewing. Links and buttons work like on your website."
         : s.device === "mobile" && !phoneHintShown ? "Phone view. Changes made here also apply on computers." : "";
       if (s.mode === "edit" && s.device === "mobile" && !phoneHintShown) {
         phoneHintShown = true;
-        hintTimer = window.setTimeout(() => { hint.textContent = ""; }, 3500);
+        hintTimer = window.setTimeout(() => { hintText.textContent = ""; }, 3500);
       }
     }
     if (!prev) {
@@ -447,8 +466,9 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
   return {
     frame: () => active,
     surface,
-    open(path) {
-      restore = { scrollY: null, select: null, pulse: false };
+    showEditable,
+    open(path, reveal) {
+      restore = { scrollY: null, select: reveal ?? null, pulse: Boolean(reveal) };
       store.dispatch({ type: "open_page", path });
       void navigate(path);
     },
