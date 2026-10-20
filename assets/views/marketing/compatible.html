@@ -9,7 +9,7 @@
 <main id="main">
   <div class="mk-field">
     <div class="mk-wrap mk-doc-head">
-      <h1 class="mk-doc-title">What a compatible ZIP looks like</h1>
+      <h1 class="mk-doc-title">Which website exports work with Pagehaven</h1>
       <p class="mk-doc-lead">Pagehaven imports a finished website, meaning the HTML pages and the pictures, styles and fonts they use, in one ZIP. This page shows what it accepts, what it refuses and the limits.</p>
     </div>
   </div>
@@ -18,16 +18,16 @@
     <div class="mk-wrap mk-section mk-doc">
       <nav class="mk-doc-nav" aria-label="On this page">
         <p>On this page</p>
-        <a href="#accepted">A ZIP that imports</a>
+        <a href="#accepted">HTML website exports that import</a>
         <a href="#refused">What Pagehaven refuses</a>
-        <a href="#javascript">Pages built by JavaScript</a>
+        <a href="#javascript">HTML content and pages built by JavaScript</a>
         <a href="#left-out">What stays out of your site</a>
         <a href="#limits">Limits</a>
       </nav>
 
       <div class="mk-doc-body">
         <section id="accepted" aria-labelledby="accepted-title">
-          <h2 id="accepted-title">A ZIP that imports</h2>
+          <h2 id="accepted-title">HTML website exports that import</h2>
           <p>This is the sample site in the homepage screenshots, shortened. Every page is an HTML file, and everything a page loads is in the ZIP with it.</p>
 <pre class="mk-tree" aria-label="Files in furnace-hill.zip">furnace-hill.zip
 ├── index.html            <span class="mk-tree-note">the home page, at the top</span>
@@ -49,6 +49,7 @@
             <li>Text files are UTF-8.</li>
             <li>Pagehaven keeps HTML, CSS, JavaScript, JSON, text, SVG, pictures, icons, fonts, MP4 and WebM video, MP3, Ogg and WAV audio, PDF and WASM files.</li>
           </ul>
+          <p>After import, use the <a href="/visual-html-editor">visual HTML editor</a> to change supported content, then <a href="/static-website-hosting">publish your static website from the ZIP</a>. The <a href="/">Pagehaven homepage</a> shows the real editor with a sample website.</p>
           <h3>Where to get one</h3>
           <ul>
             <li>A page from an AI chat. Save it as an <code>.html</code> file named <code>index.html</code>, put it in a folder with any pictures it uses, and ZIP the folder.</li>
@@ -76,7 +77,7 @@
         </section>
 
         <section id="javascript" aria-labelledby="javascript-title">
-          <h2 id="javascript-title">Pages built by JavaScript</h2>
+          <h2 id="javascript-title">HTML content and pages built by JavaScript</h2>
           <p>Some sites, such as a built React or Vite app, ship an almost empty HTML file and draw the page in the browser. Pagehaven imports them, and they publish and work. It shows this warning when you import one:</p>
           <blockquote class="mk-quote mk-quote-warn">
             <p>This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.</p>

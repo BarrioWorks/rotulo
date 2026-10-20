@@ -9,8 +9,13 @@ use serde_json::{json, Value};
 
 use crate::state::Pagehaven;
 
-pub const INDEXABLE_PATHS: &[&str] = &["/", "/compatible-exports"];
-const HOME_DESCRIPTION: &str = "Import a website delivered as HTML files, edit text, images and links visually, then publish it with Pagehaven. No code needed for supported edits.";
+pub const INDEXABLE_PATHS: &[&str] = &[
+    "/",
+    "/compatible-exports",
+    "/visual-html-editor",
+    "/static-website-hosting",
+];
+const HOME_DESCRIPTION: &str = "Edit an AI-made HTML website without code. Import a compatible ZIP, change text, images and links visually, then publish your static website with Pagehaven.";
 
 pub fn metadata(app_origin: &str) -> Value {
     let origin = app_origin.trim_end_matches('/');
@@ -19,8 +24,10 @@ pub fn metadata(app_origin: &str) -> Value {
             "canonical": format!("{origin}{path}"), "robots": robots})
     };
     json!({
-        "home": page("/", "Pagehaven · Edit and publish your HTML website without code", HOME_DESCRIPTION, "index, follow"),
-        "compatible_exports": page("/compatible-exports", "Compatible HTML website exports · Pagehaven", "Check which HTML website exports work with Pagehaven. Learn what to include in your ZIP and why build-step projects and browser-rendered pages cannot be edited.", "index, follow"),
+        "home": page("/", "Edit an HTML website without code | Pagehaven", HOME_DESCRIPTION, "index, follow"),
+        "compatible_exports": page("/compatible-exports", "Which website exports work with Pagehaven?", "Check which HTML website exports work with Pagehaven. Learn what to include in your ZIP and why build-step projects and browser-rendered pages cannot be edited.", "index, follow"),
+        "visual_html_editor": page("/visual-html-editor", "Visual HTML editor for exported websites | Pagehaven", "Edit exported HTML visually in Pagehaven. Change text, replace images and update links in your AI-made website. Check which edits work before you import.", "index, follow"),
+        "static_website_hosting": page("/static-website-hosting", "Publish a static website from a ZIP | Pagehaven", "Publish a static website from a ZIP with Pagehaven. Check your files, preview a draft, review changes and publish to a hosted address. Keep earlier versions.", "index, follow"),
         "login": page("/login", "Sign in to your HTML website editor · Pagehaven", "Sign in to Pagehaven to edit text, images and links in your imported HTML websites and publish your changes when you are ready.", "noindex, follow"),
         "register": page("/register", "Create your HTML website editor account · Pagehaven", "Create a Pagehaven account to import a compatible HTML website ZIP, edit text, images and links visually, and publish your website without code.", "noindex, follow"),
         "image": format!("{origin}/static/img/marketing/og.png"),

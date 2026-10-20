@@ -1,0 +1,83 @@
+{% extends "layouts/base.html" %}
+{% block head %}
+{% set_global seo = seo_pages.static_website_hosting %}
+{% endblock head %}
+{% block styles %}<link rel="stylesheet" href="/static/css/marketing.css">{% endblock styles %}
+{% block body_class %}mk-body{% endblock body_class %}
+{% block body %}
+<div class="mk-field">{% include "marketing/header.html" %}</div>
+<main id="main">
+  <div class="mk-field">
+    <div class="mk-wrap mk-doc-head">
+      <h1 class="mk-doc-title">Publish a static website from a ZIP</h1>
+      <p class="mk-doc-lead">Put your finished HTML pages and their assets in one ZIP. Pagehaven checks the files, opens a draft for editing and publishes a version at your website’s Pagehaven address when you confirm.</p>
+    </div>
+  </div>
+  <div class="mk-page">
+    <div class="mk-wrap mk-section mk-doc">
+      <nav class="mk-doc-nav" aria-label="On this page">
+        <p>On this page</p>
+        <a href="#prepare">Prepare the ZIP</a>
+        <a href="#import">Import the files</a>
+        <a href="#preview">Preview your draft</a>
+        <a href="#publish">Publish to a hosted address</a>
+        <a href="#versions">Return to an earlier version</a>
+        <a href="#limits">Static hosting limits</a>
+      </nav>
+      <div class="mk-doc-body">
+        <section id="prepare" aria-labelledby="prepare-title">
+          <h2 id="prepare-title">Prepare a finished website ZIP</h2>
+          <p>Your ZIP needs an <code>index.html</code> file and the local files your pages load. Pagehaven finds the website at the top of the archive, inside one wrapper folder, or in a <code>dist</code> or <code>build</code> folder. If it finds several possible website folders, you choose which one to import.</p>
+          <p>Keep the ZIP within 25 MB, with at most 2,000 files and folders and 100 MB unpacked. A single file can be up to 20 MB. Check the <a href="/compatible-exports">compatible exports guide</a> for the full limits, an example folder tree and import refusal messages.</p>
+          <p>A project’s source code is not its finished website. Build it in the original tool first, then ZIP the static output. Pagehaven never runs a build step or server code.</p>
+        </section>
+        <section id="import" aria-labelledby="import-title">
+          <h2 id="import-title">Import and read the file report</h2>
+          <p>Upload the ZIP after signing in. Pagehaven checks the archive and the files inside it. A missing local stylesheet or script stops the import and names the missing file. Other missing assets, such as a picture, produce a warning.</p>
+          <figure>
+            <img class="mk-step-shot" src="/static/img/marketing/step-import.webp" width="760" height="250" loading="lazy" decoding="async" alt="Real Pagehaven import screen showing the Furnace Hill Coffee sample website with seven pages imported and an Open editor button.">
+            <figcaption>The real Pagehaven import screen with the Furnace Hill Coffee sample site.</figcaption>
+          </figure>
+          <p>The import report lists files left out, including server code, private keys, environment files and databases. Secrets and server code also raise a warning. Pagehaven keeps the original uploaded ZIP on the server, so review your archive for private files before uploading it.</p>
+        </section>
+        <section id="preview" aria-labelledby="preview-title">
+          <h2 id="preview-title">Preview the draft before it goes live</h2>
+          <p>Open the imported site in the editor and check its pages, images and links. Supported text, images and links can be changed there; the <a href="/visual-html-editor">visual HTML editor guide</a> explains which parts are editable.</p>
+          <p>Your draft preview uses a separate origin from the live website. Saving an edit does not change the files visitors see. Use the preview to check the draft before publishing.</p>
+        </section>
+        <section id="publish" aria-labelledby="publish-title">
+          <h2 id="publish-title">Review and publish to your hosted address</h2>
+          <p>Choose Publish in the editor. Pagehaven shows the changes and the address visitors will use. Confirm to create a numbered version of the website.</p>
+          <figure>
+            <img class="mk-step-shot" src="/static/img/marketing/step-publish.webp" width="386" height="430" loading="lazy" decoding="async" alt="Real Pagehaven publish review for Furnace Hill Coffee, showing one Home page text change, the visitor address and a Publish button.">
+            <figcaption>The real Pagehaven publish review. Publishing requires confirmation.</figcaption>
+          </figure>
+          <p>Your live address has the form <code>&lt;name&gt;.&lt;sites domain&gt;</code>, using the sites domain configured by your Pagehaven host. The website’s name and address can be changed in its settings.</p>
+          <p>Published files have editor markup and hidden sections removed. Each version’s files remain unchanged afterwards. A later edit stays in the draft until you publish again.</p>
+        </section>
+        <section id="versions" aria-labelledby="versions-title">
+          <h2 id="versions-title">Put an earlier version back online</h2>
+          <p>Choose “Make this version live” to point visitors at an earlier published version. Your current draft stays in place, and this action does not create another version.</p>
+          <p>To continue editing an older version, choose “Edit from this version”. Pagehaven copies it into your draft as one undoable change. Visitors keep seeing the live version until you publish the draft.</p>
+        </section>
+        <section id="limits" aria-labelledby="limits-title">
+          <h2 id="limits-title">Static hosting does not run your server</h2>
+          <p>Pagehaven serves the finished website files. A site that needs server code or a database will need those services elsewhere. Including them in the ZIP does not make them run.</p>
+          <p>A built website that draws its pages with JavaScript can import and publish, but Pagehaven can edit only content written in the HTML. For editable pages, export HTML that already contains the words and images you want to change.</p>
+          <p>See the <a href="/">Pagehaven homepage</a> for the full editing workflow, or compare your archive with the <a href="/compatible-exports">supported HTML website exports</a>.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+  <section class="mk-field mk-close" aria-labelledby="close-title">
+    <div class="mk-wrap mk-close-inner">
+      <h2 id="close-title" class="mk-close-title">Give your finished HTML website an address.</h2>
+      <div class="mk-close-side">
+        <a class="mk-btn mk-btn-on-field" href="/register">Create an account to publish your ZIP</a>
+        <p>Bring the finished website files, including index.html.</p>
+      </div>
+    </div>
+  </section>
+</main>
+{% include "marketing/footer.html" %}
+{% endblock body %}
