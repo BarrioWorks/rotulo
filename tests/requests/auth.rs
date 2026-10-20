@@ -106,7 +106,7 @@ async fn home_shows_the_configured_sites_domain_without_a_port() {
         response.assert_status_ok();
         let document = scraper::Html::parse_document(&response.text());
         let address = document
-            .select(&scraper::Selector::parse(".mock-url").unwrap())
+            .select(&scraper::Selector::parse(".site-address").unwrap())
             .next()
             .unwrap()
             .text()

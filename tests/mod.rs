@@ -8,6 +8,8 @@ mod domains;
 mod editing;
 #[path = "requests/imports.rs"]
 mod imports;
+#[path = "requests/marketing.rs"]
+mod marketing;
 #[path = "requests/preview.rs"]
 mod preview;
 #[path = "requests/projects.rs"]

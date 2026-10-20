@@ -193,6 +193,17 @@
   --panel-w: 320px;            /* toolbar panels, properties */
   --gutter: var(--s6);         /* --s4 under 520 px */
 
+  /* Marketing display roles (homepage, compatible exports). Onest's variable axis covers 680 inside the 400-700 face. */
+  --fs-hero: clamp(2.625rem, 1.2rem + 5.4vw, 6rem); --lh-hero: 0.98; --fw-hero: 680; --ls-hero: -0.035em;
+  --fs-display-2: clamp(2rem, 1.35rem + 2.4vw, 3.25rem); --lh-display-2: 1.04; --fw-display-2: 660; --ls-display-2: -0.03em;
+  --fs-mk-lead: clamp(1.125rem, 1rem + 0.4vw, 1.3125rem); --lh-mk-lead: 1.5;
+  --fs-mk-body: 1.0625rem; --lh-mk-body: 1.65;  /* 17 px marketing body */
+  /* The ultramarine field: white type, secondary #DAD9F8 (6.58:1). Product screenshots are the only light objects on it. */
+  --field: var(--accent);
+  --on-field: #FFFFFF;
+  --on-field-2: #DAD9F8;
+  --field-hover: var(--accent-soft);  /* white button hover on the field */
+
   color-scheme: light;
 }
 
