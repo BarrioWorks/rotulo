@@ -1,3 +1,4 @@
+import { openMenu } from "./menu.js";
 import { h, must } from "../ui.js";
 import { pageLabel } from "./pages.js";
 import { changed, publishText, siteState } from "./state.js";
@@ -14,8 +15,8 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     const bottom = must(document, "[data-bottom-bar]");
     const actions = must(document, "[data-caption-actions]");
     const touch = matchMedia("(max-width: 899px), (pointer: coarse)");
-    const modeButtons = [...document.querySelectorAll("[data-mode]")];
-    const deviceButtons = [...document.querySelectorAll("[data-device]")];
+    const modeButtons = [...document.querySelectorAll("button[data-mode]")];
+    const deviceButtons = [...document.querySelectorAll("button[data-device]")];
     const toolsHome = center.parentElement;
     const zoom = must(document, "[data-zoom]");
     zoom.hidden = false;
@@ -24,14 +25,24 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     function layout() {
         if (touch.matches) {
             bottom.prepend(center);
-            bottom.append(actions);
+            context.append(actions);
         }
         else {
             toolsHome?.insertBefore(center, document.querySelector(".ed-top-right"));
             must(document, "[data-toolbar]").append(actions);
         }
     }
-    new ResizeObserver(() => document.documentElement.style.setProperty("--studio-bottom-height", `${bottom.offsetHeight}px`)).observe(bottom);
+    const hint = h("span", { class: "bottom-hint", text: "Select text or a picture to edit" });
+    const context = h("div", { class: "studio-context" }, hint);
+    bottom.append(context);
+    const more = h("button", { class: "btn btn-ghost studio-tools-more", text: "More", attrs: { type: "button", "aria-haspopup": "menu" } });
+    center.append(more);
+    more.addEventListener("click", () => openMenu(more, [
+        ...deviceButtons.map((b) => ({ label: b.getAttribute("aria-label") ?? "Screen size", run: () => b.click() })),
+        { label: "Zoom", run: () => zoom.click() },
+        { label: "Focus mode", run: () => setFocus(true) },
+    ], { label: "More tools" }));
+    store.subscribe(() => { hint.hidden = !actions.hidden && actions.querySelector("button:not([hidden])") !== null; });
     layout();
     touch.addEventListener("change", layout);
     undoBtn.addEventListener("click", undo);
@@ -152,6 +163,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
         publishBtn.textContent = s.changes.length ? `Publish · ${s.changes.length}` : "Publish";
         pageButton.setAttribute("aria-expanded", String(s.surface.kind === "pages"));
         siteName.textContent = s.project.name;
+        must(document, "[data-pages-site-name]").textContent = s.project.name;
         pageName.textContent = pageLabel(s.pages.find((p) => p.path === s.path) ?? { path: s.path, title: "" }, s.project.name, s.pages);
         const fullName = `${s.project.name} / ${pageName.textContent}`;
         pageButton.setAttribute("aria-label", `Switch page: ${fullName}`);

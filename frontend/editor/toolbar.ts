@@ -97,9 +97,14 @@ function fileName(src: string | null): string {
   }
 }
 
+/** The protocol calls generic containers Areas; owners see their element kind. */
+export function kindLabel(kind: Kind): string {
+  return kind === "box" ? "Box" : KIND_LABELS[kind];
+}
+
 /** What a screen reader hears when a part is selected. Never an empty name. */
 export function describeSelection(sel: Selection, s: Pick<State, "path" | "pages" | "anchors" | "project">): string {
-  const kind = KIND_LABELS[sel.kind];
+  const kind = kindLabel(sel.kind);
   if (sel.kind === "image") {
     const alt = (sel.info.alt ?? "").trim();
     if (/[\p{L}\p{N}]/u.test(alt)) return `${kind} selected: ${alt}`;
@@ -292,14 +297,29 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     if (s.editing.active) {
       const f = s.editing.formats;
       return [
-        button("bold", "Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold }),
-        button("italic", "Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic }),
+        button("bold", "Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold, iconOnly: true }),
+        button("italic", "Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic, iconOnly: true }),
         button("text-link", "Link", "link", () => openPanel("text-link", false, "text-link"), { expanded: s.surface.kind === "panel" && s.surface.panel === "text-link" }),
-        ...(f.link ? [button("unlink", "Remove link", "unlink", () => canvas.send({ type: "format", command: "unlink", href: null }))] : []),
+        ...(f.link ? [button("unlink", "Remove link", "unlink", () => canvas.send({ type: "format", command: "unlink", href: null }), { iconOnly: true })] : []),
         button("done", "Done", "check", () => void canvas.finishText(), { tip: "Keep the text. Escape also keeps it." }),
       ];
     }
     const actions = actionsFor(sel);
+    if (matchMedia("(max-width: 899px), (pointer: coarse)").matches) {
+      const candidates = actions.primary.map((id) => actionButton(id, sel, s, false));
+      const more = button("measure-more", "More", "more", () => {}, { menu: true });
+      const measure = h("div", { class: "ftb-row studio-action-measure", attrs: { "aria-hidden": "true" } }, ...candidates, more);
+      actionHost.append(measure);
+      let available = (actionHost.parentElement?.clientWidth ?? innerWidth - 16) - more.offsetWidth - 8;
+      const primary: ActionId[] = [];
+      for (const [index, id] of actions.primary.entries()) {
+        const width = candidates[index]?.offsetWidth ?? 0;
+        if (width <= available) { primary.push(id); available -= width + 8; }
+        else actions.overflow.push(id);
+      }
+      measure.remove();
+      actions.primary = primary;
+    }
     return [
       ...actions.primary.map((id) => actionButton(id, sel, s, false)),
       button("more", "More", "more", (b) => openMenu(b, [
@@ -343,7 +363,7 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     root.classList.add("is-visible"); actionHost.hidden = false;
     const problem = s.saves.problem;
     const save = s.editing.active ? "Editing" : problem ? "Not saved" : s.saves.pending > 0 ? "Saving…" : "Saved";
-    labelHost.textContent = f.kind === "blocked" ? "Can't edit this part" : `${f.kind === "selected" ? KIND_LABELS[f.selection.kind] : "Part"} · ${save}`;
+    labelHost.textContent = f.kind === "blocked" ? "Can't edit this part" : `${f.kind === "selected" ? kindLabel(f.selection.kind) : "Part"} · ${save}`;
     if (problem) {
       const retry = h("button", { class: "btn btn-ghost btn-sm", text: problem.kind === "conflict" ? "Reload" : "Retry", attrs: { type: "button" } });
       retry.onclick = () => document.dispatchEvent(new Event("studio-retry")); labelHost.append(retry);

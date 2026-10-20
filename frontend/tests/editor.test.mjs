@@ -313,6 +313,8 @@ test("screen readers hear a real description, never an empty name", () => {
   assert.equal(describeSelection(image("...", "http://tok.preview.localhost/img/1.jpg"), s), "Image selected: 1.jpg, a picture without a description", "a placeholder alt is no description");
   assert.equal(describeSelection(sel({ kind: "link", tag: "a", can: "l", info: { ...info, href: "about.html" } }), s), "Link selected: goes to Our story page");
   assert.equal(describeSelection(sel({ name: "Welcome!" }), s), "Heading selected: Welcome");
+  assert.equal(describeSelection(sel({ kind: "box", name: "" }), s), "Box selected");
+  assert.equal(describeSelection(sel({ kind: "section", name: "" }), s), "Section selected");
 });
 
 test("phone, email and web links are checked before they are saved", () => {
