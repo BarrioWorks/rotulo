@@ -3,6 +3,8 @@ import { ApiError, api } from "./api.js";
 import { intersect } from "./placement.js";
 import { pageLabel } from "./pages.js";
 import { changed, siteState } from "./state.js";
+/** Changes the review lists before "Show all". */
+const REVIEW_ROWS = 8;
 export function displayUrl(url) {
     return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
@@ -87,6 +89,8 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
     let publishing = false;
     let publishError = null;
     let popTrigger = null;
+    /** The review lists the latest changes first; the owner can open the rest before publishing. */
+    let showAllChanges = false;
     async function loadReleases() {
         try {
             const { releases } = await api.releases(pid());
@@ -177,12 +181,14 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         const title = (text) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title", tabindex: "-1" } : {} });
         const liveLine = live ? h("p", { class: "pub-meta", text: `Visitors see version ${live.number}, published ${dateTime(live.created_at).replace(/^Today/, "today").replace(/^Yesterday/, "yesterday")}.` }) : null;
         const addressRow = h("p", { class: "pub-address" }, icon("domain", "icon-sm"), h("a", { text: address, attrs: { href: s.project.site_url, target: "_blank", rel: "noopener noreferrer" } }));
+        const listed = showAllChanges ? s.changes : s.changes.slice(-REVIEW_ROWS);
         const changesList = s.changes.length > 0
-            ? h("ul", { class: "pub-changes", attrs: { "aria-label": "Changes that are not published" } }, ...s.changes.slice(-8).reverse().map((change) => {
+            ? h("ul", { class: "pub-changes", attrs: { "aria-label": "Changes that are not published" } }, ...listed.slice().reverse().map((change, index) => {
                 const page = s.pages.find((p) => p.path === change.page);
                 const content = [h("span", { class: "pub-page", text: page ? pageLabel(page, s.project.name, s.pages) : change.page }), h("span", { class: "pub-labels", text: change.label })];
+                const item = { "data-change": String(index), tabindex: "-1" };
                 if (!change.element)
-                    return h("li", {}, ...content);
+                    return h("li", { attrs: item }, ...content);
                 const element = change.element;
                 const row = h("button", { class: "pub-change", attrs: { type: "button", "aria-label": `${change.label} on ${page ? pageLabel(page, s.project.name, s.pages) : change.page}` } }, ...content);
                 row.addEventListener("click", () => {
@@ -196,10 +202,23 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
                     }
                     canvas.surface.focus({ preventScroll: true });
                 });
-                return h("li", {}, row);
+                return h("li", { attrs: item }, row);
             }))
             : null;
-        const more = s.changes.length > 8 ? h("p", { class: "pub-meta", text: `and ${s.changes.length - 8} more` }) : null;
+        let more = null;
+        if (listed.length < s.changes.length) {
+            more = h("button", { class: "link-btn", text: `Show all ${s.changes.length} changes`, attrs: { type: "button" } });
+            more.addEventListener("click", () => {
+                showAllChanges = true;
+                renderAll();
+                const first = pop.querySelector(`[data-change="${REVIEW_ROWS}"]`);
+                (first?.querySelector("button") ?? first)?.focus();
+            });
+        }
+        const pageCount = s.pages.length;
+        const wholeSite = h("p", { class: "pub-text", text: pageCount === 1
+                ? "This publishes your website's one page, exactly as it shows in the editor."
+                : `This publishes all ${pageCount} pages of your website, exactly as they show in the editor.` });
         const publishButton = (label) => {
             const b = h("button", { class: "btn btn-primary", text: label, attrs: { type: "button", "data-publish-confirm": "" } });
             if (publishing)
@@ -213,7 +232,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         const parts = [];
         switch (site.kind) {
             case "never":
-                parts.push(title("Publish your website?"), errorBox, changesList ?? h("p", { class: "pub-text", text: "Your whole website will be published, exactly as it shows in the editor." }), more, h("p", { class: "pub-text", text: "Visitors will find it at this address. You can change the address in Website settings." }), addressRow, actions("Publish"));
+                parts.push(title("Publish your website?"), errorBox, wholeSite, changesList, more, h("p", { class: "pub-text", text: "Visitors will find it at this address. You can change the address in Website settings." }), addressRow, actions("Publish"));
                 break;
             case "changes":
                 parts.push(title("Publish your changes?"), errorBox, changesList ?? h("p", { class: "pub-text", text: "You have changes from an earlier visit that are not published yet." }), more, liveLine, addressRow, actions("Publish"));
@@ -251,7 +270,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
             if (inHistory && focused instanceof HTMLElement)
                 focused.focus({ preventScroll: true });
             else if (focusedConfirm)
-                pop.querySelector("[data-publish-confirm]")?.focus();
+                pop.querySelector("[data-publish-confirm]")?.focus({ preventScroll: true });
             else if (inReview)
                 pop.querySelector("a, button")?.focus({ preventScroll: true });
         }
@@ -275,9 +294,9 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
             const selected = canvas.toApp(s.focus.selection.rect);
             const caption = document.querySelector("[data-toolbar].is-visible:not(.is-offscreen)");
             const avoid = [selected, ...(caption ? [caption.getBoundingClientRect()] : [])];
-            // Keep enough room to use the review; smaller windows may need to overlap.
+            // Step aside only when the whole review still fits; otherwise cover the selection, never the review.
             for (const box of avoid) {
-                if (intersect({ x, y: top, width: pop.offsetWidth, height }, box) && box.y - top - 8 >= 120)
+                if (intersect({ x, y: top, width: pop.offsetWidth, height }, box) && box.y - top - 8 >= pop.scrollHeight)
                     height = Math.min(height, box.y - top - 8);
             }
         }
@@ -299,6 +318,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         }
         popTrigger = trigger;
         publishError = null;
+        showAllChanges = false;
         store.dispatch({ type: "open_surface", surface: "publish" });
         pop.hidden = false;
         trigger?.setAttribute("aria-expanded", "true");
@@ -307,7 +327,8 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         placeReview();
         document.addEventListener("pointerdown", onOutside, true);
         const target = pop.querySelector("[data-publish-confirm]") ?? pop.querySelector("a, button");
-        target?.focus();
+        target?.focus({ preventScroll: true });
+        pop.scrollTop = 0;
         if (store.get().releases === null)
             void loadReleases();
     }
