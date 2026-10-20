@@ -153,8 +153,12 @@ export function reduce(state, action) {
         case "save_ok": {
             const draftChanged = action.draftChanged;
             const changes = draftChanged ? logChange(state.changes, action.log, state.history, action.history, action.page) : [];
+            // Undo and redo make "Picture replaced" and its choices out of date.
+            const stepped = action.log === "undo" || action.log === "redo";
+            const rail = stepped && state.rail.kind === "panel" && state.rail.replaced ? { ...state.rail, replaced: false } : state.rail;
             return {
                 ...state,
+                rail,
                 saves: { pending: Math.max(0, state.saves.pending - 1), problem: null, savedAt: action.at },
                 project: { ...state.project, revision: action.revision },
                 history: action.history,

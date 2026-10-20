@@ -85,6 +85,7 @@ sheet.replaceSync(`
   .slug.below { top: calc(100% + ${px("1px")}); }
   .slug.above { bottom: calc(100% + ${px("1px")}); border-radius: ${px("2px")} ${px("2px")} 0 0; }
   .slug.inside { top: ${px("1px")}; left: ${px("1px")}; border-radius: 0 0 ${px("2px")} 0; }
+  .slug.corner { bottom: ${px("1px")}; left: ${px("1px")}; border-radius: 0 ${px("2px")} 0 0; }
   .veil { position: fixed; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.18) 0 6px, rgba(255, 255, 255, 0.18) 6px 12px); border: ${px("1px")} dashed ${O.muted}; }
   .veil[hidden] { display: none; }
   .badge { position: absolute; left: ${px("8px")}; display: inline-flex; align-items: center; height: ${px("24px")}; padding: 0 ${px("8px")}; border-radius: ${px("3px")}; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 ${px("12px")}/${px("24px")} ${UI_FONT}; white-space: nowrap; }
@@ -179,8 +180,10 @@ function placeSlug(r: DOMRect | null): void {
     const b = boxOf(el);
     return b.left < r.left + width && b.right > r.left && b.top < top + room - 4 * k && b.bottom > top + 4 * k;
   });
-  // Below the bottom-left corner, unless that hides words; then above, then inside the corner.
-  const placement = r.bottom + room < innerHeight && !covers(r.bottom) ? "below" : r.top > room && !covers(r.top - room) ? "above" : "inside";
+  // Below the bottom-left corner, unless that hides words: then inside that corner, where the
+  // toolbar never goes. With no room below at all, above, then inside the top corner.
+  const roomBelow = r.bottom + room < innerHeight;
+  const placement = roomBelow ? (covers(r.bottom) ? "corner" : "below") : r.top > room ? "above" : "inside";
   slug.className = `slug ${placement}`;
 }
 
@@ -474,8 +477,13 @@ function words(text: string | null | undefined, max = 60): string {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
+/** Words with at least one letter or digit; a placeholder alt like "..." is no description. */
+function meaningful(text: string): string {
+  return /[\p{L}\p{N}]/u.test(text) ? text : "";
+}
+
 function nameOf(el: HTMLElement, kind: Kind): string {
-  if (kind === "image") return words(el.getAttribute("alt"));
+  if (kind === "image") return meaningful(words(el.getAttribute("alt")));
   if (kind === "section" || kind === "header" || kind === "footer" || kind === "menu" || kind === "box" || kind === "banner" || kind === "card") {
     const heading = el.querySelector("h1, h2, h3, h4, [role=heading]");
     const byId = el.id && (kind === "section" || kind === "header" || kind === "footer" || kind === "banner") ? el.id.replace(/[-_]+/g, " ") : "";
@@ -1154,7 +1162,7 @@ function outline(): Extract<AgentMessage, { type: "outline" }> {
     .slice(0, MAX_OUTLINE_IMAGES)
     .map((img) => {
       const src = (img.currentSrc || img.src).slice(0, 2048);
-      return { element: idOf(img) as string, name: words(img.getAttribute("alt")) || fileName(src), src };
+      return { element: idOf(img) as string, name: meaningful(words(img.getAttribute("alt"))) || fileName(src), src };
     });
   return { type: "outline", heading: heading ? idOf(heading) : null, images };
 }

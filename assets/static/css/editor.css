@@ -345,5 +345,6 @@ body[data-boot="manage"] .manage { display: flex; }
 
 /* A two-choice segmented control that spans the rail. */
 .seg-block { display: flex; width: 100%; }
-.seg-block button { flex: 1; min-width: 0; padding: 0 var(--s2); }
+.seg-block button { flex: 1; min-width: 0; padding: 0 var(--s2); justify-content: center; white-space: nowrap; }
+.rail-panel-body .seg-block { flex-direction: column; }
 .seg-block[aria-busy="true"] { opacity: 0.6; pointer-events: none; }

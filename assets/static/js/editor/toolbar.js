@@ -81,7 +81,7 @@ export function describeSelection(sel, s) {
     const kind = KIND_LABELS[sel.kind];
     if (sel.kind === "image") {
         const alt = (sel.info.alt ?? "").trim();
-        if (alt)
+        if (/[\p{L}\p{N}]/u.test(alt))
             return `${kind} selected: ${alt}`;
         const file = fileName(sel.info.src);
         return file ? `${kind} selected: ${file}, a picture without a description` : `${kind} selected: a picture without a description`;

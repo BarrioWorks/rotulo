@@ -302,6 +302,7 @@ test("screen readers hear a real description, never an empty name", () => {
   assert.equal(describeSelection(image("Sourdough loaves", "http://tok.preview.localhost/img/a.jpg"), s), "Image selected: Sourdough loaves");
   assert.equal(describeSelection(image("", "http://tok.preview.localhost/img/portfolio%201.jpg"), s), "Image selected: portfolio 1.jpg, a picture without a description");
   assert.equal(describeSelection(image(null, null), s), "Image selected: a picture without a description");
+  assert.equal(describeSelection(image("...", "http://tok.preview.localhost/img/1.jpg"), s), "Image selected: 1.jpg, a picture without a description", "a placeholder alt is no description");
   assert.equal(describeSelection(sel({ kind: "link", tag: "a", can: "l", info: { ...info, href: "about.html" } }), s), "Link selected: goes to Our story page");
   assert.equal(describeSelection(sel({ name: "Welcome!" }), s), "Heading selected: Welcome");
 });
@@ -315,4 +316,15 @@ test("phone, email and web links are checked before they are saved", () => {
   assert.deepEqual(checkWeb("harbor-bakery.com/menu"), { ok: true, href: "https://harbor-bakery.com/menu" });
   assert.deepEqual(checkWeb("http://example.com"), { ok: true, href: "http://example.com" });
   for (const bad of ["bakery", "javascript:alert(1)", "ftp://example.com", "two words.com", "name@example.com", ""]) assert.equal(checkWeb(bad).ok, false, bad);
+});
+
+test("undo puts away the 'Picture replaced' note and its fit choices", () => {
+  const store = createStore(initialState(bootstrap, 0));
+  store.dispatch({ type: "selected", selection: sel({ element: "i", kind: "image", tag: "img", can: "i" }) });
+  store.dispatch({ type: "open_panel", panel: "image", replaced: true });
+  saved(store, { undo: "image change" });
+  assert.equal(store.get().rail.replaced, true, "a new save keeps it");
+  saved(store, { undo: null, redo: "image change", log: "undo" });
+  assert.equal(store.get().rail.replaced, false);
+  assert.equal(store.get().rail.panel, "image");
 });
