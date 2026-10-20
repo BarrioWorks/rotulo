@@ -67,3 +67,5 @@ What that changes:
 21. **The ultramarine field becomes the identity across the app's own pages.** Sign in, sign up, the dashboard, import, errors and the compatibility page all use it. The editor chrome stays neutral glass, because the owner's site needs a neutral frame (Studio decision 9). Only the editor's entry moments use the field.
 22. **SEO covers content, not just tags.** Use keyword-aligned headings and copy where they stay true. Add internal links between marketing pages, FAQ structured data matching visible questions, image sizes and alt text, and the two remaining high-intent pages from `seo/README.md`, built with real product evidence.
 23. **The work splits between Claude and Codex builders,** each owning separate files.
+
+24. **Item 11 refined after the security review.** The tip reads "Click any highlighted text, then type to change it." It has a close button, tints only text, and lasts until the first selection. "Show what I can edit" is in the command palette. A second click on selected text focuses Edit text, and typing starts the edit. Only input in the app itself can start a text session.
