@@ -29,6 +29,7 @@ pub async fn register(server: &TestServer, email: &str) -> String {
         .form(&json!({"name":"Request Tester","email":email,"password":PASSWORD}))
         .await;
     r.assert_status(axum::http::StatusCode::SEE_OTHER);
+    r.assert_header("location", "/projects/new");
     let cookie = r.headers()["set-cookie"].to_str().unwrap();
     assert!(cookie.contains("HttpOnly"));
     assert!(cookie.contains("SameSite=Lax"));
