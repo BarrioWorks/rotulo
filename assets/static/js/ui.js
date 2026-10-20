@@ -49,11 +49,11 @@ export function toast(message, options = {}, ms) {
                 leave();
             } })
         : null;
-    const el = h("div", { class: kind === "error" ? "toast is-error" : "toast", attrs: kind === "error" ? { role: "alert" } : {} }, icon(kind === "error" ? "alert" : "success", "icon-sm"), h("span", { text: message }), action);
+    const el = h("div", { class: kind === "info" ? "toast" : `toast is-${kind}`, attrs: kind === "info" ? {} : { role: "alert" } }, icon(kind === "info" ? "success" : "alert", "icon-sm"), h("span", { text: message }), action);
     host.append(el);
     while (host.children.length > MAX_TOASTS)
         host.firstElementChild?.remove();
-    let remaining = opts.ms ?? (action ? 8000 : kind === "error" ? 6000 : 3600);
+    let remaining = opts.ms ?? (action ? 8000 : kind === "info" ? 3600 : 6000);
     let started = Date.now();
     let timer = window.setTimeout(leave, remaining);
     function pause() {

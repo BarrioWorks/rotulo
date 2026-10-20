@@ -31,6 +31,7 @@ PAIRS = [
     ("select", "dark-photo", 3.0, "selection on a dark photo"), ("select", "ink", 3.0, "focus ring next to ink button"),
     ("ink", "surface", 3.0, "pressed segment, switch on"),
     ("select", "select-soft", 3.0, "current page icon"),
+    ("ink", "warning-soft", 4.5, "warning toast text"), ("warning", "warning-soft", 3.0, "warning toast icon"),
 ]
 
 def lum(h):

@@ -101,9 +101,9 @@ export function createEdits({ store, canvas, change, undo }) {
         canvas.send({ type: "preview_style", element: sel.element, styles });
         return save({ op: "set_style", element: sel.element, styles });
     }
-    function undoToast(message) {
+    function undoToast(message, kind = "info") {
         announce(message);
-        return toast(message, { action: { label: "Undo", run: () => {
+        return toast(message, { kind, action: { label: "Undo", run: () => {
                     undo();
                     canvas.surface.focus({ preventScroll: true });
                 } } });
@@ -235,12 +235,11 @@ export function createEdits({ store, canvas, change, undo }) {
         return once(sel, async () => {
             canvas.send({ type: "preview_hidden", element: sel.element, hidden });
             if (await save({ op: "hide_section", element: sel.element, hidden })) {
-                const linked = sel.info.anchorLinks;
-                undoToast(!hidden
-                    ? "Section shown on your website"
-                    : linked > 0
-                        ? `Section hidden on your website. ${linked === 1 ? "A link on this page jumps" : `${linked} links on this page jump`} to it, for example in your menu, and won't go anywhere until you show it again.`
-                        : "Section hidden on your website");
+                const linked = hidden ? sel.info.anchorLinks : 0;
+                if (linked > 0)
+                    undoToast(`Section hidden on your website. ${linked === 1 ? "A link on this page jumps" : `${linked} links on this page jump`} to it, for example in your menu, and won't go anywhere until you show it again.`, "warning");
+                else
+                    undoToast(hidden ? "Section hidden on your website" : "Section shown on your website");
             }
         });
     }

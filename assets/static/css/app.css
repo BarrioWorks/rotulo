@@ -592,6 +592,8 @@ dialog.sheet[open] { animation: sheet-in var(--dur-panel) var(--ease-out); }
 .toasts { position: fixed; z-index: var(--z-toast); left: 50%; bottom: var(--s6); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--s2); pointer-events: none; }
 .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; max-width: min(520px, calc(100vw - 32px)); padding: 10px var(--s4); border-radius: var(--radius-float); background: var(--toast); color: var(--on-toast); font-size: var(--fs-control); line-height: var(--lh-control); box-shadow: var(--shadow-float); animation: rise var(--dur-pop) var(--ease-out); }
 .toast.is-error { background: var(--error); color: var(--on-primary); }
+.toast.is-warning { background: var(--warning-soft); color: var(--ink); border: var(--border-float); }
+.toast.is-warning > .icon { color: var(--warning); }
 .toast.is-leaving { opacity: 0; transform: translateY(4px); transition: opacity var(--dur-pop) var(--ease-out), transform var(--dur-pop) var(--ease-out); }
 .toast-action { margin-left: var(--s2); padding: 0; border: 0; background: none; color: inherit; font-weight: var(--fw-control); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 
