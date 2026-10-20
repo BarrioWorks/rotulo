@@ -115,7 +115,7 @@ All three answer like `/edits`, plus `"pages"` (the new page list).
 
 ### Publishing
 
-- `POST /api/projects/{pid}/publish` `{"base_revision"}` gives `201 {"release": Release, "site_url"}`. `422 {"error":"invalid","message"}` when the draft can't be published (for example a missing stylesheet). When a live release exists and the draft matches it, returns `422 {"error":"nothing_to_publish","message":"Everything is already live."}` without creating a release. A stale revision still returns `409 conflict`. Publishing after the site is taken offline remains allowed.
+- `POST /api/projects/{pid}/publish` `{"base_revision"}` gives `201 {"release": Release, "site_url"}`. `422 {"error":"invalid","message"}` when the draft can't be published (for example a missing stylesheet). When a live release exists and the draft matches it, returns `422 {"error":"nothing_to_publish","message":"Everything is already published."}` without creating a release. A stale revision still returns `409 conflict`. Publishing after the site is taken offline remains allowed.
 - `GET /api/projects/{pid}/releases` gives `{"releases":[Release], "site_url"}`, newest first.
 - `POST /api/projects/{pid}/releases/{number}/activate` makes that release live (rollback). Gives `{"release": Release}`. The editor then refetches `GET /api/projects/{pid}/editor` through its save queue to refresh `draft_changed_since_publish` against the newly live release.
 - `POST /api/projects/{pid}/releases/{number}/restore` `{"base_revision"}` copies that release into the draft as one undoable edit. Answers like `/undo`, plus `"page_list"` (the new page list with titles).

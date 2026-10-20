@@ -208,7 +208,7 @@ pub async fn publish(
         return Err(ApiError::Rejected {
             code: "nothing_to_publish",
             status: axum::http::StatusCode::UNPROCESSABLE_ENTITY,
-            message: "Everything is already live.".to_owned(),
+            message: "Everything is already published.".to_owned(),
         });
     }
     let files = drafts::files(db, project.id).await?;
