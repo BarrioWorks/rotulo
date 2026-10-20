@@ -174,6 +174,8 @@ const agentMessages = {
   }),
   /** A click on something the site's code made. `around` is the nearest editable ancestor. */
   blocked: obj({ type: lit("blocked"), rect: parseRect, around: opt(elementId) }),
+  /** Requests editing; only the parent can authorize and start the text session. */
+  request_text: obj({ type: lit("request_text"), element: elementId }),
   deselect: obj({ type: lit("deselect") }),
   /** Sent every frame that moves. `obstructions` are the site's own fixed or sticky bars; `obstacles` as in `select`. */
   viewport: obj({ type: lit("viewport"), scrollY: scroll, rect: opt(parseRect), obstructions: arr(parseRect, 4), obstacles: arr(parseRect, MAX_OBSTACLES) }),

@@ -6,7 +6,6 @@
 import { OVERLAY } from "../overlay-theme.js";
 import {
   ANCHOR_ID,
-  KIND_LABELS,
   MAX_OBSTACLES,
   MAX_OUTLINE_IMAGES,
   STYLE_KEYS,
@@ -62,43 +61,32 @@ const sheet = new CSSStyleSheet();
 const O = OVERLAY;
 /* Every size goes through --k (1 / canvas scale), so marks keep their size on screen. */
 const px = (value: string) => `calc(var(--k, 1) * ${value})`;
-/** The dark twin beside the white hover line, so it reads on light pages. Agent-only. */
-const TWIN = "rgba(22, 22, 26, 0.5)";
 const UI_FONT = `"Pagehaven UI", system-ui, sans-serif`;
 sheet.replaceSync(`
   :host { all: initial; }
   * { box-sizing: border-box; }
   .ring { position: fixed; pointer-events: none; border-radius: ${px("2px")}; }
   .ring[hidden] { display: none; }
-  .glide { transition: left 140ms cubic-bezier(0.16, 1, 0.3, 1), top 140ms cubic-bezier(0.16, 1, 0.3, 1), width 140ms cubic-bezier(0.16, 1, 0.3, 1), height 140ms cubic-bezier(0.16, 1, 0.3, 1); }
-  .hover { border: ${px("1px")} dashed ${O.halo}; box-shadow: 0 0 0 ${px("1px")} ${TWIN}, inset 0 0 0 ${px("1px")} ${TWIN}; animation: fade 80ms ease-out; }
-  .hover.blocked { border-color: ${O.muted}; }
+  .hover { border: ${px("1px")} solid ${O.hover}; background: ${O.accentSoft}; animation: fade 120ms ease-out; }
+  .hover.blocked { border-style: dashed; border-color: ${O.muted}; background: transparent; }
   .select { border: ${px(O.stroke)} solid ${O.accent}; box-shadow: 0 0 0 ${px(O.haloWidth)} ${O.halo}; }
-  .select.pulse { animation: pulse 400ms ease-out; }
+  .select.editing { box-shadow: 0 0 0 ${px(O.haloWidth)} ${O.halo}, inset 0 0 ${px("8px")} ${px("2px")} ${O.accentSoft}; }
+  .select.pulse { animation: fade 120ms ease-out; }
   .blocked-box { border: ${px(O.stroke)} dashed ${O.muted}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}, inset 0 0 0 ${px("1px")} ${O.halo}; }
   .crop { --arm: ${px(O.cropMark)}; --gap: ${px(O.cropGap)}; --w: ${px(O.stroke)}; position: absolute; width: var(--arm); height: var(--arm); border: 0 solid ${O.accent}; filter: drop-shadow(0 0 ${px("0.5px")} ${O.halo}) drop-shadow(0 0 ${px("0.5px")} ${O.halo}); }
-  .select.editing .crop { --arm: ${px(`calc(${O.cropMark} * 1.5)`)}; --w: ${px(`calc(${O.stroke} * 2)`)}; }
   .crop.tl { left: calc(-1 * (var(--gap) + var(--arm))); top: calc(-1 * (var(--gap) + var(--arm))); border-right-width: var(--w); border-bottom-width: var(--w); }
   .crop.tr { right: calc(-1 * (var(--gap) + var(--arm))); top: calc(-1 * (var(--gap) + var(--arm))); border-left-width: var(--w); border-bottom-width: var(--w); }
   .crop.bl { left: calc(-1 * (var(--gap) + var(--arm))); bottom: calc(-1 * (var(--gap) + var(--arm))); border-right-width: var(--w); border-top-width: var(--w); }
   .crop.br { right: calc(-1 * (var(--gap) + var(--arm))); bottom: calc(-1 * (var(--gap) + var(--arm))); border-left-width: var(--w); border-top-width: var(--w); }
-  .slug { position: absolute; left: ${px(`-${O.stroke}`)}; display: inline-flex; align-items: center; height: ${px("20px")}; padding: 0 ${px("6px")}; border-radius: 0 0 ${px("2px")} ${px("2px")}; background: ${O.chipBg}; color: ${O.chipInk}; font: 600 ${px("12px")}/${px("20px")} ${UI_FONT}; letter-spacing: 0.01em; white-space: nowrap; box-shadow: 0 0 0 ${px("1px")} ${O.halo}; }
-  .slug.below { top: calc(100% + ${px("1px")}); }
-  .slug.above { bottom: calc(100% + ${px("1px")}); border-radius: ${px("2px")} ${px("2px")} 0 0; }
-  .slug.inside { top: ${px("1px")}; left: ${px("1px")}; border-radius: 0 0 ${px("2px")} 0; }
-  .slug.corner { bottom: ${px("1px")}; left: ${px("1px")}; border-radius: 0 ${px("2px")} 0 0; }
   .veil { position: fixed; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.18) 0 6px, rgba(255, 255, 255, 0.18) 6px 12px); border: ${px("1px")} dashed ${O.muted}; }
   .veil[hidden] { display: none; }
   .badge { position: absolute; left: ${px("8px")}; display: inline-flex; align-items: center; height: ${px("24px")}; padding: 0 ${px("8px")}; border-radius: ${px("3px")}; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 ${px("12px")}/${px("24px")} ${UI_FONT}; white-space: nowrap; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 0 ${O.accentSoft}, inset 0 0 0 ${px("1px")} ${O.halo}; } 40% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 ${px("10px")} ${O.accentSoft}, inset 0 0 0 ${px("1px")} ${O.halo}; } 100% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 0 transparent, inset 0 0 0 ${px("1px")} ${O.halo}; } }
   @media (prefers-reduced-motion: reduce) {
-    .glide { transition: none; }
-    .hover, .select.pulse { animation: fade 120ms ease-out; }
+    .hover, .select.pulse { animation: none; transition: none; }
   }
   @media (forced-colors: active) {
     .select, .hover, .blocked-box { border-color: Highlight; box-shadow: none; forced-color-adjust: none; }
-    .slug { background: Highlight; color: HighlightText; box-shadow: none; forced-color-adjust: none; }
     .crop { border-color: Highlight; filter: none; }
   }
 `);
@@ -145,9 +133,6 @@ const hoverBox = div("ring hover");
 const blockedBox = div("ring blocked-box");
 const selectBox = div("ring select");
 for (const corner of ["tl", "tr", "bl", "br"]) div(`crop ${corner}`, selectBox);
-const slug = document.createElement("span");
-slug.className = "slug below";
-selectBox.append(slug);
 for (const box of [hoverBox, blockedBox, selectBox]) box.hidden = true;
 
 let origin = { x: 0, y: 0 };
@@ -178,22 +163,6 @@ function place(box: HTMLElement, el: Element | null, offset: number): DOMRect | 
   box.style.width = `${Math.max(2, right - left)}px`;
   box.style.height = `${Math.max(2, bottom - top)}px`;
   return r;
-}
-
-function placeSlug(r: DOMRect | null): void {
-  if (!r) return;
-  slug.textContent = editing ? "Editing" : KIND_LABELS[kindOf(selected as HTMLElement)];
-  const room = 26 * k;
-  const width = 90 * k;
-  const covers = (top: number) => (obstacleCache?.for === selected ? obstacleCache.els : []).some((el) => {
-    const b = boxOf(el);
-    return b.left < r.left + width && b.right > r.left && b.top < top + room - 4 * k && b.bottom > top + 4 * k;
-  });
-  // Below the bottom-left corner, unless that hides words: then inside that corner, where the
-  // toolbar never goes. With no room below at all, above, then inside the top corner.
-  const roomBelow = r.bottom + room < innerHeight;
-  const placement = roomBelow ? (covers(r.bottom) ? "corner" : "below") : r.top > room ? "above" : "inside";
-  slug.className = `slug ${placement}`;
 }
 
 /* The site's own fixed and sticky bars, so the toolbar and the hidden-section veil avoid them. */
@@ -271,9 +240,8 @@ function redraw(): void {
   const bars = active ? obstructions() : [];
   place(hoverBox, active && hovered !== selected && !editing ? hovered : null, 3 * k);
   hoverBox.classList.toggle("blocked", hovered !== null && !canOf(hovered));
-  const r = place(selectBox, active ? selected : null, 3 * k);
+  place(selectBox, active ? selected : null, 3 * k);
   selectBox.classList.toggle("editing", editing !== null);
-  if (active && selected) placeSlug(r);
   place(blockedBox, active ? blocked : null, 2 * k);
   drawHiddenSections(bars);
   const viewport = {
@@ -570,20 +538,15 @@ function ancestorsOf(el: HTMLElement): Ancestor[] {
     .map(({ a, kind }) => ({ element: idOf(a) as string, kind, name: nameOf(a, kind), photo: canOf(a).includes("b") && hasPhoto(a) }));
 }
 
-function select(el: HTMLElement | null, glide = true): void {
+function select(el: HTMLElement | null, _glide = true): void {
   if (editing && editing.el !== el) commitText();
   blocked = null;
   hovered = null;
   if (selected && selected !== el) resizes.unobserve(selected);
-  const moved = selected !== null && el !== null && selected !== el;
   selected = el;
   if (el) resizes.observe(el);
   const id = el ? idOf(el) : null;
   if (el && id) {
-    if (moved && glide && !reducedMotion.matches) {
-      selectBox.classList.add("glide");
-      window.setTimeout(() => selectBox.classList.remove("glide"), 180);
-    }
     const kind = kindOf(el);
     post({
       type: "select",
@@ -640,7 +603,7 @@ function reveal(el: HTMLElement, pulse: boolean): void {
     selectBox.classList.remove("pulse");
     void selectBox.offsetWidth;
     selectBox.classList.add("pulse");
-    window.setTimeout(() => selectBox.classList.remove("pulse"), 420);
+    window.setTimeout(() => selectBox.classList.remove("pulse"), 140);
   }
 }
 
@@ -1012,6 +975,7 @@ for (const type of ["mousedown", "pointerdown", "mouseup", "pointerup", "touchst
     if (mode !== "edit" || isOurs(event)) return;
     event.stopImmediatePropagation();
     if (editingContains(event.target)) return;
+    if (event.type === "touchstart" || event.type === "touchend" || (event instanceof PointerEvent && event.pointerType === "touch")) return;
     if (event instanceof MouseEvent && event.button !== 0) return;
     if (event.cancelable) event.preventDefault();
   }, { capture: true, passive: false });
@@ -1049,8 +1013,12 @@ window.addEventListener("click", (event) => {
   const target = asElement(event.target);
   if (!target) return;
   const result = pickAt(event.clientX, event.clientY, target);
-  if (result.kind === "element") select(result.el);
-  else if (result.kind === "blocked") showBlocked(result.el);
+  if (result.kind === "element") {
+    const repeat = result.el === selected && canOf(result.el).includes("t");
+    select(result.el);
+    const element = idOf(result.el);
+    if (repeat && element) post({ type: "request_text", element });
+  } else if (result.kind === "blocked") showBlocked(result.el);
   else select(null);
 }, true);
 
@@ -1071,15 +1039,13 @@ window.addEventListener("submit", (event) => {
 window.addEventListener("keydown", (event) => {
   if (editing) {
     event.stopImmediatePropagation();
-    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    if (event.isComposing) return;
+    if ((event.key === "Enter" && !event.shiftKey) || event.key === "Escape") {
       event.preventDefault();
       commitText();
     } else if (event.key === "Enter" && event.shiftKey) {
       event.preventDefault();
       if (!document.execCommand("insertLineBreak")) document.execCommand("insertHTML", false, "<br>");
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      cancelText();
     }
     return;
   }
@@ -1175,13 +1141,19 @@ function outline(): Extract<AgentMessage, { type: "outline" }> {
   const size = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize) || 0;
   const heading = headings.find((el) => el.localName === "h1")
     ?? headings.reduce<HTMLElement | null>((best, el) => (!best || size(el) > size(best) ? el : best), null);
-  const images = [...document.querySelectorAll<HTMLImageElement>("img")]
-    .filter((img) => editable(img) && canOf(img).includes("i") && visible(img))
-    .slice(0, MAX_OUTLINE_IMAGES)
-    .map((img) => {
-      const src = (img.currentSrc || img.src).slice(0, 2048);
-      return { element: idOf(img) as string, name: meaningful(words(img.getAttribute("alt"))) || fileName(src), src };
-    });
+  const images: Extract<AgentMessage, { type: "outline" }>["images"] = [];
+  for (const el of document.querySelectorAll<HTMLElement>("img, [data-ph-can*='b']")) {
+    const element = idOf(el);
+    if (!element || !editable(el) || !visible(el)) continue;
+    const img = el instanceof HTMLImageElement && canOf(el).includes("i") ? el : null;
+    const background = !img && canOf(el).includes("b") && hasPhoto(el)
+      ? /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(el).backgroundImage)?.[1] : null;
+    if (!img && !background) continue;
+    const src = (img ? img.currentSrc || img.src : background ?? "").slice(0, 2048);
+    const name = img ? meaningful(words(img.getAttribute("alt"))) : nameOf(el, kindOf(el));
+    images.push({ element, name: name || fileName(src) || "Background photo", src });
+    if (images.length === MAX_OUTLINE_IMAGES) break;
+  }
   return { type: "outline", heading: heading ? idOf(heading) : null, images };
 }
 

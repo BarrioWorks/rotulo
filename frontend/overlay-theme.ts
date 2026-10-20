@@ -8,7 +8,7 @@ export const OVERLAY = {
   accent: "#3730BD",
   /** --overlay-accent-soft: the editing glow and the "just changed" pulse. */
   accentSoft: "rgba(55, 48, 189, 0.12)",
-  /** --overlay-hover: the dashed hover rule. */
+  /** --overlay-hover: the hover outline. */
   hover: "rgba(55, 48, 189, 0.7)",
   /** --overlay-halo: the white line beside every rule, so it reads on dark photos. */
   halo: "#FFFFFF",
