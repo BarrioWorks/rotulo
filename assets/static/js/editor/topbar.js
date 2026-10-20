@@ -1,5 +1,5 @@
 import { openMenu } from "./menu.js";
-import { h, must } from "../ui.js";
+import { h, icon, must } from "../ui.js";
 import { pageLabel } from "./pages.js";
 import { changed, publishText, siteState } from "./state.js";
 export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }) {
@@ -35,13 +35,13 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     const hint = h("span", { class: "bottom-hint", text: "Select text or a picture to edit" });
     const context = h("div", { class: "studio-context" }, hint);
     bottom.append(context);
-    const more = h("button", { class: "btn btn-ghost studio-tools-more", text: "More", attrs: { type: "button", "aria-haspopup": "menu" } });
+    const more = h("button", { class: "btn btn-ghost studio-tools-more", attrs: { type: "button", "aria-haspopup": "menu" } }, icon("desktop", "icon-sm"), h("span", { text: "View" }));
     center.append(more);
     more.addEventListener("click", () => openMenu(more, [
         ...deviceButtons.map((b) => ({ label: b.getAttribute("aria-label") ?? "Screen size", run: () => b.click() })),
         { label: "Zoom", run: () => zoom.click() },
         { label: "Focus mode", run: () => setFocus(true) },
-    ], { label: "More tools" }));
+    ], { label: "View tools" }));
     store.subscribe(() => { hint.hidden = !actions.hidden && actions.querySelector("button:not([hidden])") !== null; });
     layout();
     touch.addEventListener("change", layout);

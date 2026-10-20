@@ -365,18 +365,25 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         const subject = s.surface.panel === "page"
             ? (page ? pageLabel(page, s.project.name, s.pages) : s.path)
             : sel ? `${KIND_LABELS[sel.kind]}${sel.name ? ` · ${sel.name}` : ""}` : "";
+        const scrollTop = kindChanged ? 0 : panelView.scrollTop;
         const body = renderPanel(s.surface.panel, { store, canvas, change, edits, close: closePanel, replaced: s.surface.replaced });
         panelView.replaceChildren(h("div", { class: "rail-panel-head" }, back, h("h2", { class: "rail-title", text: PANEL_TITLES[s.surface.panel], attrs: { id: "ed-rail-title" } }), subject ? h("p", { class: "rail-subject truncate", text: subject, attrs: { "data-tip": subject } }) : null), body);
         pagesView.hidden = true;
         panelView.hidden = false;
+        panelView.scrollTop = scrollTop;
         if (kindChanged) {
             if (s.surface.replaced)
-                panelView.querySelector("[data-replaced]")?.focus({ preventScroll: true });
+                panelView.querySelector("#rail-alt")?.focus({ preventScroll: true });
             else
                 focusFirst();
         }
         else if (focusedKey) {
             panelView.querySelector(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
+        }
+        const description = panelView.querySelector("#rail-alt");
+        if (s.surface.replaced && description === document.activeElement) {
+            requestAnimationFrame(() => { if (description?.isConnected)
+                description.scrollIntoView({ block: "nearest" }); });
         }
     }
     for (const type of ["input", "change"]) {
@@ -419,6 +426,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
             return;
         }
         const r = caption.getBoundingClientRect();
+        const scrollTop = panelView.scrollTop;
         panelView.style.maxHeight = "none";
         const selected = selection(store.get());
         const target = selected ? canvas.toApp(selected.rect) : { x: r.x, y: r.y - 20, width: r.width, height: 12 };
@@ -427,6 +435,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
         panelView.style.left = `${position.x}px`;
         panelView.style.top = `${position.y}px`;
         panelView.style.maxHeight = `${position.height}px`;
+        panelView.scrollTop = scrollTop;
     }
     window.addEventListener("resize", placePanel);
     store.subscribe((s, prev) => {

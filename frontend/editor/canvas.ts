@@ -120,6 +120,7 @@ function makeIframe(title: string): HTMLIFrameElement {
 export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
   const area = must<HTMLElement>(document, "[data-canvas-area]");
   const surface = must<HTMLElement>(document, "[data-canvas-frame]");
+  const loading = must<HTMLElement>(document, "[data-canvas-loading]");
   const loadingText = must<HTMLElement>(document, "[data-canvas-loading-text]");
   const zoomButton = must<HTMLButtonElement>(document, "[data-zoom]");
   const zoomLabel = must<HTMLElement>(document, "[data-zoom-label]");
@@ -179,6 +180,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
   new ResizeObserver(() => applyLayout()).observe(area);
 
   function setLoadingVeil(on: boolean): void {
+    loading.setAttribute("aria-hidden", String(!on));
     window.clearTimeout(veilTimer);
     if (on) veilTimer = window.setTimeout(() => surface.classList.add("is-loading"), VEIL_DELAY_MS);
     else surface.classList.remove("is-loading");
@@ -195,6 +197,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
           if (pending === frame && awaitingReady) {
             window.clearTimeout(slowTimer);
             swap();
+            loading.removeAttribute("aria-hidden");
             surface.classList.add("is-loading");
             loadingText.textContent = "This page can't be edited. It may not be a web page.";
           }
@@ -393,6 +396,8 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
     store.dispatch({ type: "zoom", zoom: store.get().zoom === "fit" ? "actual" : "fit" });
   });
 
+  let phoneHintShown = false;
+  let hintTimer = 0;
   store.subscribe((s, prev) => {
     if (!prev || s.mode !== prev.mode) {
       if (prev) send({ type: "mode", mode: s.mode });
@@ -402,9 +407,14 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
     if (prev && changed(s, prev, "pages", "path")) syncFocusability(s);
     surface.toggleAttribute("data-has-selection", s.focus.kind !== "none");
     if (!prev || s.mode !== prev.mode || s.device !== prev.device) {
+      window.clearTimeout(hintTimer);
       hint.textContent = s.mode === "preview"
         ? "Previewing. Links and buttons work like on your website."
-        : s.device === "mobile" ? "Phone view. Changes made here also apply on computers." : "";
+        : s.device === "mobile" && !phoneHintShown ? "Phone view. Changes made here also apply on computers." : "";
+      if (s.mode === "edit" && s.device === "mobile" && !phoneHintShown) {
+        phoneHintShown = true;
+        hintTimer = window.setTimeout(() => { hint.textContent = ""; }, 3500);
+      }
     }
     if (!prev) {
       area.dataset["device"] = s.device;

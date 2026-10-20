@@ -29,9 +29,14 @@ function offscreenDirection(target, canvas) {
         return "below";
     return target.x + target.width <= canvas.x ? "left" : "right";
 }
-export function placeToolbar({ target, canvas, size, obstructions, editing = false, banner = false, gap = 8 }) {
+export function placeToolbar({ target, canvas, size, obstructions, obstacles = [], previous = null, locked, editing = false, banner = false, gap = 8 }) {
     if (!intersect(target, canvas))
         return { kind: "offscreen", direction: offscreenDirection(target, canvas) };
+    if (editing && locked) {
+        if (intersect(locked, target) || locked.y < canvas.y + INSET || locked.y + locked.height > canvas.y + canvas.height - INSET)
+            return { kind: "hidden" };
+        return { kind: "placed", x: locked.x, y: locked.y, candidate: previous ?? "below-start" };
+    }
     const x = Math.max(canvas.x + INSET, Math.min(target.x, canvas.x + canvas.width - size.width - INSET));
     const top = canvas.y + INSET;
     const bottom = canvas.y + canvas.height - size.height - INSET;
@@ -42,6 +47,15 @@ export function placeToolbar({ target, canvas, size, obstructions, editing = fal
         const y = Math.max(navBottom, Math.min(bottom, target.y + target.height - size.height - gap));
         return { kind: "placed", x, y: Math.min(bottom, y), candidate: "pinned" };
     }
+    const aboveClear = above >= top && coverage({ x, y: above, ...size }, obstructions) === 0;
+    const preferAbove = previous === "above-start" || (previous === null && aboveClear &&
+        (below > bottom || coverage({ x, y: below, ...size }, [...obstacles, ...obstructions]) > coverage({ x, y: above, ...size }, [...obstacles, ...obstructions])));
+    if (preferAbove && aboveClear)
+        return { kind: "placed", x, y: above, candidate: "above-start" };
+    if (previous === "above-start")
+        return { kind: "hidden" };
+    if (previous === "below-start" && below > bottom)
+        return { kind: "hidden" };
     if (below <= bottom)
         return { kind: "placed", x, y: below, candidate: "below-start" };
     if (above >= top)

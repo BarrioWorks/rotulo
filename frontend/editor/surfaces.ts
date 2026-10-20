@@ -377,6 +377,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     const subject = s.surface.panel === "page"
       ? (page ? pageLabel(page, s.project.name, s.pages) : s.path)
       : sel ? `${KIND_LABELS[sel.kind]}${sel.name ? ` · ${sel.name}` : ""}` : "";
+    const scrollTop = kindChanged ? 0 : panelView.scrollTop;
     const body = renderPanel(s.surface.panel, { store, canvas, change, edits, close: closePanel, replaced: s.surface.replaced });
     panelView.replaceChildren(
       h("div", { class: "rail-panel-head" }, back,
@@ -385,11 +386,16 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
       body);
     pagesView.hidden = true;
     panelView.hidden = false;
+    panelView.scrollTop = scrollTop;
     if (kindChanged) {
-      if (s.surface.replaced) panelView.querySelector<HTMLElement>("[data-replaced]")?.focus({ preventScroll: true });
+      if (s.surface.replaced) panelView.querySelector<HTMLElement>("#rail-alt")?.focus({ preventScroll: true });
       else focusFirst();
     } else if (focusedKey) {
       panelView.querySelector<HTMLElement>(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
+    }
+    const description = panelView.querySelector<HTMLElement>("#rail-alt");
+    if (s.surface.replaced && description === document.activeElement) {
+      requestAnimationFrame(() => { if (description?.isConnected) description.scrollIntoView({ block: "nearest" }); });
     }
   }
 
@@ -431,6 +437,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
       panelView.style.maxHeight = `${Math.max(0, bounds.y + bounds.height - top - 8)}px`; return;
     }
     const r = caption.getBoundingClientRect();
+    const scrollTop = panelView.scrollTop;
     panelView.style.maxHeight = "none";
     const selected = selection(store.get());
     const target = selected ? canvas.toApp(selected.rect) : { x: r.x, y: r.y - 20, width: r.width, height: 12 };
@@ -439,6 +446,7 @@ export function createSurfaces({ store, canvas, change, edits, returnFocus, open
     panelView.style.left = `${position.x}px`;
     panelView.style.top = `${position.y}px`;
     panelView.style.maxHeight = `${position.height}px`;
+    panelView.scrollTop = scrollTop;
   }
   window.addEventListener("resize", placePanel);
   store.subscribe((s, prev) => {
