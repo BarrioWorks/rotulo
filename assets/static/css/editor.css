@@ -144,6 +144,7 @@ body[data-review-open] .ed-publish { --btn-bg: var(--surface); --btn-fg: var(--i
 .canvas-area { flex: 1; min-height: 0; position: relative; overflow: auto; display: flex; padding: var(--s3); scrollbar-width: thin; }
 .canvas-frame {
   position: relative; flex: none; margin: auto;
+  width: 100%; height: 100%; /* the final box before the module sizes it, so load does not shift */
   background: var(--surface);
   border-radius: var(--radius-canvas);
   box-shadow: var(--shadow-canvas);
