@@ -94,7 +94,7 @@ function reportDetails(report) {
         const byReason = new Map();
         for (const s of report.skipped)
             byReason.set(s.reason, [...(byReason.get(s.reason) ?? []), s.path]);
-        blocks.push(h("details", { class: "report-skipped" }, h("summary", {}, icon("chevron-right", "icon-sm"), h("span", { text: "Show details" })), h("p", { class: "small muted", text: `${plural(report.skipped.length, "file was", "files were")} left out:` }), h("ul", { class: "result-list" }, ...[...byReason].map(([reason, paths]) => h("li", { class: "stack" }, h("span", { text: `${SKIP_WORDS[reason]} (${paths.length})` }), h("span", { class: "row wrap" }, ...listWithMore(paths)))))));
+        blocks.push(h("details", { class: "disclosure report-skipped" }, h("summary", {}, icon("chevron-right", "icon-sm"), h("span", { text: "Show details" })), h("p", { class: "small muted", text: `${plural(report.skipped.length, "file was", "files were")} left out:` }), h("ul", { class: "result-list" }, ...[...byReason].map(([reason, paths]) => h("li", { class: "stack" }, h("span", { text: `${SKIP_WORDS[reason]} (${paths.length})` }), h("span", { class: "row wrap" }, ...listWithMore(paths)))))));
     }
     return blocks;
 }

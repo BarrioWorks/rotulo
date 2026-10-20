@@ -372,7 +372,7 @@ A neutral ink-and-stock palette with a single cyan reserved for attention, and f
 - **Alert Red** (error), **Alert Red Hover** (error-hover) and **Red Wash** (error-soft): Field errors, error alerts and toasts, destructive buttons and menu items. 5.96:1 on surface, 5.05:1 on its wash; white on red is 5.96:1, on hover 7.60:1.
 
 ### Overlay (defined for the later overlay phase)
-These tokens are mirrored into the preview agent because the iframe cannot read the app's custom properties. overlay-accent aliases Proof Cyan and overlay-chip-bg aliases Slug Cyan. overlay-accent-soft is the selected element's fill, overlay-hover the hover outline, overlay-halo the white halo that keeps the rule visible on dark photos, overlay-muted the outline for parts that cannot be edited, and overlay-chip-ink the slug text. The veil for locked areas is a 135 degree ink and white stripe at 6 px (`--overlay-veil`, carried in the sidecar). The phone preview frame uses device-bezel and device-bezel-edge.
+These tokens are mirrored into the preview agent because the iframe cannot read the app's custom properties. overlay-accent aliases Proof Cyan and overlay-chip-bg aliases Slug Cyan. overlay-accent-soft is the selected element's fill, overlay-hover the hover outline, overlay-halo the white halo that keeps the rule visible on dark photos, overlay-muted the outline for parts that cannot be edited, and overlay-chip-ink the slug text. The veil for locked areas is a 135 degree ink and white stripe at 6 px (`--overlay-veil`, carried in the sidecar). The phone preview frame uses device-bezel and device-bezel-edge, with the screen rounded at 34 px (`--device-radius`); that corner depicts a phone and sits outside the radius scale. While a page reloads, the old page sits under a veil of sheet white at 86 percent (`--veil`).
 
 ### Named Rules
 **The No Hue Rule.** The chrome has no color of its own. Hue appears only in the select tokens, the link tokens and the state colors.
@@ -419,11 +419,11 @@ Both faces are self-hosted from assets/static/fonts/ with their OFL files, use `
 
 A 4 px spacing grid (s0 2 px through s11 80 px). Screens sit in a centered column of 1160 px (`--page-max`) with a 24 px gutter that drops to 16 px under 520 px; narrow pages use 760 px, auth cards 400 px. The app header is 60 px, sticky on the ground with a hairline under it. Pages open with 40 px above and 64 px below. The dashboard is an auto-fill grid of cards at least 280 px wide with 24 px gaps.
 
-The editor is a fixed grid: a 56 px top bar across, a 248 px sidebar, and the canvas. The sidebar width leaves the site 1008 px at a 1280 window, past Bootstrap's 992 breakpoint. Toolbar panels and popovers are 320 px, dialogs 440 px, sheets 360 px.
+The editor is a fixed grid: a 56 px top bar across, a 248 px sidebar, and the canvas. The sidebar width leaves the site 1008 px at a 1280 window, past Bootstrap's 992 breakpoint. Toolbar panels and popovers are 320 px, dialogs 440 px (640 px for website settings, where the DNS table needs room: `--dialog-w-wide`), sheets 360 px.
 
 Breakpoints are 520 px (phone, one column, 16 px gutters, sheets become bottom sheets), 760 px (dashboard to one column, page heads stack, title 1 shrinks), 900 px (the editor minimum; below it the "needs a bigger screen" message shows) and 1000 px (editor top bar drops the Edit and Preview labels to icons). Under `(pointer: coarse)` every button, input, select and menu item reaches 44 px and inputs use 16 px text to stop iOS zoom.
 
-Layers stack canvas hints (5), sticky bars (20), menus and popovers (30), the floating toolbar (40) and toasts and tooltips (100). Dialogs use the browser top layer.
+Layers stack canvas hints (5), sticky bars (20), menus and popovers (30), the floating toolbar (40), menus opened from the floating toolbar (41, `--z-menu-over-toolbar`) and toasts and tooltips (100). Dialogs use the browser top layer.
 
 Motion is mechanical: 90 ms for hover, press and color; 140 ms for menus, the toolbar and the selection glide; 200 ms for dialogs, sheets and panels; 280 ms for the computer and phone width change. Easing is a fast-out curve with a standard in-out for loops. Reduced motion sets every duration to zero and keeps instant state changes.
 
@@ -444,7 +444,7 @@ Flat by default. Regions separate with 1 px hairlines, never with shadows. Cards
 
 ## Shapes
 
-Sharp, like a trimmed proof. The canvas and thumbnails are 2 px, pills, the slug, swatches and tooltips 3 px, buttons, inputs and rows 4 px, cards, menus, popovers, the toolbar and toasts 6 px, dialogs 8 px. Full rounding is only for status dots, the avatar, the switch and the progress track. Borders are 1 px; meaningful rules are ink, decorative ones are hairline. Two places use a 2 px ink rule: under each dashboard thumbnail and above each landing step. The drop zone is the only dashed edge (1.5 px).
+Sharp, like a trimmed proof. The canvas and thumbnails are 2 px, pills, the slug, swatches and tooltips 3 px, buttons, inputs and rows 4 px, cards, menus, popovers, the toolbar and toasts 6 px, dialogs 8 px. Full rounding is only for status dots, the avatar, the switch and the progress track. Borders are 1 px; meaningful rules are ink, decorative ones are hairline. Two places use a 2 px ink rule: under each dashboard thumbnail and above each landing step. The drop zone is the only dashed edge (1.5 px). Crop marks (`.crop`) are 8 px arms set 4 px outside a sheet's corners: 1 px ink on screens (`--crop-weight`), and 1.5 px Proof Cyan on a selection (`.crop-select`).
 
 Icons are Lucide line glyphs from one sprite, assets/static/img/icons.svg, built by scripts/design/build_icons.py. They render at 16, 20 and 24 px with stroke widths of 2.25, 1.8 and 1.5 grid units so the stroke lands near 1.5 px at every size, with round caps and joins in currentColor. The logo and favicon are flat ink; the favicon flips to stock on ink for dark browser UI.
 
@@ -487,7 +487,8 @@ Solid, quiet and exact.
 ### Navigation
 - **App header:** Wordmark left, ghost buttons and the account menu right, on the ground with a hairline under it.
 - **Editor sidebar:** Collapsible sections with label-type heads in 600. Page rows are 36 px; the current page is the cyan wash with link-colored text and a cyan icon.
-- **Menus and popovers:** Sheet white, ink edge, float shadow, 6 px radius, 4 px inner padding. Items are 34 px with the ink hover wash; destructive items are red.
+- **Menus and popovers:** Sheet white, ink edge, float shadow, 6 px radius, 4 px inner padding. Items are 34 px with the ink hover wash; destructive items are red. When any item in a menu leads with an icon, items without one keep an empty 16 px icon column so every label starts at the same x.
+- **Disclosure:** A `<details class="disclosure">` whose summary is a quiet control-type text button with a chevron that turns 90 degrees when open; it underlines on hover.
 
 ### Floating Toolbar
 The editor's signature tool. A sheet white bar with an ink edge and the float shadow that rises 4 px into place in 90 ms. Buttons are 30 px ghosts; pressed or expanded ones take the cyan wash with link-colored text, because they describe what is selected. Panels open below a hairline at 320 px.
