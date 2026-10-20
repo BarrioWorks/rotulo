@@ -20,6 +20,7 @@ export function createSaver(store, fetchState) {
     let tail = Promise.resolve();
     let halted = false;
     let wake = null;
+    let retryFailed = null;
     function waitForRetry(attempt) {
         return new Promise((resolve) => {
             const done = () => {
@@ -46,6 +47,7 @@ export function createSaver(store, fetchState) {
                 const base = store.get().project.revision;
                 try {
                     const result = await run(base);
+                    retryFailed = null;
                     if (isSaved(result)) {
                         store.dispatch({
                             type: "save_ok",
@@ -109,6 +111,7 @@ export function createSaver(store, fetchState) {
                         options.onRejected?.(failure);
                     }
                     else {
+                        retryFailed = () => change(run, options).then((result) => result !== null);
                         store.dispatch({ type: "save_failed", message: failure.message });
                         toast(failure.message, { kind: "error" });
                         options.onRejected?.(failure);
@@ -120,5 +123,16 @@ export function createSaver(store, fetchState) {
         tail = job;
         return job;
     }
-    return { change, retryNow: () => wake?.() };
+    return {
+        change,
+        async retryNow() {
+            if (wake) {
+                wake();
+                return false;
+            }
+            const retry = retryFailed;
+            retryFailed = null;
+            return retry ? retry() : false;
+        },
+    };
 }

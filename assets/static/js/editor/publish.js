@@ -27,9 +27,9 @@ export function createPublishing({ store, saver, afterRestore }) {
     const change = saver.change;
     const pid = () => store.get().project.pid;
     const pop = must(document, "[data-publish-pop]");
-    const historySheet = must(document, 'dialog[data-dialog="history"]');
+    const historySheet = must(document, '[data-dialog="history"]');
     const historyList = must(historySheet, "[data-release-list]");
-    const settings = must(document, 'dialog[data-dialog="settings"]');
+    const settings = must(document, '[data-dialog="settings"]');
     const manageReview = document.querySelector("[data-manage-review]");
     const manageHistory = document.querySelector("[data-manage-history]");
     const manageAddress = document.querySelector("[data-manage-address]");
@@ -57,11 +57,20 @@ export function createPublishing({ store, saver, afterRestore }) {
     function viewWebsite() {
         window.open(store.get().project.site_url, "_blank", "noopener,noreferrer");
     }
+    function publicationFeedback(text) {
+        const status = document.querySelector("[data-status-text]");
+        if (status) {
+            status.textContent = text;
+            status.dataset["publicationFeedback"] = text;
+        }
+        announce(text);
+    }
     async function publish() {
         if (publishing)
             return;
         publishing = true;
         publishError = null;
+        publicationFeedback("Publishing…");
         renderAll();
         let rejection = null;
         const result = await change((base) => api.publish(pid(), base), {
@@ -80,12 +89,14 @@ export function createPublishing({ store, saver, afterRestore }) {
             else if (failure) {
                 publishError = failure.message;
             }
+            publicationFeedback(publishError ?? "Couldn’t publish. Try again.");
             renderAll();
             return;
         }
         store.dispatch({ type: "published", release: result.release });
         store.dispatch({ type: "project", project: { ...store.get().project, site_url: result.site_url } });
         closeReview();
+        publicationFeedback(`Published at ${new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`);
         announce(`Published. Visitors now see version ${result.release.number}.`);
         toast(`Published. Visitors now see version ${result.release.number}.`, { action: { label: "View website", run: viewWebsite } });
     }
@@ -148,7 +159,6 @@ export function createPublishing({ store, saver, afterRestore }) {
         if (where === "popover") {
             const history = h("button", { class: "link-btn", text: "Version history", attrs: { type: "button" } });
             history.addEventListener("click", () => {
-                closeReview();
                 openHistory(popTrigger);
             });
             out.push(h("div", { class: "pub-foot" }, history));
@@ -159,7 +169,10 @@ export function createPublishing({ store, saver, afterRestore }) {
         const s = store.get();
         if (!pop.hidden) {
             const focusedConfirm = document.activeElement instanceof HTMLElement && document.activeElement.hasAttribute("data-publish-confirm");
+            const hadHistory = !historySheet.hidden && historySheet.parentElement === pop;
             pop.replaceChildren(...review(s, "popover"));
+            if (hadHistory)
+                pop.append(historySheet);
             if (focusedConfirm)
                 pop.querySelector("[data-publish-confirm]")?.focus();
         }
@@ -175,6 +188,8 @@ export function createPublishing({ store, saver, afterRestore }) {
         pop.style.right = `${Math.round(Math.max(8, window.innerWidth - r.right))}px`;
     }
     function onOutside(event) {
+        if (event.target instanceof Element && event.target.closest("dialog"))
+            return;
         if (event.target instanceof Node && (pop.contains(event.target) || popTrigger?.contains(event.target)))
             return;
         closeReview(false);
@@ -186,6 +201,7 @@ export function createPublishing({ store, saver, afterRestore }) {
         }
         popTrigger = trigger;
         publishError = null;
+        store.dispatch({ type: "open_surface", surface: "publish" });
         pop.hidden = false;
         trigger?.setAttribute("aria-expanded", "true");
         document.body.toggleAttribute("data-review-open", true);
@@ -201,7 +217,11 @@ export function createPublishing({ store, saver, afterRestore }) {
         if (pop.hidden)
             return false;
         pop.hidden = true;
+        historySheet.hidden = true;
+        document.body.append(historySheet);
         pop.replaceChildren();
+        if (store.get().surface.kind === "publish")
+            store.dispatch({ type: "close_panel" });
         document.body.toggleAttribute("data-review-open", false);
         document.removeEventListener("pointerdown", onOutside, true);
         popTrigger?.setAttribute("aria-expanded", "false");
@@ -255,8 +275,7 @@ export function createPublishing({ store, saver, afterRestore }) {
         const result = await change((base) => api.restore(pid(), base, release.number));
         if (!result)
             return;
-        if (historySheet.open)
-            historySheet.close();
+        closeReview(false);
         await afterRestore(result.pages);
         toast(`Version ${release.number} is now in the editor.`);
     }
@@ -275,7 +294,7 @@ export function createPublishing({ store, saver, afterRestore }) {
                 actions.append(live);
             }
             if (!compact) {
-                const open = h("button", { class: "btn btn-ghost btn-sm", text: "Open in editor", attrs: { type: "button", "aria-label": `Open version ${r.number} in the editor` } });
+                const open = h("button", { class: "btn btn-ghost btn-sm", text: "Restore", attrs: { type: "button", "aria-label": `Open version ${r.number} in the editor` } });
                 open.addEventListener("click", () => void openVersion(r));
                 actions.append(open);
             }
@@ -284,16 +303,24 @@ export function createPublishing({ store, saver, afterRestore }) {
     }
     function renderHistory() {
         const s = store.get();
-        if (historySheet.open)
+        if (!historySheet.hidden)
             historyList.replaceChildren(...releaseRows(s, false));
         if (manageHistory)
             manageHistory.replaceChildren(...releaseRows(s, true));
     }
-    must(historySheet, "[data-close]").addEventListener("click", () => historySheet.close());
-    function openHistory(_trigger = null) {
-        historyList.replaceChildren(...releaseRows(store.get(), false));
-        historySheet.showModal();
-        historySheet.querySelector(".release button, [data-close]")?.focus();
+    must(historySheet, "[data-close]").addEventListener("click", () => {
+        if (store.get().surface.kind === "settings")
+            settingsSection("general");
+        else
+            closeReview();
+    });
+    function openHistory(trigger = null) {
+        if (store.get().surface.kind !== "publish")
+            openReview(trigger);
+        historySheet.hidden = false;
+        pop.append(historySheet);
+        renderHistory();
+        historySheet.querySelector("button")?.focus();
         void loadReleases();
     }
     /* Website settings: name, address and own domain */
@@ -307,7 +334,7 @@ export function createPublishing({ store, saver, afterRestore }) {
     const domainForm = must(settings, "[data-domain-form]");
     const domainInput = must(settings, "[data-domain-input]");
     const domainError = must(settings, "[data-domain-error]");
-    must(settings, "[data-close]").addEventListener("click", () => settings.close());
+    must(settings, "[data-close]").addEventListener("click", () => closeSettings());
     siteSlug.addEventListener("input", () => {
         const cleaned = siteSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, "-");
         if (cleaned !== siteSlug.value)
@@ -411,25 +438,61 @@ export function createPublishing({ store, saver, afterRestore }) {
             domainInput.setAttribute("aria-invalid", "true");
         }
     });
-    function openSettings(_trigger = null) {
+    let settingsTrigger = null;
+    function closeSettings() {
+        store.dispatch({ type: "close_panel" });
+        settingsTrigger?.focus({ preventScroll: true });
+    }
+    function settingsSection(section) {
+        for (const content of settings.querySelectorAll("[data-settings-content]"))
+            content.hidden = content.dataset["settingsContent"] !== section;
+        for (const b of settings.querySelectorAll("[data-settings-section]"))
+            b.setAttribute("aria-pressed", String(b.dataset["settingsSection"] === section));
+        if (section === "versions") {
+            const host = must(settings, "[data-settings-versions]");
+            host.append(historySheet);
+            historySheet.hidden = false;
+            renderHistory();
+        }
+    }
+    function openSettings(trigger = null) {
+        settingsTrigger = trigger;
         const s = store.get();
         siteName.value = s.project.name;
         siteSlug.value = s.project.slug;
         settingsError.hidden = true;
-        settings.showModal();
+        store.dispatch({ type: "open_surface", surface: "settings" });
+        settingsSection("general");
         siteName.focus();
         if (s.customDomains)
             void loadDomains();
     }
+    for (const button of settings.querySelectorAll("[data-settings-section]"))
+        button.addEventListener("click", () => settingsSection(button.dataset["settingsSection"] ?? "general"));
+    settings.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            closeSettings();
+        }
+    });
+    must(settings, "[data-settings-shortcuts]").addEventListener("click", () => must(document, '[data-dialog="shortcuts"]').show());
+    must(settings, "[data-settings-pages]").addEventListener("click", () => must(document, "[data-page-switcher]").click());
+    must(settings, "[data-settings-images]").addEventListener("click", () => must(document, "[data-open-images]").click());
+    must(settings, "[data-page-meta]").addEventListener("click", () => store.dispatch({ type: "open_panel", panel: "page" }));
+    must(settings, "[data-settings-publish]").addEventListener("click", () => openReview(document.querySelector('[data-action="publish"]')));
     function renderAll() {
         renderReview();
         renderHistory();
     }
     store.subscribe((s, prev) => {
+        settings.hidden = s.surface.kind !== "settings";
+        if (s.surface.kind !== "publish" && !pop.hidden)
+            closeReview(false);
         if (changed(s, prev, "project", "draftChanged", "changes", "releases", "saves", "pages"))
             renderAll();
-        if (changed(s, prev, "customDomains"))
-            domainSection.hidden = !s.customDomains;
+        if (!s.customDomains)
+            domainSection.hidden = true;
         if (changed(s, prev, "domains", "dns"))
             domainList.replaceChildren(...(s.domains ?? []).map((d) => domainCard(d, s.dns)));
         if (changed(s, prev, "project")) {

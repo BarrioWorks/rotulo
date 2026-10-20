@@ -40,8 +40,13 @@ export function openMenu(trigger, items, options) {
     const hgt = menu.offsetHeight;
     let left = options.align === "end" ? r.right - w : r.left;
     left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+    const caption = trigger.closest("[data-toolbar]");
     let top = r.bottom + 6;
-    if (top + hgt > window.innerHeight - 8 && r.top - hgt - 6 > 8)
+    if (caption) {
+        const c = caption.getBoundingClientRect();
+        top = caption.dataset["placement"] === "above-start" ? c.top - hgt - 8 : c.bottom + 8;
+    }
+    if (!caption && top + hgt > window.innerHeight - 8 && r.top - hgt - 6 > 8)
         top = r.top - hgt - 6;
     menu.style.left = `${Math.round(left)}px`;
     menu.style.top = `${Math.round(Math.max(8, top))}px`;

@@ -3,6 +3,7 @@ import { announce, confirmDialog, h, icon, must, toast } from "../ui.js";
 import { ApiError, api } from "./api.js";
 import { pageLabel, slugify } from "./pages.js";
 import { openMenu } from "./menu.js";
+import { placePanel as panelPlacement } from "./placement.js";
 import { previewImage, renderPanel, PANEL_TITLES } from "./panels.js";
 import { changed, selection } from "./state.js";
 function folderOf(path) {
@@ -32,14 +33,13 @@ function pictureLabel(name, src) {
 function edited(el) {
     return el.matches("input, textarea, select") && el.dataset["edited"] !== undefined;
 }
-export function createRail({ store, canvas, change, edits, returnFocus, openSettings, openHistory }) {
+export function createSurfaces({ store, canvas, change, edits, returnFocus, openSettings }) {
     const pid = () => store.get().project.pid;
     const pagesView = must(document, "[data-rail-pages]");
     const panelView = must(document, "[data-rail-panel]");
     const imagesView = must(document, "[data-rail-images]");
     const imageList = must(imagesView, "[data-image-list]");
     const imagesSubject = must(imagesView, "[data-images-subject]");
-    const imagesCount = must(document, "[data-images-count]");
     const start = must(document, "[data-rail-start]");
     const startHeading = must(start, '[data-start="heading"]');
     const startPicture = must(start, '[data-start="picture"]');
@@ -48,7 +48,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     let renderedPanelKey = "";
     function renderPages() {
         const s = store.get();
-        list.replaceChildren(...s.pages.map((page) => {
+        list.replaceChildren(...s.pages.filter((p) => `${pageLabel(p, s.project.name)} ${p.path}`.toLowerCase().includes(search.value.toLowerCase())).map((page, index) => {
             const isHome = page.path === "index.html";
             const label = pageLabel(page, s.project.name);
             const open = h("button", { class: "page-open", attrs: { type: "button", "data-tip": `/${page.path}` } }, icon(isHome ? "home-page" : "page", "icon-sm"), h("span", { class: "truncate", text: label }));
@@ -57,8 +57,9 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
             open.addEventListener("click", () => {
                 if (store.get().path !== page.path)
                     canvas.open(page.path);
+                close();
             });
-            const item = h("li", { class: "page-item" }, open);
+            const item = h("li", { class: "page-item", attrs: { id: `page-option-${index}`, role: "option", "aria-selected": String(index === active) } }, open);
             if (page.path === s.path)
                 item.classList.add("is-current");
             const more = h("button", { class: "btn btn-ghost btn-icon btn-sm page-more", attrs: { type: "button", "aria-label": `More for ${label}`, "data-tip": "Rename, duplicate, settings", "aria-haspopup": "menu", "aria-expanded": "false" } }, icon("more", "icon-sm"));
@@ -75,6 +76,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
             item.append(more);
             return item;
         }));
+        activate(active);
     }
     /* Add and rename share one dialog */
     const dialog = must(document, 'dialog[data-dialog="page"]');
@@ -124,7 +126,8 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
             submit.textContent = "Add page";
         }
         updateAddress();
-        dialog.showModal();
+        store.dispatch({ type: "close_panel" });
+        dialog.show();
         nameInput.focus();
         nameInput.select();
     }
@@ -209,41 +212,66 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     }
     startHeading.addEventListener("click", () => selectInCanvas(store.get().outline.heading));
     startPicture.addEventListener("click", () => selectInCanvas(store.get().outline.images[0]?.element ?? null));
-    for (const b of document.querySelectorAll('[data-start="settings"], [data-row="settings"]'))
-        b.addEventListener("click", () => openSettings(b));
-    const historyRow = must(document, '[data-row="history"]');
-    historyRow.addEventListener("click", () => openHistory(historyRow));
-    must(document, '[data-row="images"]').addEventListener("click", () => {
-        store.dispatch({ type: "open_images" });
-        imageList.querySelector("button")?.focus({ preventScroll: true });
-    });
-    const imagesBack = must(imagesView, "[data-images-back]");
-    imagesBack.addEventListener("click", () => {
-        store.dispatch({ type: "close_panel" });
-        must(document, '[data-row="images"]').focus({ preventScroll: true });
-    });
-    imagesView.addEventListener("keydown", (event) => {
-        if (event.key !== "Escape")
+    must(document, '[data-open-images]').addEventListener("click", () => open("images"));
+    must(document, '[data-open-settings]').addEventListener("click", (event) => openSettings(event.currentTarget instanceof HTMLElement ? event.currentTarget : pagesView));
+    must(document, '[data-start="settings"]').addEventListener("click", () => openSettings(pagesView));
+    must(document, '[data-images-back]').addEventListener("click", close);
+    let opener = null;
+    document.addEventListener("pointerdown", (event) => {
+        const surface = store.get().surface.kind;
+        if (!["pages", "images", "panel"].includes(surface) || !(event.target instanceof Element))
             return;
-        event.preventDefault();
-        event.stopPropagation();
-        imagesBack.click();
-    });
-    /* On narrow windows the rail is a drawer: the toggle opens it, a panel opens it, a click in the page closes it. */
-    const editorRoot = must(document, "#editor");
-    const toggle = must(document, "[data-rail-toggle]");
-    const drawer = window.matchMedia("(max-width: 899px)");
-    function setDrawer(open) {
-        editorRoot.toggleAttribute("data-rail-open", open);
-        toggle.setAttribute("aria-expanded", String(open));
+        if (event.target.closest("[data-surface-host], [data-toolbar], [data-bottom-bar], .ed-menu, dialog, .ed-top"))
+            return;
+        store.dispatch({ type: "close_panel" });
+    }, true);
+    function open(kind) {
+        opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        if (store.get().surface.kind === kind)
+            return close();
+        store.dispatch({ type: "open_surface", surface: kind });
+        if (kind === "pages") {
+            search.value = "";
+            renderPages();
+            search.focus();
+        }
+        else
+            imageList.querySelector("button")?.focus();
     }
-    toggle.addEventListener("click", () => {
-        const open = !editorRoot.hasAttribute("data-rail-open");
-        setDrawer(open);
-        if (open)
-            document.querySelector(".ed-rail button:not([hidden])")?.focus({ preventScroll: true });
+    function close() { store.dispatch({ type: "close_panel" }); opener?.focus({ preventScroll: true }); }
+    for (const view of [pagesView, imagesView])
+        view.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !event.defaultPrevented) {
+                event.preventDefault();
+                event.stopPropagation();
+                close();
+            }
+        });
+    const search = must(document, "[data-page-search]");
+    let active = 0;
+    function activate(index) {
+        const rows = [...list.querySelectorAll('[role="option"]')];
+        active = Math.max(0, Math.min(index, rows.length - 1));
+        rows.forEach((row, i) => { row.setAttribute("aria-selected", String(i === active)); row.classList.toggle("is-active", i === active); });
+        const row = rows[active];
+        if (row)
+            search.setAttribute("aria-activedescendant", row.id);
+        else
+            search.removeAttribute("aria-activedescendant");
+    }
+    search.addEventListener("input", () => { active = 0; renderPages(); });
+    search.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            activate(active + (event.key === "ArrowDown" ? 1 : -1));
+        }
+        else if (event.key === "Enter") {
+            event.preventDefault();
+            list.querySelectorAll('.page-open')[active]?.click();
+        }
     });
-    drawer.addEventListener("change", () => setDrawer(false));
+    must(document, '[data-add-page]').addEventListener("click", () => pageDialog("add"));
+    let pendingImage = null;
     function renderStart(s) {
         const away = s.mode !== "edit" || s.focus.kind !== "none";
         start.classList.toggle("is-collapsed", away);
@@ -257,7 +285,6 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     }
     function renderImages(s) {
         const images = s.outline.images;
-        imagesCount.textContent = images.length > 0 ? String(images.length) : "";
         const page = s.pages.find((p) => p.path === s.path);
         imagesSubject.textContent = images.length === 0 ? "No pictures you can change on this page." : `${images.length === 1 ? "1 picture" : `${images.length} pictures`} on ${page ? pageLabel(page, s.project.name) : s.path}. Choose one to select it.`;
         const current = selection(s)?.element ?? null;
@@ -268,6 +295,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
             if (img.element === current)
                 b.setAttribute("aria-current", "true");
             b.addEventListener("click", () => {
+                pendingImage = img.element;
                 canvas.send({ type: "select_element", element: img.element });
             });
             return h("li", {}, b);
@@ -275,28 +303,40 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
         if (focusedKey)
             imageList.querySelector(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
     }
+    must(document, "[data-images-upload]").addEventListener("click", () => {
+        const image = store.get().outline.images[0];
+        if (!image)
+            return;
+        pendingImage = image.element;
+        canvas.send({ type: "select_element", element: image.element });
+    });
     /* The panel view */
     function panelKey(s) {
-        if (s.rail.kind !== "panel")
-            return s.rail.kind;
+        if (s.surface.kind !== "panel")
+            return s.surface.kind;
         const sel = selection(s);
-        return JSON.stringify([s.rail, s.rail.panel === "page" ? [s.path, s.pageMeta] : sel ? [sel.element, sel.info, sel.name] : null, s.palette, s.anchors, s.pages, s.editing.active]);
+        return JSON.stringify([s.surface, s.surface.panel === "page" ? [s.path, s.pageMeta] : sel ? [sel.element, sel.info, sel.name] : null, s.palette, s.anchors, s.pages, s.editing.active]);
     }
     function closePanel() {
+        const surface = store.get().surface;
+        const page = surface.kind === "panel" && surface.panel === "page";
         store.dispatch({ type: "close_panel" });
-        returnFocus();
+        if (page)
+            must(document, "[data-page-switcher]").focus();
+        else
+            returnFocus();
     }
     let renderedPanel = null;
     let renderedElement = null;
-    function renderRail() {
+    function renderSurfaces() {
         const s = store.get();
         const key = panelKey(s);
         if (key === renderedPanelKey)
             return;
         const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         const inPanel = active !== null && panelView.contains(active);
-        const kind = s.rail.kind === "panel" ? `${s.rail.panel}:${String(s.rail.replaced)}` : null;
-        const element = s.rail.kind === "panel" ? s.rail.element : null;
+        const kind = s.surface.kind === "panel" ? `${s.surface.panel}:${String(s.surface.replaced)}` : null;
+        const element = s.surface.kind === "panel" ? s.surface.element : null;
         // Never rebuild a form under the owner's typing; it re-renders once focus leaves the panel.
         // A field that only holds focus (the description box is focused when the panel opens) is
         // rebuilt, so undo and redo show the restored part's facts at once.
@@ -306,9 +346,9 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
         renderedPanelKey = key;
         renderedPanel = kind;
         renderedElement = element;
-        if (s.rail.kind !== "panel") {
-            pagesView.hidden = s.rail.kind !== "pages";
-            imagesView.hidden = s.rail.kind !== "images";
+        if (s.surface.kind !== "panel") {
+            pagesView.hidden = s.surface.kind !== "pages";
+            imagesView.hidden = s.surface.kind !== "images";
             panelView.hidden = true;
             panelView.replaceChildren();
             if (inPanel)
@@ -318,18 +358,18 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
         imagesView.hidden = true;
         const focusedKey = inPanel ? active.dataset["key"] ?? null : null;
         const sel = selection(s);
-        const back = h("button", { class: "btn btn-ghost btn-sm rail-back", attrs: { type: "button", "data-key": "back", "data-kbd": "Esc", "data-tip": "Back to the pages" } }, icon("chevron-left", "icon-sm"), h("span", { text: "Pages" }));
+        const back = h("button", { class: "btn btn-ghost btn-sm rail-back", attrs: { type: "button", "data-key": "back", "data-kbd": "Esc", "data-tip": "Back to the pages" } }, icon("chevron-left", "icon-sm"), h("span", { text: "Close" }));
         back.addEventListener("click", closePanel);
         const page = s.pages.find((p) => p.path === s.path);
-        const subject = s.rail.panel === "page"
+        const subject = s.surface.panel === "page"
             ? (page ? pageLabel(page, s.project.name) : s.path)
             : sel ? `${KIND_LABELS[sel.kind]}${sel.name ? ` · ${sel.name}` : ""}` : "";
-        const body = renderPanel(s.rail.panel, { store, canvas, change, edits, close: closePanel, replaced: s.rail.replaced });
-        panelView.replaceChildren(h("div", { class: "rail-panel-head" }, back, h("h2", { class: "rail-title", text: PANEL_TITLES[s.rail.panel], attrs: { id: "ed-rail-title" } }), subject ? h("p", { class: "rail-subject truncate", text: subject, attrs: { "data-tip": subject } }) : null), body);
+        const body = renderPanel(s.surface.panel, { store, canvas, change, edits, close: closePanel, replaced: s.surface.replaced });
+        panelView.replaceChildren(h("div", { class: "rail-panel-head" }, back, h("h2", { class: "rail-title", text: PANEL_TITLES[s.surface.panel], attrs: { id: "ed-rail-title" } }), subject ? h("p", { class: "rail-subject truncate", text: subject, attrs: { "data-tip": subject } }) : null), body);
         pagesView.hidden = true;
         panelView.hidden = false;
         if (kindChanged) {
-            if (s.rail.replaced)
+            if (s.surface.replaced)
                 panelView.querySelector("[data-replaced]")?.focus({ preventScroll: true });
             else
                 focusFirst();
@@ -347,7 +387,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     panelView.addEventListener("focusout", (event) => {
         if (event.relatedTarget instanceof Node && panelView.contains(event.relatedTarget))
             return;
-        window.setTimeout(renderRail, 0);
+        window.setTimeout(renderSurfaces, 0);
     });
     function focusFirst() {
         const field = panelView.querySelector("[data-autofocus]") ?? panelView.querySelector(".rail-panel-body input, .rail-panel-body select, .rail-panel-body textarea, .rail-panel-body button");
@@ -360,6 +400,31 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
             closePanel();
         }
     });
+    function placePanel() {
+        if (store.get().surface.kind !== "panel")
+            return;
+        const caption = document.querySelector("[data-toolbar]");
+        if (!caption)
+            return;
+        const surface = store.get().surface;
+        if (surface.kind === "panel" && surface.panel === "page") {
+            const anchor = must(document, "[data-page-switcher]").getBoundingClientRect();
+            panelView.style.left = `${anchor.left}px`;
+            panelView.style.top = `${anchor.bottom + 8}px`;
+            panelView.style.maxHeight = `${innerHeight - anchor.bottom - 24}px`;
+            return;
+        }
+        const r = caption.getBoundingClientRect();
+        const box = canvas.visibleBox();
+        const above = caption.dataset["placement"] === "above-start";
+        panelView.style.left = `${Math.max(8, Math.min(r.left, innerWidth - panelView.offsetWidth - 8))}px`;
+        panelView.style.maxHeight = `${Math.max(120, above ? r.top - box.y - 16 : box.y + box.height - r.bottom - 16)}px`;
+        const selected = selection(store.get());
+        const target = selected ? canvas.toApp(selected.rect) : { x: r.x, y: r.y - 20, width: r.width, height: 12 };
+        const position = panelPlacement({ caption: { x: r.x, y: r.y, width: r.width, height: r.height }, selection: target, canvas: box, size: { width: panelView.offsetWidth, height: panelView.offsetHeight } });
+        panelView.style.top = `${position.y}px`;
+    }
+    window.addEventListener("resize", placePanel);
     store.subscribe((s, prev) => {
         if (changed(s, prev, "pages", "path", "project"))
             renderPages();
@@ -367,16 +432,19 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
             renderStart(s);
         if (changed(s, prev, "outline", "pages", "path", "focus", "canvasOrigin"))
             renderImages(s);
-        renderRail();
-        if (s.rail.kind === "panel" && prev?.rail.kind === "pages")
-            announce(`${PANEL_TITLES[s.rail.panel]} panel open`);
-        if (drawer.matches && prev && s.rail !== prev.rail)
-            setDrawer(s.rail.kind !== "pages");
-        if (drawer.matches && prev && s.rail.kind === "pages" && s.focus.kind !== "none" && selection(s)?.element !== selection(prev)?.element)
-            setDrawer(false);
+        renderSurfaces();
+        if (s.surface.kind === "panel" && prev?.surface.kind !== "panel")
+            announce(`${PANEL_TITLES[s.surface.panel]} panel open`);
+        if (pendingImage && selection(s)?.element === pendingImage) {
+            pendingImage = null;
+            store.dispatch({ type: "open_panel", panel: selection(s)?.can.includes("i") ? "image" : "background" });
+        }
+        placePanel();
     });
     return {
         openAddPage: () => pageDialog("add"),
         focusPanel: focusFirst,
+        openPages: () => open("pages"),
+        close,
     };
 }
