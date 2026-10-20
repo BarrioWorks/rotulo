@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T22:27:37Z",
+  "generatedAt": "2026-10-20T00:19:54Z",
   "title": "Design System: Pagehaven",
   "extensions": {
     "colorMeta": {
@@ -793,6 +793,11 @@
         "purpose": "Crop marks sit this far outside the corner."
       },
       {
+        "name": "crop-weight",
+        "value": "1px",
+        "purpose": "Crop mark stroke on screens (.crop); .crop-select uses select-stroke in Proof Cyan."
+      },
+      {
         "name": "kind-label-size",
         "value": "0.75rem",
         "purpose": "Type size of the slug: Heading, Image."
@@ -801,6 +806,16 @@
         "name": "canvas-backdrop",
         "value": "var(--sunken)",
         "purpose": "Editor canvas backdrop."
+      },
+      {
+        "name": "device-radius",
+        "value": "34px",
+        "purpose": "The phone screen corner inside its bezel; a depicted device outside the radius scale."
+      },
+      {
+        "name": "veil",
+        "value": "color-mix(in srgb, var(--surface) 86%, transparent)",
+        "purpose": "Sheet white veil over the old page while it reloads."
       }
     ],
     "layout": [
@@ -836,6 +851,11 @@
       {
         "name": "dialog-w",
         "value": "440px"
+      },
+      {
+        "name": "dialog-w-wide",
+        "value": "640px",
+        "purpose": "Website settings, where the DNS table needs room."
       },
       {
         "name": "sheet-w",
@@ -879,6 +899,11 @@
       {
         "name": "z-toolbar",
         "value": "40"
+      },
+      {
+        "name": "z-menu-over-toolbar",
+        "value": "calc(var(--z-toolbar) + 1)",
+        "purpose": "Menus opened from the floating toolbar (41)."
       },
       {
         "name": "z-toast",
@@ -948,9 +973,9 @@
       "name": "Site Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "A bare proof on a 2 px ink rule inside a hairline card; the edge turns ink on hover.",
-      "html": "<article class=\"ds-card\"><div class=\"ds-thumb\"></div><div class=\"ds-card-body\"><a class=\"ds-card-title\" href=\"#\">Harbor Bakery</a><span class=\"ds-card-meta\">Edited 2 hours ago</span></div></article>",
-      "css": ".ds-card { width: 280px; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-float); overflow: hidden; font-family: var(--font-ui); transition: border-color var(--dur-fast) var(--ease-out); } .ds-card:hover, .ds-card:focus-within { border-color: var(--ink); } .ds-thumb { aspect-ratio: 16 / 10; background: var(--sunken); border-bottom: 2px solid var(--ink); } .ds-card-body { display: flex; flex-direction: column; gap: 6px; padding: 16px 20px 20px; } .ds-card-title { font-size: var(--fs-heading); line-height: var(--lh-heading); font-weight: var(--fw-heading); letter-spacing: var(--ls-heading); color: var(--ink); text-decoration: none; } .ds-card-title:hover { text-decoration: underline; } .ds-card-title:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); } .ds-card-meta { font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-2); }"
+      "description": "A dashboard proof: a bare 16:10 thumbnail on a 2 px ink caption rule, the name with its status pill, meta, then Edit, View website and More along the foot. No box; the thumbnail takes an ink outline on hover.",
+      "html": "<article class=\"ds-proof\"><div class=\"ds-thumb\"></div><div class=\"ds-caption\"><div class=\"ds-head\"><a class=\"ds-name\" href=\"#\">Harbor Bakery</a><span class=\"ds-pill\">Published</span></div><span class=\"ds-meta\">Edited 2 hours ago · 4 pages</span><div class=\"ds-actions\"><a class=\"ds-btn\" href=\"#\">Edit</a><a class=\"ds-ghost\" href=\"#\">View website</a><button class=\"ds-more\" aria-label=\"More for Harbor Bakery\">···</button></div></div></article>",
+      "css": ".ds-proof { width: 340px; font-family: var(--font-ui); } .ds-thumb { aspect-ratio: 16 / 10; background: var(--sunken); border: 1px solid var(--rule); border-radius: var(--radius-canvas); outline: 2px solid transparent; outline-offset: 3px; transition: outline-color var(--dur-fast) var(--ease-out); } .ds-proof:hover .ds-thumb { outline-color: var(--ink); } .ds-caption { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--ink); } .ds-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .ds-name { font-size: var(--fs-heading); line-height: var(--lh-heading); font-weight: var(--fw-heading); letter-spacing: var(--ls-heading); color: var(--ink); text-decoration: none; } .ds-name:hover { text-decoration: underline; text-underline-offset: 4px; } .ds-name:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); } .ds-pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--radius-chip); background: var(--success-soft); color: var(--success); font-size: var(--fs-micro); font-weight: var(--fw-micro); } .ds-meta { font-size: var(--fs-meta); line-height: var(--lh-meta); color: var(--ink-2); } .ds-actions { display: flex; align-items: center; gap: 8px; padding-top: 20px; } .ds-btn, .ds-ghost, .ds-more { display: inline-flex; align-items: center; height: var(--control-h-sm); padding: 0 12px; border-radius: var(--radius-control); font-size: var(--fs-control); font-weight: var(--fw-control); text-decoration: none; } .ds-btn { background: var(--surface); color: var(--ink); border: 1px solid var(--control-border); } .ds-btn:hover { background: var(--surface-hover); border-color: var(--ink-2); } .ds-ghost, .ds-more { color: var(--ink-2); background: transparent; border: 0; } .ds-ghost:hover, .ds-more:hover { background: var(--hover); color: var(--ink); } .ds-more { margin-left: auto; width: var(--control-h-sm); justify-content: center; padding: 0; cursor: pointer; } .ds-btn:focus-visible, .ds-ghost:focus-visible, .ds-more:focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); }"
     },
     {
       "name": "Menu",
