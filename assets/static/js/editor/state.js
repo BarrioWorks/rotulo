@@ -4,6 +4,7 @@ export function initialState(data, now) {
         pages: data.pages,
         path: data.pages.some((p) => p.path === "index.html") ? "index.html" : (data.pages[0]?.path ?? "index.html"),
         previewOrigin: data.preview_origin,
+        canvasOrigin: data.preview_origin,
         bootstrappedAt: now,
         imageBytes: data.limits.image_bytes,
         customDomains: data.features?.custom_domains ?? true,
@@ -109,7 +110,7 @@ export function reduce(state, action) {
         case "page_ready":
             if (action.path !== state.path)
                 return state;
-            return { ...state, canvasLoading: false, pageMeta: { title: action.title, description: action.description } };
+            return { ...state, canvasLoading: false, canvasOrigin: action.origin, pageMeta: { title: action.title, description: action.description } };
         case "selected": {
             const focus = { kind: "selected", selection: action.selection };
             return { ...state, focus, obstacles: action.obstacles ?? [], rail: retarget(state.rail, focus, state.editing.active) };

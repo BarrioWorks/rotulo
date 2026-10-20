@@ -402,7 +402,7 @@ function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
     if (last?.framed) body.append(fitControl(ctx, sel, last.fit));
   }
   const image = sel.info.image;
-  const src = previewImage(sel.info.src, ctx.store.get().previewOrigin);
+  const src = previewImage(sel.info.src, ctx.store.get().canvasOrigin);
   if (src) {
     const thumb = h("img", { class: "rail-thumb", attrs: { src, alt: "", referrerpolicy: "no-referrer" } });
     body.append(h("figure", { class: "rail-figure" }, thumb,

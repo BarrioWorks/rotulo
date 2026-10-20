@@ -100,8 +100,16 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
   let awaitingReady = true;
   let textSession: { element: string; path: string; finishing: boolean } | null = null;
 
-  function url(path: string): string {
-    return `${store.get().previewOrigin}/${path.split("/").map(encodeURIComponent).join("/")}`;
+  /**
+   * The preview origin each frame was loaded from. The preview address changes every time the
+   * editor reloads its state (publishing again, undo), so a frame already on screen keeps
+   * talking to the origin it was opened on until the next page load.
+   */
+  const frameOrigins = new WeakMap<HTMLIFrameElement, string>();
+  const originOf = (frame: HTMLIFrameElement) => frameOrigins.get(frame) ?? store.get().previewOrigin;
+
+  function url(origin: string, path: string): string {
+    return `${origin}/${path.split("/").map(encodeURIComponent).join("/")}`;
   }
 
   function title(s: State): string {
@@ -208,7 +216,9 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
       active.after(pending);
     }
     expectedLoads.add(pending);
-    pending.src = url(path) + suffix;
+    const origin = store.get().previewOrigin;
+    frameOrigins.set(pending, origin);
+    pending.src = url(origin, path) + suffix;
   }
 
   /** Shows the frame that just became ready and drops the old one. */
@@ -247,7 +257,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
         store.dispatch({ type: "editing", active: false, formats: { bold: false, italic: false, link: false } });
       }
     }
-    active.contentWindow?.postMessage(envelope(message), store.get().previewOrigin);
+    active.contentWindow?.postMessage(envelope(message), originOf(active));
   }
 
   /** After a click in the page, keys go back to the app so shortcuts and arrow keys keep working. */
@@ -258,7 +268,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
 
   window.addEventListener("message", (event) => {
     const source = awaitingReady ? (pending ?? active) : active;
-    if (event.source !== source.contentWindow || event.origin !== store.get().previewOrigin) return;
+    if (event.source !== source.contentWindow || event.origin !== originOf(source)) return;
     const message = parseAgentMessage(event.data);
     if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false }, message)) return;
     switch (message.type) {
@@ -267,8 +277,8 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
         window.clearTimeout(slowTimer);
         setLoadingVeil(false);
         swap();
-        store.dispatch({ type: "page_ready", path: expectedPath, title: message.title, description: message.description });
-        active.contentWindow?.postMessage(envelope({ type: "init", mode: store.get().mode, scrollY: restore.scrollY, select: restore.select, scale: layout.scale }), store.get().previewOrigin);
+        store.dispatch({ type: "page_ready", path: expectedPath, title: message.title, description: message.description, origin: originOf(active) });
+        active.contentWindow?.postMessage(envelope({ type: "init", mode: store.get().mode, scrollY: restore.scrollY, select: restore.select, scale: layout.scale }), originOf(active));
         const ready = active;
         void loadUiFont().then((data) => {
           if (data && ready === active) send({ type: "font", data });
@@ -328,7 +338,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
         break;
       case "navigate": {
         const state = store.get();
-        const target = canvasNavigation(message.href, state.previewOrigin, expectedPath, state.pages);
+        const target = canvasNavigation(message.href, originOf(active), expectedPath, state.pages);
         if (target) {
           restore = { scrollY: null, select: null, pulse: false };
           store.dispatch({ type: "open_page", path: target.path });

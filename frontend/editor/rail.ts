@@ -266,7 +266,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
     const current = selection(s)?.element ?? null;
     const focusedKey = document.activeElement instanceof HTMLElement && imageList.contains(document.activeElement) ? document.activeElement.dataset["key"] : undefined;
     imageList.replaceChildren(...images.map((img) => {
-      const thumb = previewImage(img.src, s.previewOrigin);
+      const thumb = previewImage(img.src, s.canvasOrigin);
       const b = h("button", { class: "image-row", attrs: { type: "button", "data-key": img.element } },
         thumb ? h("img", { class: "image-thumb", attrs: { src: thumb, alt: "", loading: "lazy", referrerpolicy: "no-referrer" } }) : h("span", { class: "image-thumb" }),
         h("span", { class: "image-name truncate", text: img.name || "Picture without a description" }));
@@ -371,7 +371,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
   store.subscribe((s, prev) => {
     if (changed(s, prev, "pages", "path", "project")) renderPages();
     if (changed(s, prev, "mode", "focus", "outline")) renderStart(s);
-    if (changed(s, prev, "outline", "pages", "path", "focus", "previewOrigin")) renderImages(s);
+    if (changed(s, prev, "outline", "pages", "path", "focus", "canvasOrigin")) renderImages(s);
     renderRail();
     if (s.rail.kind === "panel" && prev?.rail.kind === "pages") announce(`${PANEL_TITLES[s.rail.panel]} panel open`);
     if (drawer.matches && prev && s.rail !== prev.rail) setDrawer(s.rail.kind !== "pages");

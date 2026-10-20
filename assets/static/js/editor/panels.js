@@ -345,7 +345,7 @@ function imagePanel(ctx, sel) {
             body.append(fitControl(ctx, sel, last.fit));
     }
     const image = sel.info.image;
-    const src = previewImage(sel.info.src, ctx.store.get().previewOrigin);
+    const src = previewImage(sel.info.src, ctx.store.get().canvasOrigin);
     if (src) {
         const thumb = h("img", { class: "rail-thumb", attrs: { src, alt: "", referrerpolicy: "no-referrer" } });
         body.append(h("figure", { class: "rail-figure" }, thumb, image ? h("figcaption", { class: "hint", text: `Shown at ${image.width} × ${image.height}. The file is ${image.naturalWidth} × ${image.naturalHeight}.` }) : null));

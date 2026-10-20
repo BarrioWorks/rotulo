@@ -349,3 +349,13 @@ test("Edit text starts with short text selected, so typing replaces it, and long
   assert.equal(startSelection("heading", paragraph), "all", "a heading is always replaced whole");
   assert.equal(startSelection("text", `  ${"word ".repeat(23)}  \n\n  `), "all", "whitespace does not count");
 });
+
+test("reloading the editor's state keeps the page on screen on the origin it was opened from", () => {
+  const store = createStore(initialState(bootstrap, 0));
+  store.dispatch({ type: "page_ready", path: "index.html", title: "Home", description: "", origin: bootstrap.preview_origin });
+  store.dispatch({ type: "bootstrapped", data: { ...bootstrap, preview_origin: "http://fresh.preview.localhost:5150" } });
+  assert.equal(store.get().previewOrigin, "http://fresh.preview.localhost:5150", "the next page load uses the new address");
+  assert.equal(store.get().canvasOrigin, bootstrap.preview_origin, "the open page keeps its own");
+  store.dispatch({ type: "page_ready", path: "index.html", title: "Home", description: "", origin: "http://fresh.preview.localhost:5150" });
+  assert.equal(store.get().canvasOrigin, "http://fresh.preview.localhost:5150");
+});

@@ -68,7 +68,10 @@ export interface State {
   project: Project;
   pages: Page[];
   path: string;
+  /** Where the next page load comes from. It changes each time the editor's state is reloaded. */
   previewOrigin: string;
+  /** Where the page on screen came from: its pictures and links use this origin. */
+  canvasOrigin: string;
   bootstrappedAt: number;
   imageBytes: number;
   customDomains: boolean;
@@ -102,7 +105,7 @@ export type Action =
   | { type: "device"; device: Device }
   | { type: "zoom"; zoom: Zoom }
   | { type: "open_page"; path: string }
-  | { type: "page_ready"; path: string; title: string; description: string }
+  | { type: "page_ready"; path: string; title: string; description: string; origin: string }
   | { type: "canvas_loading" }
   | { type: "selected"; selection: Selection; obstacles?: Rect[] }
   | { type: "blocked"; rect: Rect; around: string | null }
@@ -135,6 +138,7 @@ export function initialState(data: Bootstrap, now: number): State {
     pages: data.pages,
     path: data.pages.some((p) => p.path === "index.html") ? "index.html" : (data.pages[0]?.path ?? "index.html"),
     previewOrigin: data.preview_origin,
+    canvasOrigin: data.preview_origin,
     bootstrappedAt: now,
     imageBytes: data.limits.image_bytes,
     customDomains: data.features?.custom_domains ?? true,
@@ -239,7 +243,7 @@ export function reduce(state: State, action: Action): State {
       return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
     case "page_ready":
       if (action.path !== state.path) return state;
-      return { ...state, canvasLoading: false, pageMeta: { title: action.title, description: action.description } };
+      return { ...state, canvasLoading: false, canvasOrigin: action.origin, pageMeta: { title: action.title, description: action.description } };
     case "selected": {
       const focus: Focus = { kind: "selected", selection: action.selection };
       return { ...state, focus, obstacles: action.obstacles ?? [], rail: retarget(state.rail, focus, state.editing.active) };
