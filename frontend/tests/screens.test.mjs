@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { confirmsName, deleteOutcome, deleteRequest, fieldMessage, renameRequest } from "../../assets/static/js/app.js";
+import { confirmsName, deleteOutcome, deleteRequest, fieldMessage, renameRequest, publicationTime } from "../../assets/static/js/app.js";
 import { outcome, precheck, summary } from "../../assets/static/js/import.js";
 
 const MB = 1024 * 1024;
@@ -55,7 +55,13 @@ test("the source-only import message is shown word for word, with the export hel
   assert.equal(result.help, true);
 });
 
-test("import answers map to the next step", () => {
+test("import answers map to the next step", (t) => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "location");
+  Object.defineProperty(globalThis, "location", { configurable: true, value: { origin: "https://pagehaven.example" } });
+  t.after(() => {
+    if (previous) Object.defineProperty(globalThis, "location", previous);
+    else delete globalThis.location;
+  });
   assert.deepEqual(outcome(401, null), { kind: "signed_out" });
   assert.deepEqual(outcome(422, { error: "choose_folder", message: "Choose", folders: ["dist", "build"] }),
     { kind: "folders", folders: ["dist", "build"], message: "Choose" });
@@ -84,4 +90,15 @@ test("rename preserves the address and submits the trimmed name with the session
   assert.equal(init.credentials, "same-origin");
   assert.equal(init.headers["Content-Type"], "application/json");
   assert.deepEqual(JSON.parse(init.body), { name: "Harbor Bakery", slug: "harbor-bakery" });
+});
+
+test("dashboard publication times format server Unix seconds and ISO timestamps", () => {
+  const date = new Date(1760961600 * 1000);
+  const expected = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  assert.equal(publicationTime("1760961600"), expected);
+  assert.equal(publicationTime(date.toISOString()), expected);
+  assert.equal(publicationTime("0"), publicationTime("1970-01-01T00:00:00Z"));
+  assert.equal(publicationTime("invalid"), null);
+  assert.equal(publicationTime(""), null);
+  assert.equal(publicationTime("999999999999999999999999"), null);
 });

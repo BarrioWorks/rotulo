@@ -192,11 +192,16 @@ function wireRename(): void {
   });
 }
 
+export function publicationTime(value: string): string | null {
+  const date = /^-?\d+$/.test(value) ? new Date(Number(value) * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
 function formatPublicationTimes(): void {
   for (const time of document.querySelectorAll<HTMLTimeElement>("[data-published-time]")) {
-    const date = new Date(time.dateTime);
-    if (Number.isNaN(date.getTime())) continue;
-    time.textContent = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+    const formatted = publicationTime(time.dateTime);
+    if (formatted !== null) time.textContent = formatted;
   }
 }
 
