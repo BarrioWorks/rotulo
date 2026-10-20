@@ -118,27 +118,59 @@
   --control-h: 36px;
   --control-h-lg: 44px;        /* also every target under (pointer: coarse) */
 
-  /* Radii: sharp, like a trimmed proof */
-  --radius-canvas: 2px;        /* canvas, thumbnails, cards and sheets on the ground */
-  --radius-chip: 3px;          /* pills, slug, swatches, tooltips */
-  --radius-control: 4px;       /* buttons, inputs, rows */
-  --radius-float: 6px;         /* menus, popovers, toolbar, toasts: things that float */
-  --radius-dialog: 8px;
-  --radius-round: 999px;       /* dots, avatar, switch only */
+  /* Materials. Level 1 is the imported site and gets nothing. */
+  --glass-2-tint: rgba(250, 250, 252, 0.80);
+  --glass-2-filter: blur(24px) saturate(1.6);
+  --glass-2-edge-in: inset 0 0 0 1px rgba(255, 255, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-2-edge-out: 0 0 0 1px rgba(17, 17, 28, 0.12);
+  --glass-2-shadow: 0 1px 2px rgba(17, 17, 28, 0.08), 0 8px 24px -6px rgba(17, 17, 28, 0.22);
+  --glass-3-tint: rgba(250, 250, 252, 0.94);
+  --glass-3-filter: blur(40px) saturate(1.2);
+  --glass-3-edge-in: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-3-edge-out: 0 0 0 1px rgba(17, 17, 28, 0.14);
+  --glass-3-shadow: 0 2px 6px rgba(17, 17, 28, 0.08), 0 28px 64px -16px rgba(17, 17, 28, 0.36);
+  --scrim: rgba(17, 17, 28, 0.30);
 
-  /* Elevation: flat. Only floating things lift, with an ink edge. */
-  --border-float: 1px solid var(--ink);
-  --shadow-float: 0 1px 0 rgba(22, 22, 26, 0.04), 0 8px 20px -6px rgba(22, 22, 26, 0.28);
-  --shadow-dialog: 0 2px 0 rgba(22, 22, 26, 0.04), 0 24px 48px -12px rgba(22, 22, 26, 0.35);
-  --scrim: rgba(22, 22, 26, 0.38);
+  /* Shapes. Capsules for controls, a soft panel corner, a larger sheet corner; never one radius for all. */
+  --r-capsule: 999px;          /* toolbar groups, buttons on glass, segments, chips */
+  --r-row: 8px;                /* rows and fields inside a panel: panel radius minus its 6px inset */
+  --r-panel: 14px;             /* popovers, page switcher, contextual dock menus */
+  --r-sheet: 22px;             /* settings and publish sheets, dialogs */
+  --r-chip: 5px;               /* the selection label, which sits on the owner's site */
+  --r-canvas: 6px;             /* the page when it floats on the ground; 0 edge to edge */
 
-  /* Motion: mechanical and short */
-  --dur-fast: 90ms;            /* hover, press, colour changes */
-  --dur-pop: 140ms;            /* menus, toolbar, selection glide */
-  --dur-panel: 200ms;          /* dialogs, sheets, panels */
-  --dur-device: 280ms;         /* computer and phone width change */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Control sizes. 36 on desktop pointers, 44 under (pointer: coarse). */
+  --h-28: 28px;  --h-32: 32px;  --h-36: 36px;  --h-44: 44px;
+  --icon-16: 16px; --icon-18: 18px; --icon-20: 20px;
+  --icon-stroke-px: 1.5;       /* rendered stroke; stroke-width = 1.5 * 24 / icon size */
+
+  /* Motion. No loops. Exits run at about two thirds of the entrance. */
+  --dur-press: 90ms;
+  --dur-quick: 140ms;
+  --dur-pop: 200ms;
+  --dur-pop-out: 130ms;
+  --dur-sheet: 300ms;
+  --dur-sheet-out: 200ms;
+  --dur-select: 160ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Screen aliases for the Studio primitives. */
+  --radius-canvas: var(--r-canvas);
+  --radius-chip: var(--r-chip);
+  --radius-control: var(--r-row);
+  --radius-float: var(--r-panel);
+  --radius-dialog: var(--r-sheet);
+  --radius-round: var(--r-capsule);
+  --border-float: 1px solid var(--rule-strong);
+  --shadow-float: var(--glass-2-shadow);
+  --shadow-dialog: var(--glass-3-shadow);
+  --dur-fast: var(--dur-quick);
+  --dur-panel: var(--dur-sheet);
+  --dur-device: var(--dur-sheet);
+  --ease-in-out: var(--ease-move);
 
   /* Layers */
   --z-canvas-ui: 5;            /* hints over the canvas */
@@ -169,10 +201,6 @@
    760px   dashboard grid to one column, page heads stack, title-1 shrinks
    900px   editor minimum; below it shows the "needs a bigger screen" page
    1000px  editor top bar drops Edit and Preview labels to icons */
-
-@media (prefers-reduced-motion: reduce) {
-  :root { --dur-fast: 0ms; --dur-pop: 0ms; --dur-panel: 0ms; --dur-device: 0ms; }
-}
 
 /* Base */
 
@@ -210,7 +238,7 @@ p { text-wrap: pretty; }
 code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 [hidden] { display: none !important; }
 
-/* Focus: a surface gap and a cyan band; the transparent outline keeps it visible in forced colors. */
+/* Focus: a white gap and an accent band; the transparent outline keeps it visible in forced colors. */
 :focus { outline: none; }
 :focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--focus-ring); }
 
@@ -261,7 +289,7 @@ code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 
 /* Icons: Lucide glyphs on a 24 grid. Stroke widths are in grid units and render at about 1.5 px at every size. */
 
-.icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon { width: var(--icon-18); height: var(--icon-18); flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .icon-sm { width: 16px; height: 16px; stroke-width: 2.25; }
 .icon-lg { width: 24px; height: 24px; stroke-width: 1.5; }
 .inline-icon { display: inline-block; vertical-align: -3px; } /* an icon inside a sentence, on the text baseline */
@@ -444,7 +472,7 @@ code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 .kbd { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; border-radius: var(--radius-chip); border: 1px solid currentColor; font-family: var(--font-ui); font-size: var(--fs-micro); font-weight: var(--fw-label); line-height: 1; }
 
 /* Crop marks: four printer's marks outside the corners of a sheet, drawn in one pseudo-element.
-   .crop-select draws them in selection cyan at the selection stroke. */
+   .crop-select draws them in selection accent at the selection stroke. */
 
 .crop { position: relative; --crop-color: var(--ink); }
 .crop::before {
@@ -612,5 +640,68 @@ dialog.sheet[open] { animation: sheet-in var(--dur-panel) var(--ease-out); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  /* Keep opacity fades; movement and size changes settle immediately. Static
+     transforms used for positioning and switch state remain intact. */
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-property: opacity !important;
+    transition-duration: 120ms !important;
+    transition-delay: 0ms !important;
+    animation-duration: 120ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .menu, dialog.modal[open], dialog.sheet[open], .toast { animation-name: fade !important; }
+  .btn[aria-busy="true"]::after, .spinner { animation: none !important; }
+  .btn:active { transform: none; }
+  .toast.is-leaving { transform: none; }
+}
+
+/* Level 1 is the site itself: no tint, filter, edge or shadow.
+   Level 2: ink, ink-2, accent and status text only. ink-3 and control edges
+   require level 3 or an opaque surface. Never stack glass on glass. */
+.material-canvas { background: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.material-float {
+  background: var(--glass-2-tint); color: var(--ink); border-radius: var(--r-panel);
+  -webkit-backdrop-filter: var(--glass-2-filter); backdrop-filter: var(--glass-2-filter);
+  box-shadow: var(--glass-2-edge-in), var(--glass-2-edge-out), var(--glass-2-shadow);
+}
+.material-sheet {
+  background: var(--glass-3-tint); color: var(--ink); border-radius: var(--r-sheet);
+  -webkit-backdrop-filter: var(--glass-3-filter); backdrop-filter: var(--glass-3-filter);
+  box-shadow: var(--glass-3-edge-in), var(--glass-3-edge-out), var(--glass-3-shadow);
+}
+.material-capsule { border-radius: var(--r-capsule); }
+.material-sheet .material-float {
+  background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .material-float, .material-sheet { background: var(--surface); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .material-float, .material-sheet { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --ink-2: var(--ink); --ink-3: var(--ink); }
+  .material-float, .material-sheet {
+    background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none;
+    box-shadow: 0 0 0 1px var(--ink), var(--glass-2-shadow);
+  }
+}
+@media (forced-colors: active) {
+  .material-float, .material-sheet {
+    background: Canvas; color: CanvasText; border: 1px solid CanvasText;
+    box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .btn-primary, .btn-primary:hover, .btn-primary:active { --btn-bg: Highlight; --btn-fg: HighlightText; forced-color-adjust: none; }
+  :focus-visible { outline: 2px solid Highlight; box-shadow: none; }
+  .crop-select { --crop-color: Highlight; }
+}
+
+/* A 1.5px rendered Lucide stroke on its 24-unit grid. */
+.btn .icon { width: var(--icon-18); height: var(--icon-18); stroke-width: 2; }
+.btn-sm .icon, .seg .icon, .control-28 .icon, .control-32 .icon { width: var(--icon-16); height: var(--icon-16); stroke-width: 2.25; }
+.btn-lg .icon, .control-44 .icon { width: var(--icon-20); height: var(--icon-20); stroke-width: 1.8; }
+.control-36 .icon { width: var(--icon-18); height: var(--icon-18); stroke-width: 2; }
+@media (pointer: coarse) {
+  .btn .icon, .seg .icon, .tb-btn .icon, [class*="control-"] .icon { width: var(--icon-20); height: var(--icon-20); stroke-width: 1.8; }
 }

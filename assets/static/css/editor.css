@@ -371,3 +371,12 @@ body[data-boot="manage"] .manage { display: flex; }
 
 /* Addresses, DNS values and imported file names use the system monospace stack. */
 .pub-address a, .manage-address a, .domain-name, .domain-form input, .image-file { font-family: var(--font-mono); }
+
+.tb-btn .icon { width: var(--icon-16); height: var(--icon-16); stroke-width: 2.25; }
+@media (pointer: coarse) {
+  .tb-btn .icon { width: var(--icon-20); height: var(--icon-20); stroke-width: 1.8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ftb { translate: none; }
+  .ed-status-mark[data-mark="saving"] { animation: none !important; }
+}
