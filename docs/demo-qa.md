@@ -1,115 +1,104 @@
 # Investor demo QA
 
-Run on 2026-10-19 against the dev server at http://127.0.0.1:5150 with a fresh database (`/tmp/ph-qa`). Browser: T3 Code preview (Chromium), 1280x800. Every step was driven through the UI with clicks and typing. The JSON API was not called. Two read-only `curl` requests were used to confirm the live hero image bytes and to check `favicon.ico`.
+Final verification after the UI/UX redesign (Phase H of `docs/design/brief.md`).
 
-Test account: Maya Harbor, maya@harborbakery.com. Project: Harbor Bakery (`54cead7f-fd95-44d2-b8bb-02847064fc1a`), live at http://harbor-bakery.sites.localhost:5150.
+- **Date.** 2026-10-20, 04:22 to 04:55 UTC.
+- **Build.** `main` at `e78e233`. No source code was changed for this run.
+- **Server.** The running dev server at http://127.0.0.1:5150, data in `/tmp/pagehaven-demo`. It was not restarted.
+- **Browser.** T3 Code preview (Chromium), incognito profile, 1280x800 unless stated. Narrow views at 390x844. The "200% zoom" check used a 640x400 viewport.
+- **Account.** Dana Reyes, `dana.final.qa@example.com`. Demo project: Agency, published at http://agency-10.sites.localhost:5150 (`0f9ef8b4-f3c4-45e8-812c-0ff775f59c67`).
+- **Method.** Every demo step was driven through the UI with clicks, typing and key presses. The JSON API was not called. `curl` was used only to read published files: the hero image hash, the cropped portfolio image size, and the deleted site's response. Page state was read with `preview_evaluate` (DOM queries), never changed with it.
 
-## Steps
+Screenshots are in [`docs/design/screens/final/`](design/screens/final/).
+
+## Demo script steps
 
 | # | Step | Result | What I saw | Screenshot |
 |---|---|---|---|---|
-| 1 | Open Pagehaven | Pass | Landing page "Your AI-built website. Yours to edit." No console messages. | [01](screenshots/01-home.png) |
-| 2 | Sign up | Pass | Name, email and password form. "Create account" went to an empty dashboard titled "Bring in your first website". | [02](screenshots/02-signup.png), [03](screenshots/03-empty-dashboard.png) |
-| 3 | Import website, drop `harbor-bakery.zip` | Pass | Upload progress, then "Imported. Harbor Bakery. 4 pages ready to edit." with a thumbnail. | [04](screenshots/04-import-page.png), [05](screenshots/05-import-success.png) |
-| 4 | Open editor | Pass | The real bakery site rendered in the canvas. Pages: Home, Our story, Visit us, Menu. Status "Saved". | [06](screenshots/06-editor-opened.png) |
-| 5 | Headline: Edit text, select, type, Enter | Pass | The headline became "Fresh sourdough, every single morning.". Status "Saved". Undo became enabled. | [07](screenshots/07-headline-editing.png), [08](screenshots/08-headline-saved.png) |
-| 6 | Hero photo: Replace image, `replacement-hero.jpg` | Pass, with a caveat | The photo was replaced in place with the same frame and layout. The image's description (alt text) still describes the old bread photo. See problem 5. | [09](screenshots/09-image-selected.png), [10](screenshots/10-hero-image-replaced.png) |
-| 7 | "See today's menu": Link, Visit us, Save link | **Fail (visible glitch)** | The link saved. The toast said "Link saved" and the status said "Saved". **The link popover stayed open.** Escape and the Link button did not close it. A `javascript:` address was refused with a clear message. See problem 1. | [11](screenshots/11-link-popover.png), [12](screenshots/12-link-saved-popover-still-open.png) |
-| 8 | Phone icon, then computer icon | Pass, with a caveat | The canvas switched to a 390 px wide phone frame with a hamburger menu and stacked layout. On the first try the stale link popover from step 7 followed the selection into phone view. | [13](screenshots/13-mobile-stale-link-toolbar.png), [14](screenshots/14-mobile-layout.png) |
-| 9 | Publish | Pass | Toast "Your website is live at harbor-bakery.sites.localhost:5150". "Version 1, Live, 22 files, 1.5 MB" appeared in the history. | [15](screenshots/15-published-v1.png) |
-| 10 | Click live address in Publishing panel | Pass | The link has `target="_blank"` and opened a new tab at http://harbor-bakery.sites.localhost:5150/. Checked on that tab: the H1 is the new headline. The hero `src` is `images/uploads/b82e0e8e45bd0c4c.jpg`, and its SHA-256 matches `fixtures/images/replacement-hero.jpg` byte for byte. "See today's menu" links to `contact.html` (Visit us). No editor code is present on the live page. | [16](screenshots/16-live-site-v1.png) |
-| 11 | Back to editor tab | Pass | The editor was unchanged. | n/a |
-| 12 | Change a paragraph, Publish again, refresh live tab | Pass | The hero paragraph became "Version two: now open on Mondays too, from 8am." Publish created Version 2 (Live). After a refresh, the live tab showed the new paragraph. | [17](screenshots/17-published-v2.png), [18](screenshots/18-live-site-v2.png) |
-| 13 | Version history: Make live on version 1, confirm, refresh live tab | Pass, with a caveat | The confirm dialog said "Make version 1 live?". The toast said "Version 1 is live". After a refresh, the live tab shows version 1: the original paragraph is back, and the version 1 headline, image and link are still present. Afterwards the Publishing status read "Published 1 minute ago" even though the draft no longer matched the live site. See problem 3. | [19](screenshots/19-make-live-confirm.png), [20](screenshots/20-version1-live.png), [21](screenshots/21-live-site-after-rollback.png) |
-| If asked | Custom domain `www.harborbakery.com`, Add | Pass | It showed "Waiting" with TXT `_pagehaven.www.harborbakery.com` = `pagehaven-verify=…` and CNAME `www.harborbakery.com` → `harbor-bakery.sites.localhost`. Pressing Check showed "We couldn't find the TXT record yet. DNS changes can take up to an hour to appear." The domain stayed pending. | [22](screenshots/22-custom-domain-pending.png) |
+| 1 | Open Pagehaven | Pass | Landing page "Your AI-built website. Yours to edit." No console messages. | [01](design/screens/final/01-landing-1280.png) |
+| 2 | Sign up | Pass | Name, email, password form. "Create account" went to the empty dashboard "Your first website goes here". | [02](design/screens/final/02-register-1280.png), [03b](design/screens/final/03b-dashboard-empty-1280.png) |
+| 3 | Import a website, `startbootstrap-agency.zip` | Pass | Result "Agency. 1 page imported and ready to edit." The thumbnail shows a portfolio picture (the watch), not the hero (problem 10). | [04](design/screens/final/04-import-empty-1280.png), [05](design/screens/final/05-import-result-1280.png) |
+| 4 | Open editor | Pass | The real Agency page in the canvas at "Fit 79%". Start here block in the rail. Top bar "Not published yet". | [06](design/screens/final/06-editor-idle-start-here-1280.png) |
+| 5 | Headline: Edit text, type, Enter | Pass, with a caveat | Clicking the heading docks the toolbar along the top of the canvas. "Edit text" does not select the old words: I pressed Ctrl+A before typing (problem 5). After Enter the heading reads "Brand design for growing teams" and the top bar shows "Saved" for 2 seconds, then "Not published yet" (problem 6). | [07](design/screens/final/07-editor-heading-selected-1280.png), [08](design/screens/final/08-editor-headline-saved-1280.png) |
+| 6 | Subheading, Change banner photo, `replacement-hero.jpg` | Pass, with a caveat | Toast "Banner photo changed · Undo". The new photo is very bright, so the white headline is hard to read on it (problem 4). | [09](design/screens/final/09-editor-banner-replaced-1280.png) |
+| 7 | Tell me more, Link, Part of this page, Contact, save | Pass, with a glitch | Link panel opens in the rail with "A part of this page" preselected. After choosing "Contact Us" and Save link: toast "Link saved", toolbar reads "Link · Contact Us section". The button's toolbar runs past the right edge of the window and "Background" is cut off (problem 2). | [09b](design/screens/final/09b-editor-link-saved-1280.png), [clipped](design/screens/final/problem-toolbar-clipped.png) |
+| 8 | Phone icon, then computer icon | **Fail (visible glitch)** | The canvas switches to a phone frame. Tell me more is still selected from step 7, and its toolbar spills out of the phone frame: "section", "Style", "Change banner photo" and "Backg…" are drawn over the grey backdrop with no background (problem 1). After Esc the phone view is clean. Back to computer works. | [overflow](design/screens/final/problem-phone-toolbar-overflow.png), [13](design/screens/final/13-editor-phone-view-1280.png) |
+| 9 | Publish, review, Publish | Pass | Review lists "Home: Link change, Background photo change, Text change" and the address. After Publish: toast "Published. Visitors now see version 1.", top bar "Published", **View website**, disabled **Publish**. | [11](design/screens/final/11-editor-publish-review-1280.png), [12](design/screens/final/12-editor-published-1280.png) |
+| 10 | View website | Pass | Opened a new tab at http://agency-10.sites.localhost:5150/. `.masthead-heading` = "Brand design for growing teams". The masthead `style` is `background-image: url("images/uploads/b82e0e8e45bd0c4c.jpg")` and that file's SHA-256 equals `fixtures/images/replacement-hero.jpg`. Tell me more `href="#contact"`. No editor markup in the page. | [15](design/screens/final/15-live-site-v1-1280.png) |
+| 11 | Back to the editor tab | Pass | Editor unchanged. | n/a |
+| 12 | Replace a Services "Lorem ipsum" paragraph, Publish, refresh | Pass | E-Commerce paragraph changed to "We build online shops that load fast and are easy to run." Top bar "1 change not published". Review "Publish your changes? Home: Text change". After Publish and a refresh the live page shows the new paragraph; the other two are still Lorem ipsum. | [14](design/screens/final/14-editor-services-paragraph-1280.png) |
+| 13 | Version history, version 1, confirm, refresh | Pass, script wording differs | The script says **Make live**. The UI says **Publish again**, then a dialog "Publish version 1 again?" with **Publish version 1** (problem 3). After confirming: toast "Visitors now see version 1.", top bar "Visitors see version 1" with Publish enabled. Live page after refresh: all three Services paragraphs are Lorem ipsum again; headline, banner photo and link from version 1 are present. | [16](design/screens/final/16-editor-version-history-1280.png), [17](design/screens/final/17-editor-rollback-confirm-1280.png), [18](design/screens/final/18-live-site-after-rollback-1280.png) |
+| If asked | Import `landwind.zip` | Pass | Imported as "Landwind", opens in the editor and renders the Tailwind page. | [22](design/screens/final/22-editor-landwind-1280.png) |
+| If asked | Custom domain `www.example-studio.com` in Website settings | Pass | Status "Waiting for your domain settings". Records shown: TXT `_pagehaven.www.example-studio.com` = `pagehaven-verify=08d7…554d`, CNAME `www.example-studio.com` to `agency-10.sites.localhost`, each with Copy. It stays pending. | [19](design/screens/final/19-editor-website-settings-1280.png), [20](design/screens/final/20-editor-custom-domain-pending-1280.png) |
 
-### Extra checks
+After the run the Agency site was republished as version 3 (portfolio check below), so the live site no longer matches version 1.
 
-| Check | Result | What I saw | Screenshot |
+## Specific checks
+
+| | Check | Result | Evidence |
 |---|---|---|---|
-| (a) Import `vite-source-only.zip` | Pass | "We couldn't import this file" followed by the exact text "This ZIP contains source code rather than a finished website. Export the built static website files and try again." (the server answered 422). | [24](screenshots/24-source-zip-rejected.png) |
-| (b) Mobile toggle | Pass | The canvas iframe measured 390x696 CSS px. The site switched to its mobile layout with a hamburger menu. | [14](screenshots/14-mobile-layout.png) |
-| (c) Reload editor keeps edits | Pass | After a full reload, the headline, image, link and paragraph edits were all present. The status read "Unpublished changes". | [20](screenshots/20-version1-live.png) shows the pre-reload state. The post-reload state was checked by reading the page; no screenshot was kept. |
-| (d) Second tab goes stale | Pass | Tab 1 edited the paragraph to "Edited in tab one.". Tab 2, opened earlier, then edited the headline. Tab 2 showed a modal "This website changed somewhere else" with a Reload button, and its status changed to "Not saved". Reload kept tab 1's edit and dropped tab 2's. | [23](screenshots/23-stale-tab-message.png) |
-| Dangerous link refused | Pass | `javascript:alert(document.cookie)` was refused with "That link can't be used. Use a web address starting with https://, …". | n/a |
-| Console | Pass, warnings only | The editor logged no errors. It logged two warnings on every load (see problem 6). The import page logged the expected 422 for the source ZIP. | n/a |
+| a | Portfolio image with a different aspect ratio keeps its frame, in the editor and published | Pass | Replaced portfolio 1.jpg (600x450) with the 1600x900 hero. The editor kept the 356x267 frame; the panel says "The new picture is trimmed to the shape of the old one" and "The file is 1200 × 900". The crop is server-side and persists: the published HTML has `<img class="img-fluid" src="images/uploads/919a964da4a6972c.jpg" alt="...">`, that file is 1200x900 (4:3), and it renders at 356x267 like its neighbours. [editor](design/screens/final/check-a-portfolio-replaced-editor.png), [live](design/screens/final/check-a-portfolio-replaced-live.png) |
+| b | Undo/redo does not reload the canvas or jump the scroll | Partial | No visible jump: scroll position (Portfolio) and selection were kept after Undo and after Redo. But the canvas does reload: the `<iframe>` element was replaced (the reference I held was no longer in the DOM and the page sent a fresh `ready`). The reload is double-buffered, so the user does not see a flash. Code: `frontend/editor/main.ts:182` calls `canvas.reload` after every undo/redo, `frontend/editor/canvas.ts:215` swaps frames. After Undo the rail panel kept stale facts, "The file is 1200 × 900", for the restored 600x450 picture (problem 9). [after undo](design/screens/final/check-b-after-undo.png) |
+| c | Hiding a section the site's menu links to shows a warning | Pass | Hid Services via Section ▾, "Hide on your website". Toast: "Section hidden on your website. A link on this page jumps to it, for example in your menu, and won't go anywhere until you show it again." The section shows a hatched "Hidden on your website" state. [c](design/screens/final/check-c-hide-services-warning.png) |
+| d | No ghost or doubled text over an edited heading | Pass | After editing the headline (step 5) and after reloading the editor with it selected, no faint duplicate text is drawn. [08](design/screens/final/08-editor-headline-saved-1280.png), [10](design/screens/final/10-editor-style-panel-1280.png) |
+| e | Toolbar does not cover the words next to the selection | Pass for the headline | With the headline selected the toolbar docks at the top of the canvas and "Welcome To Our Studio!" stays visible. Elsewhere it does cover content: after "Change the main heading" from a scrolled canvas, the toolbar sits on top of Tell me more; a docked toolbar for an off-screen section covers the "PORTFOLIO" heading. [07](design/screens/final/07-editor-heading-selected-1280.png) |
+| f | Top bar wording | Pass | "Saved" appears after each edit (for 2 s, problem 6), then "Not published yet", "Changes not published", "1 change not published", "Published" or "Visitors see version 1". No "online" or "live" text or labels in the editor DOM (scanned text, `aria-label`, `title`, `data-tip`). After publishing: View website next to a disabled Publish. [12](design/screens/final/12-editor-published-1280.png) |
+| g | Link panel refuses `abc` phone and `javascript:` | Pass | Phone "abc": inline red "A phone number can only have digits, spaces, a + at the start, dashes and brackets." `javascript:alert(document.cookie)`: field `aria-invalid="true"`, inline "Type a web address, like example.com or https://example.com." Nothing was saved in either case. [phone](design/screens/final/check-g-phone-refused.png), [js](design/screens/final/check-g-javascript-refused.png) |
+| h | Sentence-case role labels; crisp marks at Fit | Pass | Canvas labels seen: "Heading", "Text", "Button", "Image", "Card", "Section", "Banner", "Menu", "Link", "Editing". The kind menu shows "Card" and "Section · Portfolio". Canvas labels show the role only; the "Card · name" form appears only in that menu. Marks and labels looked sharp at Fit 79% in 1x screenshots; HiDPI was not checked. [card](design/screens/final/check-h-card-label-menu.png), [banner](design/screens/final/check-h-banner-label.png) |
+| i | Start here block and the rail rows | Pass, one unreproduced failure | "Change the main heading" selected and scrolled to the heading from a fresh load and from a scrolled canvas. "Change your web address" and Website settings open the settings dialog. Version history opens the history panel. Images lists 18 pictures and selecting one selects it in the canvas. Once, right after a rollback, "Change the main heading" did nothing while a paragraph's selection marks were still drawn (problem 8). [06](design/screens/final/06-editor-idle-start-here-1280.png), [21](design/screens/final/21-editor-images-list-1280.png) |
+| j | Click outside closes the publish review; Enter on the canvas never opens the site | Pass | The review closed on a click in the rail and on a click in the canvas. Enter on the canvas with nothing selected selected the first element; with a nav link selected it started Edit text; with Tell me more clicked it started Edit text. No new tab opened in any case (checked the tab list). |
+| k | 640 px viewport (200% zoom at 1280) | Pass, with problem 2 | The editor stays in edit mode: compact top bar with icon buttons, canvas at Fit 48%, toolbar and selection work. The toolbar is cut off at the right edge here too. [k](design/screens/final/check-k-editor-640-viewport.png) |
+| l | Keyboard only | Pass | Tab order: skip link, back, site menu, page menu, undo, Edit, Preview, Computer, Phone, status, View website, Start here links, Add page, Home, More for Home, Website settings, Version history, Images, canvas. Every stop matched `:focus-visible` with a white plus blue ring. In the canvas, ArrowDown walked Menu, the logo Image, then nav links; Enter started Edit text; Esc cancelled editing, then cleared the selection. Esc closed Version history and Website settings and returned focus to their rail rows. Dashboard: Tab to "More for Harbor Bakery", Enter opens the menu, Tab to "Delete website…", Enter opens the dialog with focus in the confirm field, Esc closes it and returns focus to the More button, typing the name and Enter deletes. ArrowDown does not move into the card menu (Tab does). [arrow keys](design/screens/final/check-l-arrow-key-selection.png), [dashboard focus](design/screens/final/check-l-dashboard-focus.png) |
+| m | Reduced motion | Pass by inspection, not emulated | The preview tool cannot emulate `prefers-reduced-motion`. `app.css` sets `--dur-*` to 0ms and forces `animation-duration` and `transition-duration` to 1ms with `!important` under `(prefers-reduced-motion: reduce)`; `screens.css:308` has a matching block; the canvas agent disables glide, hover fade and pulse and switches scrolling to `instant` (`frontend/agent/agent.ts:94`, `:567`, `:619`); the device switch skips its delay (`frontend/editor/canvas.ts:371`). |
+| n | Dashboard | Pass | Three equal cards, each 349x381 px. Pills "Published" and "Not published yet", the same words as the editor. Deleting Harbor Bakery (typed confirmation) showed "Harbor Bakery was deleted." and its address now returns 404 with the page "No website here yet". [3 sites](design/screens/final/03-dashboard-3-sites-1280.png), [dialog](design/screens/final/check-n-delete-dialog-keyboard.png), [after](design/screens/final/check-n-after-delete.png), [offline](design/screens/final/check-n-deleted-site-offline.png) |
+| o | `vite-source-only.zip` message | Pass | Heading "This ZIP isn't a website Pagehaven can use", body exactly "This ZIP contains source code rather than a finished website. Export the built static website files and try again." [o](design/screens/final/check-o-source-zip-rejected.png) |
+| p | Console | Pass, one warning | Landing, register, sign in, dashboard, import (empty state): no entries. Editor (Agency and Landwind): one warning, "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing." The Agency site itself logs its Start Bootstrap Forms banner. No errors from Pagehaven. The only error seen was a 404 for a URL I typed. Console output for the import page after an upload was not captured separately. |
 
 ## Problems found
 
-Ordered by severity.
+Ordered by how much they would hurt the investor demo.
 
-### 1. After a successful save, the link and description popovers stay open (confirmed, reproducible)
+1. **Phone view shows a broken toolbar on the demo path (step 8).** The script leaves Tell me more selected after step 7, so the first thing the audience sees in phone view is toolbar text spilling out of the phone frame onto the grey backdrop.
+   Reproduce: select Tell me more, click the phone icon.
+   Root cause: when no spot fits, the toolbar docks as a strip exactly as wide as the canvas (`frontend/editor/placement.ts:115-120`, `width: canvas.width`), and docked mode removes the max width (`assets/static/css/editor.css:175`). The row is a non-wrapping flex row with visible overflow (`editor.css:177`), so buttons wider than the 308 px phone canvas draw outside the strip's background.
+   Workaround for the presenter: press Esc before clicking the phone icon.
 
-The earlier suspicion is confirmed. After "Save link", the link saves. The status says "Saved" and a "Link saved" toast appears. **The popover stays on screen.** Escape does not close it. Clicking the Link button again does not close it. Clicking another element in the page leaves the old toolbar and popover on screen, attached to the new selection. Switching to the phone view carries the stale popover along ([13](screenshots/13-mobile-stale-link-toolbar.png)). The image "Description" panel has the same bug, and there it happens every time ([25](screenshots/25-description-saved-panel-still-open.png)). During the demo this happens at step 7, while the presenter says "Buttons go wherever you want".
+2. **Toolbar cut off at the window edge for buttons and links (step 7, and at 640 px).** With Tell me more selected, the toolbar is 640 px wide but its content is 696 px; "Background" ends at x=1321 in a 1280 px window.
+   Reproduce: click Tell me more at 1280x800.
+   Root cause: `.ftb` has `max-width: min(640px, calc(100vw - 16px))` (`assets/static/css/editor.css:163`) while the row neither wraps nor scrolls (`editor.css:177`). Placement measures the capped `offsetWidth` (`frontend/editor/toolbar.ts:396`), so it believes the toolbar fits. The long "Link · Contact Us section" label pushes the content past the cap.
 
-Reproduction:
-1. In the editor, click "See today's menu", then Link.
-2. Click the Page dropdown and choose "Visit us". Focus is now on the dropdown.
-3. Click "Save link". Result: the toast says "Link saved", and `[data-toolbar] .ftb-panel` is still in the DOM with focus still on the `<select>`.
-4. Press Escape, or click the Link button twice. The panel stays.
-5. The same happens with Web address: type `https://example.com/menu` and press Enter.
-6. Description: select the hero image, click Description, type, click Save. The toast says "Description saved" and the panel stays open with the textarea focused.
+3. **Demo script says "Make live", the product says "Publish again".** A presenter reading step 13 will look for a button that does not exist. Version history shows **Publish again** and the dialog shows **Publish version 1**.
+   Fix belongs in `docs/demo-script.md` step 13 (and the "Every version is kept" wording already matches the product).
 
-Root cause, from `frontend/editor/toolbar.ts`:
-- `toolbar.ts:79-82`. A `mousedown` on any toolbar control other than an input calls `preventDefault()`. Clicking "Save link" or "Save" therefore leaves focus in the panel's `<select>`, `<input>` or `<textarea>`. The Description textarea is also auto-focused at `toolbar.ts:304`.
-- `toolbar.ts:271-274` (link) and `toolbar.ts:301-302` (description). These correctly set `panel = null` and call `render(true)`.
-- `toolbar.ts:445-449`. `render()` returns early whenever the focused element is an `input, textarea, select` inside the toolbar (`keepFocus`), and `force` does not bypass this. The DOM is never rebuilt, so the closed panel stays visible.
-- `toolbar.ts:434`. `renderedKey = key` is assigned *before* that early return. The toolbar then records the new state as already rendered, so later non-forced renders with the same key also skip the rebuild.
-- `toolbar.ts:495`. The Escape handler only acts when `panel !== null`. After the save `panel` is already `null`, so Escape does nothing.
+4. **The replacement hero makes the headline unreadable.** `replacement-hero.jpg` has a bright sky behind the title; white "BRAND DESIGN FOR GROWING TEAMS" washes out, in the editor and on the live site. This is the fixture, not the product, but it is what investors see in steps 6 to 10. A darker photo would fix it. [15](design/screens/final/15-live-site-v1-1280.png)
 
-The `keepFocus` guard is there to avoid rebuilding the toolbar while the user is typing in it. It should not block an explicit close. Not fixed, as instructed.
+5. **"Edit text" does not select the existing words.** Step 5 says "choose Edit text, type a new one". After Edit text the caret is in the heading with nothing selected, so typing adds to the old headline. I had to press Ctrl+A first. The presenter needs to know this, or the script should say "select the words and type".
 
-### 2. The stale toolbar keeps acting on the previous element (consequence of 1)
+6. **"Saved" is visible for only 2 seconds.** Step 5 tells the presenter to point at **Saved**. It shows for `SAVED_VISIBLE_MS = 2000` (`frontend/editor/topbar.ts:25`) and then becomes "Not published yet", which can read as the opposite of saved.
 
-While the stale popover is up, clicking a different element (for example the headline) moves the blue selection outline. The toolbar keeps showing the previous element's controls ("Link · Edit text · Link"). Its buttons are closures over the old `sel`. A user can therefore see the headline selected while the toolbar edits the button. I observed the mismatch (toolbar row text "Link\nEdit text\nLink" while the headline was outlined). I did not click those stale buttons to see what they would change. Same root cause and lines as problem 1.
+7. **Undo and redo reload the canvas.** No flash or scroll jump (double-buffered), but the site's page is reloaded each time (`frontend/editor/main.ts:182`, `canvas.ts:215`), so in-page state such as a scrolled navbar or an open site menu resets, and there is a short delay before the change appears.
 
-### 3. After "Make live" on an older version, the status says "Published" although the draft differs
+8. **"Change the main heading" did nothing once (not reproduced).** Sequence: paragraph selected, publish version 2, Version history, Publish again on version 1, confirm, Esc. The rail showed Start here (meaning nothing selected) while the paragraph's selection marks were still drawn in the canvas, and "Change the main heading" had no effect. After a reload it worked, and a second attempt at the same sequence (with version 2) worked too.
 
-After version 1 was made live, the Publishing status read "Published 1 minute ago" ([20](screenshots/20-version1-live.png)). The draft still contained the version 2 paragraph, so the draft and the live site differed. After a page reload the same panel correctly read "Unpublished changes". An investor who sees "Published" next to a different page in the canvas could be confused.
+9. **Image panel facts go stale after Undo.** After undoing a picture replacement the canvas shows the original 600x450 picture but the panel still says "The file is 1200 × 900". [after undo](design/screens/final/check-b-after-undo.png)
 
-Root cause: `frontend/editor/publish.ts:83`. `makeLive` dispatches only a `project` update with the new `live_release`. It never refreshes `draftChanged`, which stays `false` from the previous publish. The status text is computed at `publish.ts:106-112`.
-
-### 4. Stale-tab dialog copy differs from the demo script
-
-The script's Recovery section (`docs/demo-script.md:41`) says the tab shows "This website was changed in another tab". The app shows "This website changed somewhere else" (`assets/views/projects/editor.html:212`). The dialog also does not say that the edit made in this tab will be discarded on Reload, and it was discarded.
-
-### 5. Replacing an image keeps the old description
-
-After step 6, the live site's hero `<img>` still has `alt="A crusty round loaf and a baguette beside a steaming cup of coffee in warm morning light"`, while the picture now shows sailboats in a harbour. Screen readers and search engines get the wrong description, and nothing prompts the user to update it.
-
-### 6. Console warnings on every editor load
-
-- "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing." The source is `assets/views/projects/editor.html:162` (`sandbox="allow-scripts allow-same-origin"`). The canvas loads from a separate `*.preview.localhost` origin, so this is likely not a real escape. A technical investor opening DevTools would still see a "can escape its sandboxing" warning next to a security pitch.
-- "Error with Permissions-Policy header: Unrecognized feature: 'bluetooth'." The source is `src/preview.rs:115`.
-
-### 7. Visual polish
-
-- The floating toolbar sits directly over neighbouring content. In [06](screenshots/06-editor-opened.png) and [08](screenshots/08-headline-saved.png) it covers the "Open today" pill, and in [25](screenshots/25-description-saved-panel-still-open.png) it covers the site's main navigation.
-- The selection outline of the hero image runs through the "Fresh batch at 11am" card text, which looks like a strikethrough ([09](screenshots/09-image-selected.png)).
-- The live address in the Publishing panel is cut off to "harbor-bakery.si…" ([15](screenshots/15-published-v1.png)). This is the link the presenter is told to click.
-- The custom domain name wraps mid-word ("www.harbor / bakery.com"), and the DNS values wrap character by character in the narrow sidebar ([22](screenshots/22-custom-domain-pending.png)).
-- After the stale-tab Reload, a faint "Opening your page…" placeholder was visible behind the hero image for a moment.
-
-### 8. Things an investor may read as fake or dev-only
-
-- The CNAME target shown to the user is `harbor-bakery.sites.localhost` ([22](screenshots/22-custom-domain-pending.png)), and the live address contains `localhost:5150`. This is expected on a dev server, but it shows on screen during the custom domain answer.
-- The landing page mockup shows the address `harbor-bakery.pagehaven.site`, which the product does not use in this setup ([01](screenshots/01-home.png)).
-- "Version 1" in the history already contains the demo edits. Rolling back to it does not return to the imported original, which the step 13 line "Made a mistake?" may lead viewers to expect.
-
-### 9. Minor
-
-- `favicon.ico` returns 404 on both the app and the published site. Chromium logged nothing for it.
-- In the import drop zone, the "Choose a file" label does not take a click through Playwright's text locator (it timed out). Clicking at the same position works and opens the file picker. This is probably a pointer-events or overlay detail with no effect on real users. Inferred, not verified with a mouse.
+10. **Small visual issues.**
+    - Import result thumbnail for Agency is a portfolio picture (the watch), because the hero is a CSS background. [05](design/screens/final/05-import-result-1280.png)
+    - The Start here block disappears when something is selected, so the rail rows jump up about 205 px under the pointer.
+    - The section toolbar reads "Section" twice (role label and the "Section ▾" menu).
+    - The warning toast for hiding a linked section uses the same check-mark icon as success toasts.
+    - Images list shows duplicate names ("1.jpg" three times, from different folders) and does not include the CSS banner photo.
+    - Editor console warning about `allow-scripts` plus `allow-same-origin` on the canvas iframe. The canvas runs on a separate preview origin, so this is expected, but it shows in DevTools.
 
 ## Not checked
 
-- Drag-and-drop of the ZIP. I used the file picker. The script says "drop".
-- Changing a button colour in step 12. I changed a paragraph instead, which the script allows.
-- Whether clicking the stale toolbar's buttons (problem 2) edits the previous element or the visible one.
-- A real Chrome window outside the T3 preview, other browsers, and real phone devices.
-- The other pages (Our story, Visit us, Menu): their editing, Add page, Page settings, Website settings and the Images panel.
-- Undo and Redo beyond seeing Undo become enabled.
-- Preview mode.
-- `scripts/smoke.sh` and the "Before the meeting" setup. The server was already running.
-- Real DNS verification. It cannot succeed in this environment.
-- Log out and log in again.
+- Automated test suites (`npm test`, `cargo test`, `scripts/smoke.sh`) were not run in this pass.
+- Reduced motion was checked by reading CSS and code only; it was not emulated.
+- Selection mark sharpness on a HiDPI (2x) display.
+- Real browser zoom at 200%: approximated with a 640x400 viewport.
+- Screen reader output.
+- Browsers other than the Chromium-based preview.
+- Drag and drop of the ZIP onto the drop zone: files were given to the file picker or the file input.
+- Custom domain verification against real DNS (pending is the expected outcome locally).
+- Console output for the import page after an upload, and for the published site in its own tab.
+- Multiple tabs editing the same site ("Changed in another tab").

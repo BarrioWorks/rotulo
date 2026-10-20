@@ -7,7 +7,7 @@ The demo site is [Start Bootstrap Agency](https://github.com/StartBootstrap/star
 ## Before the meeting
 
 1. `npm ci`, then `scripts/dev-server.sh /tmp/pagehaven-demo` (or the approved staging server).
-2. Open Chrome at http://127.0.0.1:5150 in a fresh window at 1280 px or wider. Keep `fixtures/zips/startbootstrap-agency.zip` and `fixtures/images/replacement-hero.jpg` in an easy folder such as the Desktop.
+2. Open Chrome at http://127.0.0.1:5150 in a fresh window at 1280 px or wider. Keep `fixtures/zips/startbootstrap-agency.zip` and `fixtures/images/replacement-banner.jpg` in an easy folder such as the Desktop.
 3. Optional dry run: `scripts/smoke.sh http://127.0.0.1:5150 fixtures/zips/startbootstrap-agency.zip` must end with `all good`.
 
 ## The story
@@ -23,14 +23,14 @@ The demo site is [Start Bootstrap Agency](https://github.com/StartBootstrap/star
 | 3 | Click **Import a website** and drop `startbootstrap-agency.zip`. | "This is a template straight from GitHub, source code and all. Pagehaven finds the finished website inside, checks every file, and never runs the code it receives." |
 | 4 | Click **Open editor**. The real Agency site appears. | "It is the actual imported site, not a copy of it." |
 | 5 | Click the big headline "It's nice to meet you", choose **Edit text**, type a new one, press Enter. | "Saved. Nothing to learn." Point at **Saved** in the top bar. |
-| 6 | Click the subheading over the hero photo and choose **Change banner photo**, then pick `replacement-hero.jpg`. | "The photo behind the headline is part of the site's design code. Pagehaven still lets you change it." |
+| 6 | Click the subheading over the hero photo and choose **Change banner photo**, then pick `replacement-banner.jpg`. | "The photo behind the headline is part of the site's design code. Pagehaven still lets you change it." |
 | 7 | Click **Tell me more**, choose **Link**, pick **Part of this page** and choose the Contact section, save. | "Buttons go wherever you want. Dangerous links are refused." |
 | 8 | Click the phone icon. | "Check the phone layout before publishing." Switch back to the computer icon. |
 | 9 | Click **Publish**, look at the list of changes, click **Publish** in the review. | "You see exactly what goes out. Each publish is a saved version." |
 | 10 | Click **View website**. It opens in a new tab. | "That is a real hosted website, served by Pagehaven." |
 | 11 | Go back to the editor tab. | |
 | 12 | Replace one of the "Lorem ipsum" paragraphs under Services with real text, then **Publish** again. Refresh the website tab. | "Placeholder text from a template, fixed in seconds. Updates are published right away." |
-| 13 | Open **Version history**, choose **Make live** on version 1 and confirm. Refresh the website tab. | "Made a mistake? Any earlier version is one click away." |
+| 13 | Open **Version history**, choose **Publish again** on version 1 and confirm **Publish version 1**. Refresh the website tab. | "Made a mistake? Any earlier version is one click away." |
 
 ## If asked
 

@@ -4,3 +4,7 @@
 - `landwind`: [Landwind](https://github.com/themesberg/landwind) by Themesberg, MIT (Tailwind CSS and Flowbite, compiled `output.css` beside its source files).
 
 Their licenses are in each folder. The other sites in this folder were written for Pagehaven's tests.
+
+# Demo images
+
+- `fixtures/images/replacement-banner.jpg`: "Desktop after work" from Unsplash, CC0 via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Desktop_after_work_(Unsplash).jpg), resized to 1600 px and darkened so white headlines stay readable.
