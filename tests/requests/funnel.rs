@@ -91,3 +91,25 @@ async fn requests_record_each_milestone_once_and_daily_returns_are_unique() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial_test::serial]
+async fn rate_limited_imports_record_no_events() {
+    request_with_create_db::<App, _, _>(|server, ctx| async move {
+        let cookie = register(&server, "funnel-limit@example.com").await;
+        let attempt = || upload(&server, &cookie, "/api/imports", b"nope!".to_vec(), "x.zip");
+        for _ in 0..20 {
+            attempt()
+                .await
+                .assert_status(axum::http::StatusCode::UNPROCESSABLE_ENTITY);
+        }
+        assert_eq!(count(&ctx, "import_failed").await, 20);
+        for _ in 0..30 {
+            attempt()
+                .await
+                .assert_status(axum::http::StatusCode::TOO_MANY_REQUESTS);
+        }
+        assert_eq!(count(&ctx, "import_failed").await, 20);
+    })
+    .await;
+}
