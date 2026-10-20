@@ -124,10 +124,10 @@
   --control-h-lg: 44px;        /* also every target under (pointer: coarse) */
 
   /* Radii: sharp, like a trimmed proof */
-  --radius-canvas: 2px;        /* canvas, thumbnails */
+  --radius-canvas: 2px;        /* canvas, thumbnails, cards and sheets on the ground */
   --radius-chip: 3px;          /* pills, slug, swatches, tooltips */
   --radius-control: 4px;       /* buttons, inputs, rows */
-  --radius-float: 6px;         /* cards, menus, popovers, toolbar, toasts */
+  --radius-float: 6px;         /* menus, popovers, toolbar, toasts: things that float */
   --radius-dialog: 8px;
   --radius-round: 999px;       /* dots, avatar, switch only */
 
@@ -528,9 +528,9 @@ code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* Cards: a surface on the ground with a hairline, never a shadow */
+/* Cards: a flat sheet on the ground with a hairline and the canvas corner, never a shadow */
 
-.card { background: var(--surface); border-radius: var(--radius-float); border: 1px solid var(--rule); }
+.card { background: var(--surface); border-radius: var(--radius-canvas); border: 1px solid var(--rule); }
 .card-pad { padding: var(--s6); }
 
 /* Lists and tables: hairline rows, tabular figures only in digit-only cells */

@@ -72,7 +72,7 @@ test("import answers map to the next step", () => {
 
 test("the result sentence says what was left out without sounding like data loss", () => {
   const report = { pages: ["index.html"], skipped: [], missing: [], warnings: [] };
-  assert.equal(summary(report), "1 page imported.");
+  assert.equal(summary(report), "1 page imported and ready to edit.");
   const skipped = { ...report, pages: ["index.html", "about.html"], skipped: [{ path: "a", reason: "source" }, { path: "b", reason: "system_junk" }] };
-  assert.equal(summary(skipped), "2 pages imported. We left out 2 files your website doesn't need.");
+  assert.equal(summary(skipped), "2 pages imported and ready to edit. We left out 2 files your website doesn't need.");
 });

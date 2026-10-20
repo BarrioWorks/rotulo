@@ -257,7 +257,7 @@ components:
     textColor: "{colors.error}"
   card:
     backgroundColor: "{colors.surface}"
-    rounded: "{rounded.float}"
+    rounded: "{rounded.canvas}"
     padding: "24px"
   menu:
     backgroundColor: "{colors.surface}"
@@ -367,7 +367,7 @@ A neutral ink-and-stock palette with a single cyan reserved for attention, and f
 - **Scrim** (scrim): Backdrop behind dialogs and sheets.
 
 ### State
-- **Published Green** (success) on **Green Wash** (success-soft): Published pill, saved dot, import result badge. 5.87:1 on surface, 5.10:1 on its wash.
+- **Published Green** (success) on **Green Wash** (success-soft): Published pill, saved dot. 5.87:1 on surface, 5.10:1 on its wash.
 - **Pending Amber** (warning) on **Amber Wash** (warning-soft): Unpublished changes and pending domain pills, saving dot. 5.82:1 on surface, 5.11:1 on its wash.
 - **Alert Red** (error), **Alert Red Hover** (error-hover) and **Red Wash** (error-soft): Field errors, error alerts and toasts, destructive buttons and menu items. 5.96:1 on surface, 5.05:1 on its wash; white on red is 5.96:1, on hover 7.60:1.
 
@@ -417,7 +417,7 @@ Both faces are self-hosted from assets/static/fonts/ with their OFL files, use `
 
 ## Layout
 
-A 4 px spacing grid (s0 2 px through s11 80 px). Screens sit in a centered column of 1160 px (`--page-max`) with a 24 px gutter that drops to 16 px under 520 px; narrow pages use 760 px, auth cards 400 px. The app header is 60 px, sticky on the ground with a hairline under it. Pages open with 40 px above and 64 px below. The dashboard is an auto-fill grid of cards at least 280 px wide with 24 px gaps.
+A 4 px spacing grid (s0 2 px through s11 80 px). Screens sit in a centered column of 1160 px (`--page-max`) with a 24 px gutter that drops to 16 px under 520 px; narrow pages use 760 px, auth cards 400 px. The app header is 60 px, sticky on the ground with a hairline under it. Pages open with 40 px above and 64 px below. The dashboard is three equal proofs per row (two under 1000 px, one under 760 px) with 48 px between rows and 32 px between columns. Each proof is a bare 16:10 thumbnail on a 2 px ink caption rule, then the name with its status pill, the edit time and page count, the addresses, and a foot row aligned across the row: Edit (secondary, small), View website (ghost, only when published) and More on the right. The name link covers the whole proof; the addresses and the foot row sit above it in focus order.
 
 The editor is a fixed grid: a 56 px top bar across, a 248 px sidebar, and the canvas. The sidebar width leaves the site 1008 px at a 1280 window, past Bootstrap's 992 breakpoint. Toolbar panels and popovers are 320 px, dialogs 440 px (640 px for website settings, where the DNS table needs room: `--dialog-w-wide`), sheets 360 px.
 
@@ -444,7 +444,7 @@ Flat by default. Regions separate with 1 px hairlines, never with shadows. Cards
 
 ## Shapes
 
-Sharp, like a trimmed proof. The canvas and thumbnails are 2 px, pills, the slug, swatches and tooltips 3 px, buttons, inputs and rows 4 px, cards, menus, popovers, the toolbar and toasts 6 px, dialogs 8 px. Full rounding is only for status dots, the avatar, the switch and the progress track. Borders are 1 px; meaningful rules are ink, decorative ones are hairline. Two places use a 2 px ink rule: under each dashboard thumbnail and above each landing step. The drop zone is the only dashed edge (1.5 px). Crop marks (`.crop`) are 8 px arms set 4 px outside a sheet's corners: 1 px ink on screens (`--crop-weight`), and 1.5 px Proof Cyan on a selection (`.crop-select`).
+Sharp, like a trimmed proof. The canvas and thumbnails are 2 px, pills, the slug, swatches and tooltips 3 px, cards and sheets on the ground 2 px like the canvas, buttons, inputs and rows 4 px, menus, popovers, the toolbar and toasts 6 px, dialogs 8 px. The import steps drop the box altogether and sit under a 2 px ink rule, like the sign-in column. Full rounding is only for status dots, the avatar, the switch and the progress track. Borders are 1 px; meaningful rules are ink, decorative ones are hairline. A 2 px ink rule marks a proof's caption: under each dashboard and import result thumbnail, above each landing and first-run step, and above the sign-in column and import steps. The drop zone is the only dashed edge (1.5 px). Crop marks (`.crop`) are 8 px arms set 4 px outside a sheet's corners: 1 px ink on screens (`--crop-weight`), and 1.5 px Proof Cyan on a selection (`.crop-select`).
 
 Icons are Lucide line glyphs from one sprite, assets/static/img/icons.svg, built by scripts/design/build_icons.py. They render at 16, 20 and 24 px with stroke widths of 2.25, 1.8 and 1.5 grid units so the stroke lands near 1.5 px at every size, with round caps and joins in currentColor. The logo and favicon are flat ink; the favicon flips to stock on ink for dark browser UI.
 
@@ -469,10 +469,10 @@ Solid, quiet and exact.
 - **State:** Draft and offline are neutral, published is green, changes and pending are amber, error is red. Keyboard hints are outlined in currentColor.
 
 ### Cards / Containers
-- **Corner Style:** 6 px.
+- **Corner Style:** 2 px, the canvas corner.
 - **Background:** Sheet white on the ground.
 - **Shadow Strategy:** None. See Elevation & Depth.
-- **Border:** 1 px hairline; dashboard site cards turn the edge ink on hover and on focus within.
+- **Border:** 1 px hairline. Dashboard proofs are not cards: the thumbnail takes a 2 px ink outline on hover and the focus ring when the name link has focus.
 - **Internal Padding:** 24 px.
 
 ### Inputs / Fields

@@ -72,7 +72,7 @@ export function outcome(status, body) {
 }
 /** One reassuring sentence for the result screen: what is ready, and what was left out. */
 export function summary(report) {
-    const ready = `${plural(report.pages.length, "page", "pages")} imported.`;
+    const ready = `${plural(report.pages.length, "page", "pages")} imported and ready to edit.`;
     if (report.skipped.length === 0)
         return ready;
     return `${ready} We left out ${plural(report.skipped.length, "file", "files")} your website doesn't need.`;

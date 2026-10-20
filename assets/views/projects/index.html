@@ -39,33 +39,9 @@
       <div class="site-caption">
         <div class="site-head">
           <h2 class="site-name"><a class="site-link" href="/projects/{{ p.pid }}">{{ p.name }}<span class="visually-hidden">, open in the editor</span></a></h2>
-          <details class="site-more" data-menu>
-            <summary class="btn btn-ghost btn-icon btn-sm" aria-label="More for {{ p.name }}" title="More">
-              <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg>
-            </summary>
-            <div class="menu">
-              {% if p.live %}
-              <a class="menu-item" href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
-                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
-                View website<span class="visually-hidden"> (opens in a new tab)</span>
-              </a>
-              {% endif %}
-              <a class="menu-item" href="/projects/{{ p.pid }}">
-                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit"/></svg>
-                Open editor
-              </a>
-              <div class="menu-sep" data-delete-only hidden></div>
-              <button class="menu-item danger" type="button" data-delete data-delete-only hidden>
-                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-remove"/></svg>
-                Delete website…
-              </button>
-            </div>
-          </details>
-        </div>
-        <p class="site-state">
           {% if p.status == "published" %}<span class="pill pill-published">Published</span>{% elif p.status == "changes" %}<span class="pill pill-changes">Changes not published</span>{% elif p.status == "offline" %}<span class="pill pill-offline">Offline</span>{% else %}<span class="pill pill-draft">Not published yet</span>{% endif %}
-          <span class="site-meta"><time datetime="{{ p.updated_at }}">Edited {{ p.updated_human }}</time> · {{ p.page_count }} {% if p.page_count == 1 %}page{% else %}pages{% endif %}</span>
-        </p>
+        </div>
+        <p class="site-meta"><time datetime="{{ p.updated_at }}">Edited {{ p.updated_human }}</time> · {{ p.page_count }} {% if p.page_count == 1 %}page{% else %}pages{% endif %}</p>
         {% if p.live or p.domains | length > 0 %}
         <ul class="site-links" role="list">
           {% if p.live %}
@@ -84,6 +60,29 @@
         {% elif p.status == "offline" %}
         <p class="site-note">Visitors can't see this website right now.</p>
         {% endif %}
+        <div class="site-actions">
+          <a class="btn btn-secondary btn-sm" href="/projects/{{ p.pid }}">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit"/></svg>
+            Edit<span class="visually-hidden"> {{ p.name }}</span>
+          </a>
+          {% if p.live %}
+          <a class="btn btn-ghost btn-sm" href="{{ p.site_url }}" target="_blank" rel="noopener noreferrer">
+            View website<span class="visually-hidden"> {{ p.name }} (opens in a new tab)</span>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
+          </a>
+          {% endif %}
+          <details class="site-more" data-menu data-delete-only hidden>
+            <summary class="btn btn-ghost btn-icon btn-sm" aria-label="More for {{ p.name }}" title="More">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg>
+            </summary>
+            <div class="menu">
+              <button class="menu-item danger" type="button" data-delete>
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-remove"/></svg>
+                Delete website…
+              </button>
+            </div>
+          </details>
+        </div>
       </div>
     </li>
     {% endfor %}
