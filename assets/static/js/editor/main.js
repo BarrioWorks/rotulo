@@ -1,6 +1,7 @@
 import { announce, h, icon, installTooltips, must, toast } from "../ui.js";
 import { ApiError, api } from "./api.js";
 import { createCanvas } from "./canvas.js";
+import { typedCharacter } from "./canvas-policy.js";
 import { createEdits } from "./edits.js";
 import { closeMenus, menuOpen } from "./menu.js";
 import { createPublishing } from "./publish.js";
@@ -78,6 +79,8 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
                 return;
             if (publishing.closeReview())
                 return;
+            if (canvas?.dismissEditable())
+                return;
             const s = store.get();
             if (s.editing.active && canvas) {
                 void canvas.finishText();
@@ -96,6 +99,10 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
     });
     if (!canvas || !toolbar)
         return;
+    const startTyping = (event) => {
+        const typed = typedCharacter(event);
+        return typed !== null && canvas.startText(typed);
+    };
     canvas.surface.addEventListener("keydown", (event) => {
         if (event.target !== canvas.surface || store.get().mode !== "edit")
             return;
@@ -116,7 +123,7 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }) {
             toolbar.activatePrimary();
         else if (event.key === "Enter" && !sel)
             move("next");
-        else
+        else if (!startTyping(event))
             return;
         event.preventDefault();
         event.stopPropagation();
@@ -217,6 +224,10 @@ async function main() {
         onPageClick() {
             publishing.closeReview(false);
             closeMenus();
+        },
+        onRequestText() {
+            if (toolbar.focusEditText())
+                announce("Press Enter or type to edit");
         },
     });
     const publishing = createPublishing({ store, canvas, saver, afterRestore: afterDraftReplaced });

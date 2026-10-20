@@ -3,6 +3,7 @@ import { h, icon, must } from "../ui.js";
 import { openMenu } from "./menu.js";
 import { placeToolbar } from "./placement.js";
 import { describeHref } from "./links.js";
+import { typedCharacter } from "./canvas-policy.js";
 import { panelApplies, selection } from "./state.js";
 export function shouldRenderToolbar({ force, keyChanged, selectionChanged, fieldFocused }) {
     return force || selectionChanged || (keyChanged && !fieldFocused);
@@ -158,8 +159,7 @@ export function createToolbar({ store, canvas, edits }) {
         }
         switch (id) {
             case "edit-text":
-                canvas.frame().focus();
-                canvas.send({ type: "start_text", element: sel.element });
+                canvas.startText();
                 break;
             case "replace-image":
                 void withFile(id, sel.element, (file, progress) => edits.replaceImage(sel, file, progress)).then((ok) => {
@@ -418,6 +418,10 @@ export function createToolbar({ store, canvas, edits }) {
         if (sel)
             canvas.send({ type: "reveal", element: sel.element, pulse: false });
     });
+    const startTyping = (event) => {
+        const typed = typedCharacter(event);
+        return typed !== null && canvas.startText(typed);
+    };
     actionHost.addEventListener("keydown", (event) => {
         const list = buttons();
         const index = list.findIndex((b) => b === document.activeElement);
@@ -432,7 +436,7 @@ export function createToolbar({ store, canvas, edits }) {
             rove(list[list.length - 1]);
         else if (event.key === "Escape" && !store.get().editing.active)
             canvas.surface.focus({ preventScroll: true });
-        else
+        else if (!startTyping(event))
             return;
         event.preventDefault();
         event.stopPropagation();
@@ -472,6 +476,13 @@ export function createToolbar({ store, canvas, edits }) {
                 run(first, sel);
             else
                 this.focus();
+        },
+        focusEditText() {
+            const edit = buttons().find((b) => b.dataset["key"] === "edit-text");
+            if (!edit)
+                return this.focus();
+            rove(edit);
+            return true;
         },
         focus() {
             if (!root.classList.contains("is-visible"))

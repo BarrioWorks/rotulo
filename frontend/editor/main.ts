@@ -1,6 +1,7 @@
 import { announce, h, icon, installTooltips, must, toast } from "../ui.js";
 import { ApiError, api } from "./api.js";
 import { createCanvas, type Canvas } from "./canvas.js";
+import { typedCharacter } from "./canvas-policy.js";
 import { createEdits } from "./edits.js";
 import { closeMenus, menuOpen } from "./menu.js";
 import { createPublishing, type Publishing } from "./publish.js";
@@ -75,6 +76,7 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }: Shell
       if (menuOpen()) return closeMenus(true);
       if (topBar.exitFocus()) return;
       if (publishing.closeReview()) return;
+      if (canvas?.dismissEditable()) return;
       const s = store.get();
       if (s.editing.active && canvas) {
         void canvas.finishText();
@@ -92,6 +94,10 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }: Shell
 
   if (!canvas || !toolbar) return;
 
+  const startTyping = (event: KeyboardEvent) => {
+    const typed = typedCharacter(event);
+    return typed !== null && canvas.startText(typed);
+  };
   canvas.surface.addEventListener("keydown", (event) => {
     if (event.target !== canvas.surface || store.get().mode !== "edit") return;
     const sel = selection(store.get());
@@ -104,7 +110,7 @@ function wireKeys({ store, canvas, toolbar, topBar, publishing, history }: Shell
     else if (event.key === "ArrowRight") move(sel ? "child" : "next");
     else if (event.key === "Enter" && sel) toolbar.activatePrimary();
     else if (event.key === "Enter" && !sel) move("next");
-    else return;
+    else if (!startTyping(event)) return;
     event.preventDefault();
     event.stopPropagation();
   });
@@ -205,6 +211,9 @@ async function main(): Promise<void> {
     onPageClick() {
       publishing.closeReview(false);
       closeMenus();
+    },
+    onRequestText() {
+      if (toolbar.focusEditText()) announce("Press Enter or type to edit");
     },
   });
 

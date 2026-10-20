@@ -98,19 +98,21 @@ function div(className, parent = shadow) {
 }
 const editableLayer = div("editable-parts");
 const MAX_EDITABLE_BOXES = 120;
-let editableTimer = 0;
 let showingEditable = false;
 function clearEditable() {
     showingEditable = false;
-    window.clearTimeout(editableTimer);
     editableLayer.replaceChildren();
 }
+/** The tint names text, so it marks only parts whose own words the owner can type over: no photos, no whole sections. */
+const TEXT_KINDS = new Set(["heading", "text", "button", "link", "list-item"]);
 function drawEditable() {
     if (!showingEditable || mode !== "edit") {
         editableLayer.replaceChildren();
         return;
     }
     const parts = stops().filter((el) => {
+        if (!canOf(el).includes("t") || !TEXT_KINDS.has(kindOf(el)))
+            return false;
         const r = el.getBoundingClientRect();
         const style = getComputedStyle(el);
         return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth
@@ -667,7 +669,27 @@ function reportEditing(active) {
         return;
     post({ type: "editing", element: id, active, formats: active ? formats() : { bold: false, italic: false, link: false } });
 }
-function startText() {
+/** Where the owner last clicked a part, in page coordinates, so a session can start at that point. */
+let lastClick = null;
+function caretAtClick(el) {
+    if (lastClick?.el !== el)
+        return null;
+    const x = lastClick.x - window.scrollX;
+    const y = lastClick.y - window.scrollY;
+    let range = null;
+    if (typeof document.caretPositionFromPoint === "function") {
+        const position = document.caretPositionFromPoint(x, y);
+        if (position) {
+            range = document.createRange();
+            range.setStart(position.offsetNode, position.offset);
+        }
+    }
+    else {
+        range = document.caretRangeFromPoint?.(x, y) ?? null;
+    }
+    return range && el.contains(range.startContainer) ? range : null;
+}
+function startText(caret, input) {
     if (!selected || !canOf(selected).includes("t") || editing?.el === selected)
         return;
     const id = idOf(selected);
@@ -681,10 +703,20 @@ function startText() {
     document.execCommand("styleWithCSS", false, "false");
     const sel = document.getSelection();
     if (sel) {
-        sel.selectAllChildren(el);
-        if (startSelection(kindOf(el), el.textContent ?? "") === "end")
-            sel.collapseToEnd();
+        const atClick = caret === "click" ? caretAtClick(el) : null;
+        if (atClick) {
+            atClick.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(atClick);
+        }
+        else {
+            sel.selectAllChildren(el);
+            if (startSelection(kindOf(el), el.textContent ?? "") === "end")
+                sel.collapseToEnd();
+        }
     }
+    if (input)
+        document.execCommand("insertText", false, input);
     reportEditing(true);
     schedule();
 }
@@ -799,12 +831,12 @@ function handle(message) {
             }
             break;
         case "show_editable":
+            showingEditable = mode === "edit";
+            schedule();
+            break;
+        case "hide_editable":
             clearEditable();
-            if (mode === "edit") {
-                showingEditable = true;
-                editableTimer = window.setTimeout(() => { clearEditable(); schedule(); }, 4000);
-                schedule();
-            }
+            schedule();
             break;
         case "mode":
             clearEditable();
@@ -843,7 +875,7 @@ function handle(message) {
             break;
         case "start_text":
             select(byId(message.element), false);
-            startText();
+            startText(message.caret, message.input);
             break;
         case "finish_text":
             if (message.commit)
@@ -1073,6 +1105,7 @@ window.addEventListener("click", (event) => {
     const result = pickAt(event.clientX, event.clientY, target);
     if (result.kind === "element") {
         const repeat = result.el === selected && canOf(result.el).includes("t");
+        lastClick = { el: result.el, x: event.clientX + window.scrollX, y: event.clientY + window.scrollY };
         select(result.el);
         const element = idOf(result.el);
         if (repeat && element)

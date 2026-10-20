@@ -13,6 +13,9 @@ const TAG = /^[a-z][a-z0-9-]{0,31}$/;
 /** An `id` a link can point at with `#id`. */
 export const ANCHOR_ID = /^[A-Za-z][\w-]{0,63}$/;
 const HEX6 = /^#[0-9a-f]{6}$/;
+/** One typed character: no control, format or separator characters. */
+const TYPED = /^[^\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+$/u;
+export const TYPED_MAX = 4;
 
 /** What the agent thinks the selected element is, from its tag, capabilities and computed style. */
 export const KINDS = ["image", "button", "link", "heading", "menu", "banner", "header", "footer", "section", "card", "list-item", "text", "box"] as const;
@@ -174,7 +177,7 @@ const agentMessages = {
   }),
   /** A click on something the site's code made. `around` is the nearest editable ancestor. */
   blocked: obj({ type: lit("blocked"), rect: parseRect, around: opt(elementId) }),
-  /** Requests editing; only the parent can authorize and start the text session. */
+  /** A second click on selected text. The parent only moves focus to its own Edit text control; it never starts a session from this. */
   request_text: obj({ type: lit("request_text"), element: elementId }),
   deselect: obj({ type: lit("deselect") }),
   /** Sent every frame that moves. `obstructions` are the site's own fixed or sticky bars; `obstacles` as in `select`. */
@@ -195,8 +198,9 @@ const agentMessages = {
 } as const;
 
 const editorMessages = {
-  /** Fixed four-second discovery tint; no caller-controlled duration or element list. */
+  /** Tints the text the owner can edit until `hide_editable`, a selection or a mode change. No caller-controlled element list. */
   show_editable: obj({ type: lit("show_editable") }),
+  hide_editable: obj({ type: lit("hide_editable") }),
   init: obj({
     type: lit("init"),
     mode: lit("edit", "preview"),
@@ -215,7 +219,12 @@ const editorMessages = {
   /** Scrolls an element into view, optionally with a one-off pulse after a change. */
   reveal: obj({ type: lit("reveal"), element: elementId, pulse: bool }),
   deselect: obj({ type: lit("deselect") }),
-  start_text: obj({ type: lit("start_text"), element: elementId }),
+  /**
+   * Sent only after the owner's own input in the app. `caret: "click"` puts the caret where the
+   * owner last clicked in that element, if the agent saw the click. `input` is the key the owner
+   * typed to start, inserted as the first change.
+   */
+  start_text: obj({ type: lit("start_text"), element: elementId, caret: lit("click", "auto"), input: opt(str(TYPED_MAX, TYPED)) }),
   finish_text: obj({ type: lit("finish_text"), commit: bool }),
   format: obj({ type: lit("format"), command: lit("bold", "italic", "link", "unlink"), href: opt(str(2048)) }),
   preview_style: obj({ type: lit("preview_style"), element: elementId, styles: parseStyleChanges }),

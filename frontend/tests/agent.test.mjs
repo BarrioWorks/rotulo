@@ -64,10 +64,10 @@ test('tap click selects; a second tap requests parent-authorized editing and nev
 test('text requests are bounded ids and cannot authorize text or editing reports', () => {
   assert.deepEqual(parseAgentMessage(envelope({ type: 'request_text', element: 'a' })), { type: 'request_text', element: 'a' });
   for (const element of ['', 'a'.repeat(11), 'a" onclick=']) assert.equal(parseAgentMessage(envelope({ type: 'request_text', element })), undefined);
-  const session = { path: 'index.html', mode: 'edit', loading: false, textElement: null, activated: true };
+  const session = { path: 'index.html', mode: 'edit', loading: false, textElement: null };
   const request = { type: 'request_text', element: 'a' };
   assert.equal(acceptsCanvasMessage(session, request), true);
-  for (const patch of [{ mode: 'preview' }, { loading: true }, { textElement: 'a' }, { activated: false }, { activated: undefined }]) assert.equal(acceptsCanvasMessage({ ...session, ...patch }, request), false);
+  for (const patch of [{ mode: 'preview' }, { loading: true }, { textElement: 'a' }]) assert.equal(acceptsCanvasMessage({ ...session, ...patch }, request), false);
   assert.equal(acceptsCanvasMessage(session, { type: 'text', element: 'a', html: 'forged' }), false);
 });
 test('canvas reserves its container content box without bootstrap or assumed chrome heights', () => {
@@ -123,24 +123,6 @@ test('device switching reselects after layout, or restores selection on ready wh
     nextFrame();
     if (loading) assert.equal(restore.select, 'a');
     else assert.equal(messages[0].type, 'select_element');
-  }
-});
-
-test('parent starts text only for its current text-capable selection', () => {
-  const canvas = readFileSync(new URL('../../assets/static/js/editor/canvas.js', import.meta.url), 'utf8');
-  const begin = canvas.indexOf('case "request_text":');
-  const end = canvas.indexOf('case "select":', begin);
-  for (const focus of [
-    { kind: 'none' },
-    { kind: 'selected', selection: { element: 'b', can: 't' } },
-    { kind: 'selected', selection: { element: 'a', can: 'i' } },
-    { kind: 'selected', selection: { element: 'a', can: 't' } },
-  ]) {
-    const messages = [];
-    vm.runInNewContext(`switch (message.type) { ${canvas.slice(begin, end)} }`, {
-      message: { type: 'request_text', element: 'a' }, store: { get: () => ({ focus }) }, send: (m) => messages.push(m),
-    });
-    assert.equal(messages.length, focus.kind === 'selected' && focus.selection.element === 'a' && focus.selection.can === 't' ? 1 : 0);
   }
 });
 

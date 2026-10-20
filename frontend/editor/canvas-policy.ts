@@ -1,4 +1,4 @@
-import type { AgentMessage } from "../protocol.js";
+import { TYPED_MAX, type AgentMessage } from "../protocol.js";
 import { pagePath, type Mode } from "./state.js";
 
 export interface CanvasSession {
@@ -7,8 +7,6 @@ export interface CanvasSession {
   loading: boolean;
   textElement: string | null;
   finishing?: boolean;
-  /** The owner just pressed inside the site: a fresh user activation, with no press in the app's own controls inside the activation window. */
-  activated?: boolean;
 }
 
 export function acceptsCanvasMessage(session: CanvasSession, message: AgentMessage): boolean {
@@ -18,13 +16,25 @@ export function acceptsCanvasMessage(session: CanvasSession, message: AgentMessa
     case "text":
     case "editing":
       return (session.mode === "edit" || session.finishing === true) && session.textElement === message.element;
+    // Accepted only to move focus to the app's Edit text control. Editing starts from the owner's input in the app.
     case "request_text":
-      return session.mode === "edit" && session.textElement === null && session.activated === true;
+      return session.mode === "edit" && session.textElement === null;
     case "navigate":
       return session.mode === "preview";
     default:
       return true;
   }
+}
+
+/**
+ * The character a key press types, when it should start editing the selected text. Space and
+ * Enter keep their usual meaning on a focused control, and "?" keeps opening the shortcuts.
+ */
+export function typedCharacter(event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "isComposing">): string | null {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return null;
+  const { key } = event;
+  if ([...key].length !== 1 || key.length > TYPED_MAX || key.trim() === "" || key === "?") return null;
+  return key;
 }
 
 /** Only known draft pages on this preview origin can be opened by an in-canvas link. */

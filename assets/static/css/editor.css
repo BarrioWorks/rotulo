@@ -376,7 +376,7 @@ body[data-review-open] .ed-publish { --btn-bg: var(--primary); --btn-fg: var(--o
 .studio-bottom { display: none; }
 .studio-show { position: fixed; z-index: 55; bottom: 16px; left: 50%; transform: translateX(-50%); border-radius: 999px; }
 .studio-focus .ed-main { inset: 0; }
-.studio-focus .ed-top, .studio-focus .ftb, .studio-focus .studio-bottom, .studio-focus .canvas-foot { visibility: hidden; pointer-events: none; }
+.studio-focus .ed-top, .studio-focus .ftb, .studio-focus .studio-bottom, .studio-focus .canvas-foot, .studio-focus .editable-tip { visibility: hidden; pointer-events: none; }
 .studio-palette { width: min(500px, calc(100vw - 24px)); }
 .studio-palette ul { list-style: none; padding: 0; max-height: 50dvh; overflow-y: auto; margin: 12px 0; }
 .studio-palette li button { width: 100%; justify-content: flex-start; }
@@ -485,11 +485,11 @@ dialog[data-dialog="page"][open] { z-index: 60; }
   .studio-bottom .tb-btn[data-key="link"] > span { max-width: 84px; }
 }
 
-/* Discovery and publish outcomes stay over the canvas without moving its controls. */
-.canvas-hint { position: relative; white-space: normal; overflow: visible; max-width: calc(100vw - 32px); pointer-events: auto; }
-.canvas-hint [data-canvas-hint-text] { position: absolute; left: 0; bottom: calc(100% + 4px); width: max-content; max-width: calc(100vw - 32px); padding: 6px 10px; border-radius: 8px; background: var(--surface); }
-.canvas-hint [data-canvas-hint-text]:empty { display: none; }
-.canvas-hint button { min-height: 28px; }
+/* The first-edit tip: one glass callout over the canvas, gone with its tint. */
+.editable-tip { position: absolute; z-index: 30; left: 50%; top: 50%; translate: -50% -50%; display: flex; align-items: center; gap: 4px; width: max-content; max-width: min(420px, calc(100% - 32px)); padding: 6px 6px 6px 16px; font-size: var(--fs-body); line-height: var(--lh-body); color: var(--ink); }
+.editable-tip[hidden] { display: none; }
+.editable-tip p { margin: 0; }
+.editable-tip .btn { flex: none; }
 .pub-change { display: grid; gap: var(--s0); width: 100%; padding: 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; }
 .pub-change:hover { background: var(--select-soft); }
 .pub-change:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

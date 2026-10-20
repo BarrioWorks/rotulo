@@ -1,7 +1,7 @@
 import { pageLabel } from "./pages.js";
 import { envelope, parseAgentMessage } from "../protocol.js";
 import { announce, must } from "../ui.js";
-import { changed } from "./state.js";
+import { changed, selection } from "./state.js";
 import { acceptsCanvasMessage, canvasNavigation } from "./canvas-policy.js";
 const PREVIEW_MAX_AGE_MS = 11 * 60 * 60 * 1000;
 /** The site always lays out at least this wide on "Computer", then scales to fit. */
@@ -9,8 +9,6 @@ export const DESKTOP_WIDTH = 1280;
 export const PHONE = { width: 390, height: 844 };
 const BEZEL = 11;
 const VEIL_DELAY_MS = 300;
-/** Chromium's transient user activation lasts five seconds. */
-const USER_ACTIVATION_MS = 5000;
 /** Fits a 1280 px desktop or a 390 by 844 phone into the space the window leaves. */
 export function frameLayout(device, zoom, available) {
     const width = Math.max(1, available.width);
@@ -67,6 +65,10 @@ function loadUiFont() {
         .catch(() => null);
     return uiFont;
 }
+/** Which part is chosen, so a moved or resized selection does not count as a new one. */
+function focusKey(s) {
+    return s.focus.kind === "selected" ? s.focus.selection.element : s.focus.kind === "blocked" ? "blocked" : null;
+}
 function makeIframe(title) {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
@@ -82,25 +84,38 @@ export function createCanvas(store, handlers) {
     const loadingText = must(document, "[data-canvas-loading-text]");
     const zoomButton = must(document, "[data-zoom]");
     const zoomLabel = must(document, "[data-zoom-label]");
-    const hint = must(document, "[data-canvas-hint]");
-    const hintText = must(hint, "[data-canvas-hint-text]");
+    const hintText = must(document, "[data-canvas-hint-text]");
+    const tip = must(document, "[data-editable-tip]");
     const welcomeUrl = new URL(window.location.href);
-    let welcome = welcomeUrl.searchParams.get("welcome") === "1";
+    const welcome = welcomeUrl.searchParams.get("welcome") === "1";
     if (welcome) {
         welcomeUrl.searchParams.delete("welcome");
         window.history.replaceState(window.history.state, "", welcomeUrl);
     }
+    /** The tip and the agent's tint share one lifetime: shown together, gone together. */
     function showEditable() {
         store.dispatch({ type: "mode", mode: "edit" });
-        if (store.get().canvasLoading)
-            welcome = true;
-        else
+        if (store.get().focus.kind !== "none") {
+            send({ type: "deselect" });
+            store.dispatch({ type: "deselected" });
+        }
+        tip.hidden = false;
+        if (!awaitingReady)
             send({ type: "show_editable" });
-        window.clearTimeout(hintTimer);
-        hintText.textContent = "Click any highlighted text to edit it.";
-        announce(hintText.textContent);
+        announce(must(tip, "[data-editable-tip-text]").textContent ?? "");
     }
-    must(hint, "[data-show-editable]").addEventListener("click", showEditable);
+    function dismissEditable() {
+        if (tip.hidden)
+            return false;
+        tip.hidden = true;
+        if (!awaitingReady)
+            send({ type: "hide_editable" });
+        return true;
+    }
+    must(tip, "[data-editable-tip-close]").addEventListener("click", () => {
+        dismissEditable();
+        surface.focus({ preventScroll: true });
+    });
     /** The frame on screen, and the one loading behind it until its agent says it is ready. */
     let active = must(surface, "[data-canvas]");
     let pending = null;
@@ -111,6 +126,8 @@ export function createCanvas(store, handlers) {
     let expectedPath = store.get().path;
     let awaitingReady = true;
     let textSession = null;
+    /** The text the owner clicked a second time, so the session they start next opens at that point. */
+    let clickedText = null;
     /**
      * The preview origin each frame was loaded from. The preview address changes every time the
      * editor reloads its state (publishing again, undo), so a frame already on screen keeps
@@ -280,20 +297,12 @@ export function createCanvas(store, handlers) {
         if (!textSession && store.get().mode === "edit" && (focused === active || focused === document.body || focused === null))
             surface.focus({ preventScroll: true });
     }
-    // A request to edit from the site needs a fresh user activation, which a script in the site cannot
-    // create. Presses in the app's own chrome also activate this window, so a request made while one of
-    // those is still within the browser's activation window does not count.
-    let chromeInputAt = -Infinity;
-    // Keys on the canvas itself only move the selection, so they are not presses in the chrome.
-    document.addEventListener("pointerdown", () => { chromeInputAt = performance.now(); }, true);
-    document.addEventListener("keydown", (event) => { if (event.target !== surface)
-        chromeInputAt = performance.now(); }, true);
     window.addEventListener("message", (event) => {
         const source = awaitingReady ? (pending ?? active) : active;
         if (event.source !== source.contentWindow || event.origin !== originOf(source))
             return;
         const message = parseAgentMessage(event.data);
-        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false, activated: (navigator.userActivation?.isActive ?? false) && performance.now() - chromeInputAt > USER_ACTIVATION_MS }, message))
+        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false }, message))
             return;
         switch (message.type) {
             case "ready": {
@@ -303,10 +312,8 @@ export function createCanvas(store, handlers) {
                 swap();
                 store.dispatch({ type: "page_ready", path: expectedPath, title: message.title, description: message.description, origin: originOf(active) });
                 active.contentWindow?.postMessage(envelope({ type: "init", mode: store.get().mode, scrollY: restore.scrollY, select: restore.select, scale: layout.scale }), originOf(active));
-                if (welcome) {
-                    welcome = false;
-                    showEditable();
-                }
+                if (!tip.hidden)
+                    send({ type: "show_editable" });
                 const ready = active;
                 void loadUiFont().then((data) => {
                     if (data && ready === active)
@@ -318,13 +325,16 @@ export function createCanvas(store, handlers) {
                 break;
             }
             case "request_text": {
-                const s = store.get();
-                if (s.focus.kind === "selected" && s.focus.selection.element === message.element && s.focus.selection.can.includes("t"))
-                    send({ type: "start_text", element: message.element });
+                const sel = selection(store.get());
+                if (sel?.element === message.element && sel.can.includes("t")) {
+                    clickedText = message.element;
+                    handlers.onRequestText();
+                }
                 break;
             }
             case "select":
                 handlers.onPageClick();
+                clickedText = null;
                 if (textSession?.element !== message.element)
                     textSession = null;
                 store.dispatch({
@@ -336,12 +346,14 @@ export function createCanvas(store, handlers) {
                 break;
             case "blocked":
                 handlers.onPageClick();
+                clickedText = null;
                 textSession = null;
                 store.dispatch({ type: "blocked", rect: message.rect, around: message.around });
                 reclaimFocus();
                 break;
             case "deselect":
                 handlers.onPageClick();
+                clickedText = null;
                 textSession = null;
                 store.dispatch({ type: "deselected" });
                 reclaimFocus();
@@ -402,8 +414,10 @@ export function createCanvas(store, handlers) {
         if (prev && changed(s, prev, "pages", "path"))
             syncFocusability(s);
         surface.toggleAttribute("data-has-selection", s.focus.kind !== "none");
-        if (prev && s.focus !== prev.focus && s.focus.kind !== "none" && hintText.textContent === "Click any highlighted text to edit it.")
-            hintText.textContent = "";
+        if (prev && focusKey(s) !== focusKey(prev) && focusKey(s) !== null)
+            dismissEditable();
+        if (prev && s.mode !== prev.mode && s.mode === "preview")
+            dismissEditable();
         if (!prev || s.mode !== prev.mode || s.device !== prev.device) {
             window.clearTimeout(hintTimer);
             hintText.textContent = s.mode === "preview"
@@ -437,10 +451,24 @@ export function createCanvas(store, handlers) {
             applyLayout();
         }
     });
+    if (welcome)
+        showEditable();
     return {
         frame: () => active,
         surface,
         showEditable,
+        dismissEditable,
+        startText(input = null) {
+            const s = store.get();
+            const sel = selection(s);
+            if (!sel || !sel.can.includes("t") || textSession || awaitingReady || s.mode !== "edit")
+                return false;
+            const caret = clickedText === sel.element ? "click" : "auto";
+            clickedText = null;
+            active.focus();
+            send({ type: "start_text", element: sel.element, caret, input });
+            return true;
+        },
         open(path, reveal) {
             restore = { scrollY: null, select: reveal ?? null, pulse: Boolean(reveal) };
             store.dispatch({ type: "open_page", path });
