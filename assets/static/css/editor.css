@@ -368,3 +368,6 @@ body[data-boot="manage"] .manage { display: flex; }
 .seg-block button { flex: 1; min-width: 0; padding: 0 var(--s2); justify-content: center; white-space: nowrap; }
 .rail-panel-body .seg-block { flex-direction: column; }
 .seg-block[aria-busy="true"] { opacity: 0.6; pointer-events: none; }
+
+/* Addresses, DNS values and imported file names use the system monospace stack. */
+.pub-address a, .manage-address a, .domain-name, .domain-form input, .image-file { font-family: var(--font-mono); }

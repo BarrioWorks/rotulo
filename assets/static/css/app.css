@@ -1,117 +1,112 @@
-/* Pagehaven foundation: tokens, base, typography and shared components ("Proof").
+/* Pagehaven foundation: tokens, base, typography and shared components ("Studio").
    screens.css (landing, auth, dashboard, import, errors) and editor.css (editor shell, canvas, toolbar, panels, publishing)
    load after this file and use only its tokens and components. DESIGN.md documents every role. */
 
 @font-face {
-  font-family: "Schibsted Grotesk";
-  src: url("/static/fonts/schibsted-grotesk-400-700.woff2") format("woff2");
+  font-family: "Onest";
+  src: url("/static/fonts/onest-variable-latin.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
-@font-face {
-  font-family: "Newsreader";
-  src: url("/static/fonts/newsreader-display-450.woff2") format("woff2");
-  font-weight: 450;
-  font-style: normal;
-  font-display: swap;
-}
-/* Metric-matched fallbacks so the swap does not move text. Numbers come from scripts/design/build_fonts.sh. */
-@font-face {
-  font-family: "Schibsted Grotesk Fallback";
-  src: local("Arial"), local("ArialMT"), local("Liberation Sans"), local("Helvetica");
-  size-adjust: 103.2%;
-  ascent-override: 94.7%;
-  descent-override: 25%;
-  line-gap-override: 0%;
-}
-@font-face {
-  font-family: "Newsreader Fallback";
-  src: local("Times New Roman"), local("TimesNewRomanPSMT"), local("Liberation Serif"), local("Times");
-  size-adjust: 104.5%;
-  ascent-override: 70.4%;
-  descent-override: 25.4%;
-  line-gap-override: 0%;
-}
 
-:root {
-  /* Families. Newsreader is for display titles outside the editor only. */
-  --font-ui: "Schibsted Grotesk", "Schibsted Grotesk Fallback", system-ui, sans-serif;
-  --font-display: "Newsreader", "Newsreader Fallback", Georgia, serif;
+:root {  /* Families. One UI face; the identity specifies no local metric overrides. */
+  --font-ui: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Neutrals. Ink on warm near-white; the chrome has no hue of its own. */
-  --ground: #F4F3EF;           /* app background */
-  --surface: #FFFFFF;          /* top bar, sidebar, cards, menus, dialogs, inputs */
-  --surface-hover: #F7F6F3;
-  --surface-pressed: #EEEDE8;
-  --sunken: #E9E8E3;           /* canvas backdrop, tracks, input addons, disabled fills */
-  --ink: #16161A;              /* primary text, primary button, rules that carry meaning */
-  --ink-2: #4B4A46;            /* secondary text */
-  --ink-3: #64635E;            /* meta, placeholders, disabled labels */
-  --rule: #DEDDD7;             /* decorative hairline */
-  --rule-strong: #C9C8C1;      /* section dividers, scrollbars */
-  --control-border: #8C8B85;   /* inputs, secondary buttons, switch track: 3:1 on surface */
-  --hover: rgba(22, 22, 26, 0.05);
-  --pressed: rgba(22, 22, 26, 0.09);
-  --neutral-soft: #ECEBE6;     /* draft and offline pills, neutral notes */
+  /* Type roles: size / line height / weight / tracking. */
+  --fs-caption: 0.6875rem;  --lh-caption: 0.875rem;  --fw-caption: 500;  --ls-caption: 0.01em;   /* 11: selection chip, kbd, counts */
+  --fs-meta: 0.75rem;       --lh-meta: 1rem;         --fw-meta: 400;     --ls-meta: 0.005em;     /* 12: row meta, hints */
+  --fs-control: 0.8125rem;  --lh-control: 1rem;      --fw-control: 500;  --ls-control: 0;        /* 13: capsule and menu labels */
+  --fs-body: 0.9375rem;     --lh-body: 1.375rem;     --fw-body: 400;     --ls-body: 0;           /* 15: inputs, sentences in panels */
+  --fs-title: 1.375rem;     --lh-title: 1.75rem;     --fw-title: 600;    --ls-title: -0.015em;   /* 22: sheet and dialog titles */
+  --fs-display: clamp(2.25rem, 1.5rem + 3vw, 3.5rem); --lh-display: 1.05; --fw-display: 600; --ls-display: -0.03em; /* dashboard, landing */
 
-  /* Action */
-  --primary: #16161A;
-  --primary-hover: #2C2C31;
-  --primary-pressed: #000000;
-  --on-primary: #FFFFFF;
-  --link: #005F96;
-  --link-hover: #004A75;
+  /* Neutrals. Cool and nearly grey, hue taken from the accent so the chrome reads as one family. */
+  --ws-ground: #E8E8EC;        /* workspace behind the canvas */
+  --ws-ground-edge: #D9D9DF;   /* canvas edge on the ground */
+  --surface: #FAFAFB;          /* opaque panels, inputs, fallback for every glass level */
+  --surface-sunk: #F0F0F3;     /* search fields and tracks inside panels */
+  --ink: #17171C;              /* text and icons on any Pagehaven surface */
+  --ink-2: #4A4A55;            /* secondary text, idle icons */
+  --ink-3: #5F5F6B;            /* meta on opaque and glass-3 surfaces; never on glass-2 */
+  --rule: rgba(23, 23, 28, 0.10);
+  --rule-strong: rgba(23, 23, 28, 0.18);
+  --control-edge: #85858F;     /* input and switch edges: 3:1 on surface */
+  --hover: rgba(23, 23, 28, 0.06);
+  --pressed: rgba(23, 23, 28, 0.11);
 
-  /* Selection and focus: Proof Cyan, reserved for what you are touching, focus and links */
-  --select: #0A86D6;
-  --select-strong: #0070B8;    /* selection slug fill, white text on it */
-  --select-soft: #E3F2FB;      /* selected rows, drop targets */
-  --select-text: rgba(10, 134, 214, 0.2);
-  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--select);
+  /* Accent: Haven Ultramarine. Selection, focus, the current item, links and Publish. */
+  --accent: #3730BD;
+  --accent-hover: #2E28A3;
+  --accent-pressed: #25208A;
+  --accent-soft: #E7E6FA;      /* current row, pressed segment on opaque */
+  --accent-wash: rgba(55, 48, 189, 0.12); /* the same on glass */
+  --on-accent: #FFFFFF;
+  --select-ring: var(--accent);
+  --select-halo: #FFFFFF;
+  --select-width: 2px;
+  --halo-width: 1.5px;
+  --focus-ring: 0 0 0 2px var(--select-halo), 0 0 0 4px var(--accent);
 
-  /* State. Each also has a word or a shape; color is never the only signal. */
-  --success: #1B7343;  --success-soft: #E6F2EA;
-  --warning: #9A5300;  --warning-soft: #FBEFD9;
-  --error: #BA2F25;    --error-soft: #FBE8E6;   --error-hover: #9E271F;
-  --toast: #16161A;    --on-toast: #F4F3EF;
+  /* Status. Each also carries a word and a shape. */
+  --success: #0F5E35;  --success-soft: #E3F1E8;
+  --warning: #774000;  --warning-soft: #F8ECD8;
+  --error: #A01C24;    --error-soft: #F9E5E5;
+  --tip: #1C1C22;      --on-tip: #F4F4F7;  /* tooltips and toasts: solid, never glass */
 
-  /* Editor overlay inside the site (drawn by the preview agent, mirrored there because the iframe cannot read these). */
-  --overlay-accent: var(--select);
-  --overlay-accent-soft: rgba(10, 134, 214, 0.2);
-  --overlay-hover: rgba(10, 134, 214, 0.7);
-  --overlay-halo: rgba(255, 255, 255, 0.9);
-  --overlay-muted: #8C8B85;
-  --overlay-veil: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.06) 0 6px, rgba(255, 255, 255, 0.06) 6px 12px);
-  --overlay-chip-bg: var(--select-strong);
-  --overlay-chip-ink: #FFFFFF;
-  --select-stroke: 1.5px;
-  --crop-mark: 8px;            /* arm length of each crop mark */
-  --crop-gap: 4px;             /* crop marks sit this far outside the corner */
-  --crop-weight: 1px;          /* crop mark stroke on screens; .crop-select uses --select-stroke */
-  --kind-label-size: 0.75rem;  /* the slug that names the part: "Heading", "Image" */
-  --canvas-backdrop: var(--sunken);
-  --shadow-canvas: 0 0 0 1px rgba(22, 22, 26, 0.14);
-  --device-bezel: #16161A;
+  /* Existing screen roles retain their names. */
+  --ground: var(--ws-ground);
+  --sunken: var(--surface-sunk);
+  --surface-hover: #F0F0F3;
+  --surface-pressed: #E4E4E9;
+  --neutral-soft: var(--surface-sunk);
+  --control-border: var(--control-edge);
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --primary-pressed: var(--accent-pressed);
+  --on-primary: var(--on-accent);
+  --link: var(--accent);
+  --link-hover: var(--accent-hover);
+  --select: var(--accent);
+  --select-strong: var(--accent);
+  --select-soft: var(--accent-soft);
+  --select-text: var(--accent-wash);
+  --error-hover: #86171E;
+  --toast: var(--tip);
+  --on-toast: var(--on-tip);
+
+  /* Preview overlay: mirrored by frontend/overlay-theme.ts. */
+  --overlay-accent: var(--accent);
+  --overlay-accent-soft: rgba(55, 48, 189, 0.12);
+  --overlay-hover: rgba(55, 48, 189, 0.7);
+  --overlay-halo: #FFFFFF;
+  --overlay-muted: var(--control-edge);
+  --overlay-veil: repeating-linear-gradient(135deg, rgba(23, 23, 28, 0.06) 0 6px, rgba(255, 255, 255, 0.06) 6px 12px);
+  --overlay-chip-bg: var(--accent);
+  --overlay-chip-ink: var(--on-accent);
+  --select-stroke: var(--select-width);
+  --crop-mark: 8px;
+  --crop-gap: 4px;
+  --crop-weight: 1px;
+  --kind-label-size: var(--fs-caption);
+  --canvas-backdrop: var(--ws-ground);
+  --shadow-canvas: 0 0 0 1px rgba(17, 17, 28, 0.14);
+  --device-bezel: #17171C;
   --device-bezel-edge: #3A3A40;
-  --device-radius: 34px;       /* the phone screen inside its bezel; a device picture, not chrome */
-  --veil: color-mix(in srgb, var(--surface) 86%, transparent); /* loading veil over the old page */
+  --device-radius: 34px;
+  --veil: rgba(250, 250, 251, 0.86);
 
-  /* Type roles: size / line height / weight / tracking. Sizes in rem so user font settings scale them. */
-  --fs-micro: 0.75rem;     --lh-micro: 1rem;       --fw-micro: 600;  --ls-micro: 0.01em;    /* pills, kbd, kind slug */
-  --fs-meta: 0.8125rem;    --lh-meta: 1.125rem;    --fw-meta: 400;   --ls-meta: 0;          /* timestamps, hints, counts */
-  --fs-label: 0.8125rem;   --lh-label: 1.125rem;   --fw-label: 500;  --ls-label: 0;         /* field labels, group titles */
-  --fs-control: 0.875rem;  --lh-control: 1.25rem;  --fw-control: 500; --ls-control: 0;      /* buttons, nav rows, menus */
-  --fs-body: 0.9375rem;    --lh-body: 1.375rem;    --fw-body: 400;   --ls-body: 0;          /* sentences, inputs */
-  --fs-lead: 1rem;         --lh-lead: 1.5rem;      --fw-lead: 400;   --ls-lead: 0;          /* line under a page title */
-  --fs-title-3: 0.9375rem; --lh-title-3: 1.25rem;  --fw-title-3: 600; --ls-title-3: -0.005em; /* editor site name, card names */
-  --fs-heading: 1.125rem;  --lh-heading: 1.5rem;   --fw-heading: 600; --ls-heading: -0.01em; /* dialog and card titles */
-  --fs-title-2: 1.5rem;    --lh-title-2: 1.875rem; --fw-title-2: 450; --ls-title-2: -0.01em; /* Newsreader: empty states, drop zone */
-  --fs-title-1: 2rem;      --lh-title-1: 2.25rem;  --fw-title-1: 450; --ls-title-1: -0.015em; /* Newsreader: page and auth titles */
-  --fs-display: clamp(2.5rem, 1.6rem + 3.6vw, 4rem); --lh-display: 1.04; --fw-display: 450; --ls-display: -0.02em; /* landing only */
-  --fs-brand: 1.0625rem;   --fw-brand: 700;      --ls-brand: -0.02em;                         /* the Pagehaven wordmark */
-  --fs-mono: 0.78125rem;   --lh-mono: 1.125rem;                                               /* DNS records, file paths */
+  /* Existing type roles map to the Studio scale. */
+  --fs-micro: var(--fs-caption); --lh-micro: var(--lh-caption); --fw-micro: var(--fw-caption); --ls-micro: var(--ls-caption);
+  --fs-label: var(--fs-control); --lh-label: var(--lh-control); --fw-label: var(--fw-control); --ls-label: var(--ls-control);
+  --fs-lead: var(--fs-body); --lh-lead: var(--lh-body); --fw-lead: var(--fw-body); --ls-lead: var(--ls-body);
+  --fs-title-3: var(--fs-body); --lh-title-3: var(--lh-body); --fw-title-3: 600; --ls-title-3: 0;
+  --fs-heading: var(--fs-title); --lh-heading: var(--lh-title); --fw-heading: var(--fw-title); --ls-heading: var(--ls-title);
+  --fs-title-2: var(--fs-title); --lh-title-2: var(--lh-title); --fw-title-2: var(--fw-title); --ls-title-2: var(--ls-title);
+  --fs-title-1: var(--fs-display); --lh-title-1: var(--lh-display); --fw-title-1: var(--fw-display); --ls-title-1: var(--ls-display);
+  --fs-brand: 1.0625rem; --fw-brand: 600; --ls-brand: -0.02em;
+  --fs-mono: var(--fs-control); --lh-mono: var(--lh-control);
   --measure: 66ch;
 
   /* Spacing, 4 px grid */
@@ -202,7 +197,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-kerning: normal;
-  font-synthesis: none; /* one upright Newsreader weight ships; never fake its bold or italic */
+  font-synthesis: none; /* use the supplied upright font without synthetic styles */
 }
 
 img, svg { display: block; max-width: 100%; }
@@ -238,9 +233,9 @@ code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 
 /* Type roles as classes, for markup that has no component of its own */
 
-.t-display { font-family: var(--font-display); font-size: var(--fs-display); line-height: var(--lh-display); font-weight: var(--fw-display); letter-spacing: var(--ls-display); }
-.t-title-1 { font-family: var(--font-display); font-size: var(--fs-title-1); line-height: var(--lh-title-1); font-weight: var(--fw-title-1); letter-spacing: var(--ls-title-1); }
-.t-title-2 { font-family: var(--font-display); font-size: var(--fs-title-2); line-height: var(--lh-title-2); font-weight: var(--fw-title-2); letter-spacing: var(--ls-title-2); }
+.t-display { font-family: var(--font-ui); font-size: var(--fs-display); line-height: var(--lh-display); font-weight: var(--fw-display); letter-spacing: var(--ls-display); }
+.t-title-1 { font-family: var(--font-ui); font-size: var(--fs-title-1); line-height: var(--lh-title-1); font-weight: var(--fw-title-1); letter-spacing: var(--ls-title-1); }
+.t-title-2 { font-family: var(--font-ui); font-size: var(--fs-title-2); line-height: var(--lh-title-2); font-weight: var(--fw-title-2); letter-spacing: var(--ls-title-2); }
 .t-heading { font-size: var(--fs-heading); line-height: var(--lh-heading); font-weight: var(--fw-heading); letter-spacing: var(--ls-heading); }
 .t-title-3 { font-size: var(--fs-title-3); line-height: var(--lh-title-3); font-weight: var(--fw-title-3); letter-spacing: var(--ls-title-3); }
 .t-lead { font-size: var(--fs-lead); line-height: var(--lh-lead); color: var(--ink-2); }
@@ -544,10 +539,10 @@ code, kbd, samp { font-family: var(--font-mono); font-size: var(--fs-mono); }
 .table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .table tbody tr:hover { background: var(--surface-hover); }
 
-/* Empty states: a Newsreader title, one sentence, one action */
+/* Empty states: an Onest title, one sentence, one action */
 
 .empty { text-align: center; padding: var(--s10) var(--s6); }
-.empty h2 { font-family: var(--font-display); font-size: var(--fs-title-2); line-height: var(--lh-title-2); font-weight: var(--fw-title-2); letter-spacing: var(--ls-title-2); }
+.empty h2 { font-family: var(--font-ui); font-size: var(--fs-title-2); line-height: var(--lh-title-2); font-weight: var(--fw-title-2); letter-spacing: var(--ls-title-2); }
 .empty p { margin: var(--s3) auto 0; max-width: 34rem; color: var(--ink-2); }
 .empty .btn { margin-top: var(--s6); }
 
@@ -607,7 +602,7 @@ dialog.sheet[open] { animation: sheet-in var(--dur-panel) var(--ease-out); }
 }
 
 @media (max-width: 760px) {
-  :root { --fs-title-1: 1.75rem; --lh-title-1: 2rem; }
+  /* Display titles already scale with the viewport. */
 }
 
 @media (max-width: 520px) {

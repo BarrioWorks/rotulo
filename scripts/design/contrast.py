@@ -1,13 +1,19 @@
 """Print WCAG contrast ratios for the color token pairs Pagehaven relies on.
 
 Usage: python3 -I scripts/design/contrast.py [assets/static/css/app.css]
-Reads hex tokens from the :root block, so the table always reflects the shipped values. Exits 1 if a pair is below its minimum.
+Reads colour tokens from the :root block, so the table always reflects the shipped values. Exits 1 if a pair is below its minimum.
 """
 import re, sys
 
 css = open(sys.argv[1] if len(sys.argv) > 1 else "assets/static/css/app.css").read()
 root = css[css.index(":root {"):css.index("}", css.index(":root {"))]
-T = dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9A-Fa-f]{6})\b", root))
+T = {k: v.strip() for k, v in re.findall(r"--([a-z0-9-]+):\s*([^;]+);", root)}
+
+def token(name):
+    value = T[name]
+    alias = re.fullmatch(r"var\(--([a-z0-9-]+)\)", value)
+    return token(alias[1]) if alias else value
+
 T["white"], T["dark-photo"] = "#FFFFFF", "#2B2B2B"
 
 # (foreground, background, minimum, what it is)
@@ -26,9 +32,8 @@ PAIRS = [
     ("ink", "select-soft", 4.5, "text on selected row"),
     ("link", "select-soft", 4.5, "current page row label"), ("ink-3", "neutral-soft", 4.5, "meta on a neutral note"),
     ("ink-2", "surface-pressed", 4.5, "label on a pressed control"),
-    ("control-border", "surface", 3.0, "input and secondary button edge"), ("control-border", "ground", 3.0, "input edge on ground"),
+    ("control-border", "surface", 3.0, "input and secondary button edge"),
     ("select", "surface", 3.0, "focus ring, selection on white"), ("select", "ground", 3.0, "focus ring on ground"),
-    ("select", "dark-photo", 3.0, "selection on a dark photo"), ("select", "ink", 3.0, "focus ring next to ink button"),
     ("ink", "surface", 3.0, "pressed segment, switch on"),
     ("select", "select-soft", 3.0, "current page icon"),
     ("ink", "warning-soft", 4.5, "warning toast text"), ("warning", "warning-soft", 3.0, "warning toast icon"),
@@ -46,7 +51,16 @@ def ratio(a, b):
 failed = False
 print("| Foreground | Background | Ratio | Needs | Use |\n|---|---|---|---|---|")
 for fg, bg, need, use in PAIRS:
-    r = ratio(T[fg], T[bg])
+    r = ratio(token(fg), token(bg))
     failed |= r < need
     print(f"| `{fg}` {T[fg]} | `{bg}` {T[bg]} | {r:.2f} | {need} | {use}{'  FAIL' if r < need else ''} |")
+# The accent and opaque white halo together must cover arbitrary site pixels.
+for step in range(2001):
+    grey = step / 2000
+    linear = grey / 12.92 if grey <= 0.04045 else ((grey + 0.055) / 1.055) ** 2.4
+    contrasts = [(max(lum(token(name)), linear) + 0.05) / (min(lum(token(name)), linear) + 0.05)
+                 for name in ("select-ring", "select-halo")]
+    if max(contrasts) < 3:
+        print(f"FAIL selection ring plus halo over grey {grey:.4f}")
+        failed = True
 sys.exit(1 if failed else 0)

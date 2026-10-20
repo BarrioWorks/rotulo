@@ -5,25 +5,27 @@
  */
 export const OVERLAY = {
     /** --overlay-accent: the selection rule, crop marks and editing glow. */
-    accent: "#0A86D6",
+    accent: "#3730BD",
     /** --overlay-accent-soft: the editing glow and the "just changed" pulse. */
-    accentSoft: "rgba(10, 134, 214, 0.2)",
+    accentSoft: "rgba(55, 48, 189, 0.12)",
     /** --overlay-hover: the dashed hover rule. */
-    hover: "rgba(10, 134, 214, 0.7)",
+    hover: "rgba(55, 48, 189, 0.7)",
     /** --overlay-halo: the white line beside every rule, so it reads on dark photos. */
-    halo: "rgba(255, 255, 255, 0.9)",
+    halo: "#FFFFFF",
     /** --overlay-muted: parts that cannot be edited and hidden sections. */
-    muted: "#8C8B85",
+    muted: "#85858F",
     /** --overlay-chip-bg: the slug that names the selected part. */
-    chipBg: "#0070B8",
+    chipBg: "#3730BD",
     /** --overlay-chip-ink: text on the slug. */
     chipInk: "#FFFFFF",
     /** --toast: the hidden-section badge. */
-    badgeBg: "#16161A",
+    badgeBg: "#1C1C22",
     /** --on-toast: text on the hidden-section badge. */
-    badgeInk: "#F4F3EF",
+    badgeInk: "#F4F4F7",
     /** --select-stroke */
-    stroke: "1.5px",
+    stroke: "2px",
+    /** --halo-width */
+    haloWidth: "1.5px",
     /** --crop-mark: arm length of each crop mark. */
     cropMark: "8px",
     /** --crop-gap: crop marks sit this far outside the corner. */
@@ -41,6 +43,7 @@ export const OVERLAY_TOKENS = {
     badgeBg: "--toast",
     badgeInk: "--on-toast",
     stroke: "--select-stroke",
+    haloWidth: "--halo-width",
     cropMark: "--crop-mark",
     cropGap: "--crop-gap",
 };

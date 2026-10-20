@@ -73,7 +73,7 @@ sheet.replaceSync(`
   .glide { transition: left 140ms cubic-bezier(0.16, 1, 0.3, 1), top 140ms cubic-bezier(0.16, 1, 0.3, 1), width 140ms cubic-bezier(0.16, 1, 0.3, 1), height 140ms cubic-bezier(0.16, 1, 0.3, 1); }
   .hover { border: ${px("1px")} dashed ${O.halo}; box-shadow: 0 0 0 ${px("1px")} ${TWIN}, inset 0 0 0 ${px("1px")} ${TWIN}; animation: fade 80ms ease-out; }
   .hover.blocked { border-color: ${O.muted}; }
-  .select { border: ${px(O.stroke)} solid ${O.accent}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}, inset 0 0 0 ${px("1px")} ${O.halo}; }
+  .select { border: ${px(O.stroke)} solid ${O.accent}; box-shadow: 0 0 0 ${px(O.haloWidth)} ${O.halo}; }
   .select.pulse { animation: pulse 400ms ease-out; }
   .blocked-box { border: ${px(O.stroke)} dashed ${O.muted}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}, inset 0 0 0 ${px("1px")} ${O.halo}; }
   .crop { --arm: ${px(O.cropMark)}; --gap: ${px(O.cropGap)}; --w: ${px(O.stroke)}; position: absolute; width: var(--arm); height: var(--arm); border: 0 solid ${O.accent}; filter: drop-shadow(0 0 ${px("0.5px")} ${O.halo}) drop-shadow(0 0 ${px("0.5px")} ${O.halo}); }
@@ -92,7 +92,15 @@ sheet.replaceSync(`
   .badge { position: absolute; left: ${px("8px")}; display: inline-flex; align-items: center; height: ${px("24px")}; padding: 0 ${px("8px")}; border-radius: ${px("3px")}; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 ${px("12px")}/${px("24px")} ${UI_FONT}; white-space: nowrap; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes pulse { 0% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 0 ${O.accentSoft}, inset 0 0 0 ${px("1px")} ${O.halo}; } 40% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 ${px("10px")} ${O.accentSoft}, inset 0 0 0 ${px("1px")} ${O.halo}; } 100% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 0 transparent, inset 0 0 0 ${px("1px")} ${O.halo}; } }
-  @media (prefers-reduced-motion: reduce) { .glide, .hover, .select.pulse { transition: none; animation: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .glide { transition: none; }
+    .hover, .select.pulse { animation: fade 120ms ease-out; }
+  }
+  @media (forced-colors: active) {
+    .select, .hover, .blocked-box { border-color: Highlight; box-shadow: none; forced-color-adjust: none; }
+    .slug { background: Highlight; color: HighlightText; box-shadow: none; forced-color-adjust: none; }
+    .crop { border-color: Highlight; filter: none; }
+  }
 `);
 shadow.adoptedStyleSheets = [sheet];
 host.style.setProperty("all", "initial", "important");

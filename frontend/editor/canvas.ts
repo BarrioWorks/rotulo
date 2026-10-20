@@ -62,7 +62,7 @@ export function frameLayout(device: State["device"], zoom: State["zoom"], availa
 }
 
 /** The app's interface font, handed to the agent as bytes so the slug in the site matches the app. */
-const UI_FONT_URL = "/static/fonts/schibsted-grotesk-400-700.woff2";
+const UI_FONT_URL = "/static/fonts/onest-variable-latin.woff2";
 let uiFont: Promise<ArrayBuffer | null> | null = null;
 
 function loadUiFont(): Promise<ArrayBuffer | null> {
