@@ -12,9 +12,20 @@ const parseReport = obj({
 });
 export type Report = Parsed<typeof parseReport>;
 
+function parseEditorUrl(value: unknown): string | undefined {
+  const path = str(2048)(value);
+  if (path === undefined) return undefined;
+  try {
+    const url = new URL(path, location.origin);
+    return url.origin === location.origin && /^\/projects\/[^/]+$/.test(url.pathname) ? path : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const parseSuccess = obj({
   project: obj({ pid: str(64), name: str(200) }),
-  editor_url: str(2048, /^\/[^/\\]/),
+  editor_url: parseEditorUrl,
   report: parseReport,
   thumbnail_url: opt(str(2048)),
 });
@@ -142,8 +153,33 @@ async function indexText(buffer: ArrayBuffer, entry: ZipEntry): Promise<string |
   return new TextDecoder().decode(output);
 }
 
+export type IndexSummary = { moduleScript: boolean; emptyRoot: boolean; sourceScript: boolean };
+
+/** Parse inert HTML instead of matching untrusted markup with backtracking regexes. */
+export function summarizeIndex(html: string): IndexSummary {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return {
+    moduleScript: doc.querySelector('script[type="module"]') !== null,
+    emptyRoot: [...doc.querySelectorAll("#root, #app, #__next")].some((root) =>
+      root.children.length === 0 && (root.textContent ?? "").trim() === ""),
+    sourceScript: doc.querySelector('script[src$=".ts" i], script[src$=".tsx" i], script[src$=".jsx" i], script[src$=".vue" i], script[src$=".svelte" i]') !== null ||
+      [...doc.querySelectorAll('script[src*="?"], script[src*="#"]')].some((script) => {
+        // Ignore URL query/fragment suffixes, as the preflight did before DOM parsing.
+        const path = (script.getAttribute("src") ?? "").split(/[?#]/, 1)[0] ?? "";
+        return [".ts", ".tsx", ".jsx", ".vue", ".svelte"].some((extension) =>
+          path.toLowerCase().endsWith(extension));
+      }),
+  };
+}
+
+export function classifyIndex(summary: IndexSummary, source: boolean, indexCount: number): ZipCheck {
+  if (source && indexCount === 1 && summary.sourceScript) return { kind: "refused", message: SOURCE_ONLY };
+  if (summary.moduleScript && summary.emptyRoot) return { kind: "warning", message: SCRIPT_BUILT };
+  return { kind: "ready" };
+}
+
 /** Advisory only: the server validates paths, content, sizes and CRCs after upload. */
-export async function inspectZip(buffer: ArrayBuffer): Promise<ZipCheck> {
+export async function inspectZip(buffer: ArrayBuffer, summarize: (html: string) => IndexSummary = summarizeIndex): Promise<ZipCheck> {
   try {
     const entries = zipDirectory(buffer);
     if (!entries) return { kind: "unsure", message: UNSURE };
@@ -156,14 +192,7 @@ export async function inspectZip(buffer: ArrayBuffer): Promise<ZipCheck> {
     if (!index) return { kind: "unsure", message: UNSURE };
     const html = await indexText(buffer, index);
     if (html === null) return { kind: "unsure", message: UNSURE };
-    const clean = html.replace(/<!--[\s\S]*?-->/g, "");
-    if (source && indexes.length === 1 && /<script\b[^>]*\bsrc\s*=\s*["']?[^"'\s>]*\.(?:ts|jsx|tsx|vue|svelte)(?=[?#"'\s>])/i.test(clean)) {
-      return { kind: "refused", message: SOURCE_ONLY };
-    }
-    if (/<script\b[^>]*\btype\s*=\s*(?:"module"|'module'|module(?=[\s>]))/i.test(clean) && /<(?:div|main)\b[^>]*\bid\s*=\s*(?:"(?:root|app|__next)"|'(?:root|app|__next)'|(?:root|app|__next)(?=[\s>]))[^>]*>\s*<\/(?:div|main)>/i.test(clean)) {
-      return { kind: "warning", message: SCRIPT_BUILT };
-    }
-    return { kind: "ready" };
+    return classifyIndex(summarize(html), source, indexes.length);
   } catch {
     return { kind: "unsure", message: UNSURE };
   }
