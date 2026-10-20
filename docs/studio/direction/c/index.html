@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agency / Home · Pagehaven Studio (Direction C, Editorial Canvas)</title>
+<link rel="preload" href="fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="editorial.css">
+</head>
+<body data-mode="edit" data-device="desktop">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8 12 3 7 8"/><path d="M12 3v12"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+</svg>
+
+<header class="line" data-line>
+  <div class="line-left">
+    <button class="w site" data-open="settings" aria-label="Website settings: Agency" data-short="A"><span class="site-full">Agency</span></button>
+    <span class="slash" aria-hidden="true">/</span>
+    <button class="w page" data-open="pages" aria-haspopup="dialog" aria-expanded="false" aria-label="Page: Home. Switch page"><span data-page-name>Home</span><svg class="ic ic-sm"><use href="#i-chev"/></svg></button>
+  </div>
+
+  <div class="line-mid" role="toolbar" aria-label="View">
+    <button class="w g" data-act="undo" aria-label="Undo" title="Undo  Ctrl+Z"><svg class="ic"><use href="#i-undo"/></svg></button>
+    <button class="w g" data-act="redo" aria-label="Redo" title="Redo  Ctrl+Shift+Z" disabled><svg class="ic"><use href="#i-redo"/></svg></button>
+    <span class="gap" aria-hidden="true"></span>
+    <span class="pair" role="group" aria-label="Mode">
+      <button class="w opt" data-mode-set="edit" aria-pressed="true">Edit</button>
+      <button class="w opt" data-mode-set="preview" aria-pressed="false">Preview</button>
+    </span>
+    <span class="gap" aria-hidden="true"></span>
+    <span class="pair" role="group" aria-label="Device">
+      <button class="w opt" data-device-set="desktop" aria-pressed="true" aria-label="Computer"><span class="lbl">Computer</span><svg class="ic alt"><use href="#i-monitor"/></svg></button>
+      <button class="w opt" data-device-set="phone" aria-pressed="false" aria-label="Phone"><span class="lbl">Phone</span><svg class="ic alt"><use href="#i-phone"/></svg></button>
+    </span>
+    <span class="gap wide-only" aria-hidden="true"></span>
+    <button class="w num wide-only" data-act="fit" aria-label="Zoom: fit to width" title="Fit or 100%"><span data-zoom>97%</span></button>
+    <button class="w wide-only" data-act="focus" title="Focus  Ctrl+.">Focus</button>
+  </div>
+
+  <div class="line-right">
+    <button class="w quiet-l" data-open="replace-any">Images</button>
+    <button class="w quiet-l" data-open="settings">Settings</button>
+    <span class="pubstate" data-pubstate aria-live="polite">2 changes not published</span>
+    <button class="publish" data-open="publish" aria-haspopup="dialog" aria-expanded="false"><span data-publish-label>Publish</span></button>
+  </div>
+</header>
+
+<main class="desk" data-desk>
+  <div class="hint" data-hint role="note">Click any words or picture on your page to change them.</div>
+  <div class="paper" data-paper>
+    <iframe data-canvas title="Your website: Agency, Home" src="http://agency-15.sites.localhost:5150/" scrolling="no" sandbox="allow-scripts allow-same-origin"></iframe>
+    <div class="overlay" data-overlay>
+      <div class="catcher" data-catcher aria-hidden="true"></div>
+      <button class="spot" data-spot="heading" aria-label="Heading: It's Great To Meet You"></button>
+      <button class="spot" data-spot="button" aria-label="Button: Tell Me More"></button>
+      <button class="spot" data-spot="photo" aria-label="Picture: portfolio photo 1"></button>
+      <div class="ring" data-ring hidden></div>
+      <div class="caret" data-caret hidden></div>
+      <div class="caption glass-2" data-caption role="toolbar" aria-label="Selected part" hidden>
+        <span class="cap-label"><span data-cap-kind>Heading</span><span class="cap-dot" aria-hidden="true">·</span><span class="cap-save" data-cap-save>Saved</span></span>
+        <span class="cap-words" data-cap-words></span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<button class="back glass-2" data-back hidden>Back to editing <kbd>Esc</kbd></button>
+
+<!-- Page switcher: a table of contents -->
+<section class="pop toc glass-2" data-surface="pages" role="dialog" aria-label="Pages" hidden>
+  <label class="find"><svg class="ic ic-sm"><use href="#i-search"/></svg><input data-find placeholder="Find a page" aria-label="Find a page" autocomplete="off"></label>
+  <ol class="toc-list" data-toc role="listbox" aria-label="Pages"></ol>
+  <button class="toc-add" data-act="add-page"><svg class="ic ic-sm"><use href="#i-plus"/></svg>Add a page…</button>
+  <div class="menu" data-pagemenu role="menu" hidden>
+    <button role="menuitem">Rename</button>
+    <button role="menuitem">Duplicate</button>
+    <button role="menuitem">Page settings</button>
+    <hr>
+    <button role="menuitem" class="danger">Delete page</button>
+  </div>
+</section>
+
+<!-- Caption: More menu -->
+<div class="menu float glass-2" data-surface="more" role="menu" hidden>
+  <button role="menuitem">Select the section around it</button>
+  <button role="menuitem">Duplicate section</button>
+  <button role="menuitem">Hide section on website</button>
+  <hr>
+  <button role="menuitem">Move section up</button>
+</div>
+
+<!-- Editing: formatting caption -->
+
+<!-- Image replace -->
+<section class="pop replace glass-2" data-surface="replace" role="dialog" aria-labelledby="rep-t" hidden>
+  <h3 id="rep-t" class="pop-t">Replace picture</h3>
+  <button class="upload" data-act="upload"><svg class="ic"><use href="#i-upload"/></svg><span><b>Upload from your computer</b><small>or drop a picture here</small></span></button>
+  <p class="pop-k">On this page</p>
+  <div class="thumbs">
+    <button class="th is-on" aria-label="portfolio/1.jpg, selected" style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/1.jpg)"></button>
+    <button class="th" aria-label="portfolio/2.jpg" style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/2.jpg)"></button>
+    <button class="th" aria-label="portfolio/3.jpg" style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/3.jpg)"></button>
+    <button class="th" aria-label="portfolio/4.jpg" style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/4.jpg)"></button>
+  </div>
+  <label class="pop-k" for="alt">Description <span class="soft">for people who can't see it</span></label>
+  <input id="alt" class="field-in" placeholder="Describe the picture" value="">
+</section>
+
+<!-- Publish surface -->
+<section class="pop publish-pop glass-3" data-surface="publish" role="dialog" aria-labelledby="pub-t" hidden>
+  <div data-pub-body>
+    <h3 id="pub-t" class="doc-h">Publish</h3>
+    <p class="doc-lede" data-pub-lede>Visitors see version 3, from 12 October. You have <b>2 changes</b> they haven't seen.</p>
+    <ul class="changes" data-changes>
+      <li><span class="ch-page">Home</span> Heading text changed</li>
+      <li><span class="ch-page">Home</span> “Tell Me More” now goes to Contact</li>
+    </ul>
+    <p class="addr"><span>agency-15.pagehaven.site</span></p>
+    <div class="pub-actions">
+      <button class="publish lg" data-act="do-publish">Publish 2 changes</button>
+      <a class="w link" href="http://agency-15.sites.localhost:5150/" target="_blank" rel="noopener">View website <svg class="ic ic-sm"><use href="#i-ext"/></svg></a>
+    </div>
+  </div>
+  <h4 class="ledger-h">Versions</h4>
+  <ol class="ledger" data-ledger>
+    <li><span class="v">3</span><span class="d">12 Oct 2026</span><span class="tag">live</span></li>
+    <li><span class="v">2</span><span class="d">3 Oct 2026</span><button class="w link sm" data-act="rollback">Make this version live</button></li>
+    <li><span class="v">1</span><span class="d">28 Sep 2026</span><button class="w link sm" data-act="rollback">Make this version live</button></li>
+  </ol>
+  <button class="w link sm all" data-open="settings" data-section="versions">Every version, in Settings</button>
+</section>
+
+<!-- Settings: a calm document -->
+<div class="scrim" data-scrim hidden></div>
+<section class="settings glass-3" data-surface="settings" role="dialog" aria-modal="true" aria-labelledby="set-t" hidden>
+  <div class="set-top">
+    <span class="set-crumb">Website settings</span>
+    <button class="w" data-act="close">Close <kbd>Esc</kbd></button>
+  </div>
+  <div class="set-grid">
+    <nav class="set-toc" aria-label="Settings sections">
+      <a href="#s-general" class="is-on">General</a><a href="#s-pages">Pages</a><a href="#s-assets">Assets</a><a href="#s-domains">Domains</a><a href="#s-publishing">Publishing</a><a href="#s-versions">Versions</a>
+    </nav>
+    <div class="set-doc" data-setdoc>
+      <h2 id="set-t" class="doc-title">Agency</h2>
+      <p class="doc-sub">agency-15.pagehaven.site · 3 pages · last published 12 October</p>
+
+      <section id="s-general"><h3>General</h3>
+        <label class="f"><span>Website name</span><input class="field-in" value="Agency"></label>
+        <label class="f"><span>Web address</span><span class="slug"><input class="field-in mono" value="agency-15" pattern="[a-z0-9\-]{3,32}"><span class="mono soft">.pagehaven.site</span></span></label>
+        <p class="note">Takes effect at once. Not part of Undo.</p>
+        <button class="btn">Save</button>
+      </section>
+
+      <section id="s-pages"><h3>Pages</h3>
+        <ol class="toc-list static" data-toc-static></ol>
+        <button class="toc-add" data-act="add-page"><svg class="ic ic-sm"><use href="#i-plus"/></svg>Add a page…</button>
+      </section>
+
+      <section id="s-assets"><h3>Assets</h3>
+        <p class="note">Pictures used on your website. Fonts 4, styles 2, scripts 3.</p>
+        <div class="assets">
+          <figure><span style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/1.jpg)"></span><figcaption class="mono">portfolio/1.jpg</figcaption></figure>
+          <figure><span style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/2.jpg)"></span><figcaption class="mono">portfolio/2.jpg</figcaption></figure>
+          <figure><span style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/portfolio/3.jpg)"></span><figcaption class="mono">portfolio/3.jpg</figcaption></figure>
+          <figure><span style="background-image:url(http://agency-15.sites.localhost:5150/assets/img/team/1.jpg)"></span><figcaption class="mono">team/1.jpg</figcaption></figure>
+        </div>
+      </section>
+
+      <section id="s-domains"><h3>Domains</h3>
+        <p class="note">Your website is at <span class="mono">agency-15.pagehaven.site</span>. You can also use a domain you own.</p>
+        <label class="f"><span>Your domain</span><input class="field-in mono" placeholder="www.example.com"></label>
+        <button class="btn">Add domain</button>
+      </section>
+
+      <section id="s-publishing"><h3>Publishing</h3>
+        <p class="prose">Visitors see version 3, published 12 October. You have 2 changes they haven't seen yet.</p>
+        <button class="publish" data-open="publish">Review and publish</button>
+      </section>
+
+      <section id="s-versions"><h3>Versions</h3>
+        <ol class="ledger">
+          <li><span class="v">3</span><span class="d">12 Oct 2026</span><span class="tag">live</span></li>
+          <li><span class="v">2</span><span class="d">3 Oct 2026</span><button class="w link sm">Make this version live</button></li>
+          <li><span class="v">1</span><span class="d">28 Sep 2026</span><button class="w link sm">Make this version live</button></li>
+        </ol>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- Command palette -->
+<section class="palette glass-2" data-surface="palette" role="dialog" aria-label="Commands" hidden>
+  <label class="find big"><svg class="ic"><use href="#i-search"/></svg><input data-pal-in placeholder="Type a command or a page" aria-label="Type a command" autocomplete="off"></label>
+  <ul class="pal-list" data-pal role="listbox"></ul>
+</section>
+
+<div class="toast" data-toast role="status" hidden></div>
+
+<script src="editorial.js"></script>
+</body>
+</html>

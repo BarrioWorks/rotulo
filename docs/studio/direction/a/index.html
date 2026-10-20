@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agency / Home · Pagehaven Studio (Direction A, Floating Studio)</title>
+<link rel="stylesheet" href="a.css">
+</head>
+<body data-l="wide">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-focus" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></symbol>
+    <symbol id="i-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  </defs>
+</svg>
+
+<!-- Level 1: the imported site. The stage scrolls; the selection overlay lives in the same scroll space. -->
+<main id="scroller" aria-label="Your website">
+  <div id="stage">
+    <iframe id="site" title="Agency home page, editable" src="http://agency-15.sites.localhost:5150/" scrolling="no"></iframe>
+    <div id="hit" tabindex="0" role="application" aria-roledescription="website canvas" aria-label="Website canvas. Arrow keys move between editable parts. Enter edits."></div>
+    <div id="ov" aria-hidden="true">
+      <div class="ring hover" id="ring-hover" hidden></div>
+      <div class="ring sel" id="ring-sel" hidden><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+      <div class="wash" id="wash" hidden></div>
+    </div>
+  </div>
+</main>
+<div id="chip" class="sel-chip" role="status" aria-live="polite" hidden></div>
+
+<!-- Level 2: three islands -->
+<div id="islands">
+  <nav class="island glass-2 capsule" id="nav-cap" aria-label="Website and page">
+    <button class="tb-btn icon-only" id="b-back" aria-label="All websites" data-tip="All websites"><svg class="icon"><use href="#i-left"/></svg></button>
+    <button class="tb-btn crumb-site" id="b-site" aria-label="Agency, website settings" data-tip="Website settings">Agency</button>
+    <span class="slash" aria-hidden="true">/</span>
+    <button class="tb-btn crumb-page" id="b-page" aria-haspopup="dialog" aria-expanded="false"><span id="page-name">Home</span><svg class="icon icon-16"><use href="#i-down"/></svg></button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button class="tb-btn icon-only" id="b-settings" aria-label="Website settings" data-tip="Website settings"><svg class="icon"><use href="#i-gear"/></svg></button>
+  </nav>
+
+  <div class="island glass-2 capsule" id="tools" role="toolbar" aria-label="View">
+    <button class="tb-btn icon-only" id="b-undo" aria-label="Undo" data-tip="Undo  ⌘Z"><svg class="icon"><use href="#i-undo"/></svg></button>
+    <button class="tb-btn icon-only" id="b-redo" aria-label="Redo" data-tip="Redo  ⇧⌘Z" disabled><svg class="icon"><use href="#i-redo"/></svg></button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <div class="seg" role="group" aria-label="Mode" id="seg-mode">
+      <button data-mode="edit" aria-pressed="true"><span class="lbl">Edit</span></button>
+      <button data-mode="preview" aria-pressed="false"><span class="lbl">Preview</span></button>
+    </div>
+    <div class="seg icons" role="group" aria-label="Device" id="seg-device">
+      <button data-device="computer" aria-pressed="true" aria-label="Computer" data-tip="Computer"><svg class="icon icon-16"><use href="#i-monitor"/></svg></button>
+      <button data-device="phone" aria-pressed="false" aria-label="Phone" data-tip="Phone"><svg class="icon icon-16"><use href="#i-phone"/></svg></button>
+    </div>
+    <button class="tb-btn zoom" id="b-zoom" aria-label="Zoom 100 percent. Change zoom" data-tip="Zoom">100%</button>
+    <button class="tb-btn icon-only" id="b-focus" aria-label="Focus mode" data-tip="Focus mode  ⌘."><svg class="icon"><use href="#i-focus"/></svg></button>
+    <button class="tb-btn icon-only" id="b-tmore" aria-label="More view options" aria-haspopup="menu"><svg class="icon"><use href="#i-more"/></svg></button>
+  </div>
+
+  <div class="island glass-2 capsule" id="pub-cap" aria-label="Publishing">
+    <button class="status" id="b-status" aria-haspopup="dialog"><span class="dot" aria-hidden="true"></span><span id="status-text">2 changes not published</span></button>
+    <button class="btn-publish" id="b-publish" aria-haspopup="dialog" aria-keyshortcuts="Control+Shift+P"><span id="publish-label">Publish</span><span class="count" id="publish-count">2</span></button>
+  </div>
+</div>
+
+<!-- Contextual dock -->
+<div id="dock" class="glass-2" role="toolbar" aria-label="Heading actions" hidden></div>
+<button id="offscreen" class="glass-2 offscreen" hidden></button>
+
+<!-- Popovers (Level 2) -->
+<div class="pop glass-2 panel sheetable" id="p-pages" role="dialog" aria-label="Pages" hidden>
+  <label class="search"><svg class="icon icon-16"><use href="#i-search"/></svg><input id="page-q" type="search" placeholder="Find a page" aria-label="Find a page" autocomplete="off"></label>
+  <div id="page-rows" role="listbox" aria-label="Pages"></div>
+  <hr>
+  <button class="row add" id="b-addpage">Add a page…</button>
+</div>
+
+<div class="menu" id="p-pagemenu" role="menu" hidden></div>
+
+<div class="pop glass-2 panel wide sheetable" id="p-publish" role="dialog" aria-labelledby="pub-title" hidden></div>
+
+<div class="pop glass-2 panel wide sheetable" id="p-replace" role="dialog" aria-labelledby="rep-title" hidden>
+  <div class="pop-head"><h3 id="rep-title">Replace picture</h3><button class="tb-btn icon-only sm" data-close aria-label="Close"><svg class="icon icon-16"><use href="#i-x"/></svg></button></div>
+  <button class="upload" id="b-upload"><svg class="icon"><use href="#i-upload"/></svg><span><b>Upload from your computer</b><small>or drop a picture here</small></span></button>
+  <p class="group-label">On this page</p>
+  <div class="thumbs" id="rep-thumbs"></div>
+  <label class="field-lite"><span>Description <small>for people who can’t see it</small></span><input id="rep-alt" value="" placeholder="Describe the picture"></label>
+</div>
+
+<div class="pop glass-2 panel sheetable" id="p-link" role="dialog" aria-labelledby="link-title" hidden>
+  <div class="pop-head"><h3 id="link-title">Link</h3><button class="tb-btn icon-only sm" data-close aria-label="Close"><svg class="icon icon-16"><use href="#i-x"/></svg></button></div>
+  <label class="field-lite"><span>Goes to</span>
+    <select id="link-kind"><option>Part of this page</option><option>Another page</option><option>Web address</option><option>Email</option><option>Phone</option></select></label>
+  <label class="field-lite"><span>Part</span>
+    <select id="link-part"><option>Contact Us</option><option>Services</option><option>Portfolio</option><option>About</option><option>Team</option></select></label>
+  <p class="note">Changes apply at once. Undo reverts them.</p>
+</div>
+
+<div class="pop glass-2 panel sheetable" id="p-style" role="dialog" aria-labelledby="style-title" hidden>
+  <div class="pop-head"><h3 id="style-title">Style</h3><button class="tb-btn icon-only sm" data-close aria-label="Close"><svg class="icon icon-16"><use href="#i-x"/></svg></button></div>
+  <p class="group-label">Colour</p>
+  <div class="swatches"><button aria-label="White" aria-pressed="true" style="--c:#fff"></button><button aria-label="Yellow" style="--c:#ffc800"></button><button aria-label="Ink" style="--c:#212529"></button><button aria-label="Teal" style="--c:#2f6f7e"></button></div>
+  <p class="group-label">Size</p>
+  <div class="seg"><button aria-pressed="false">S</button><button aria-pressed="false">M</button><button aria-pressed="true">L</button><button aria-pressed="false">XL</button></div>
+</div>
+
+<div class="menu" id="p-more" role="menu" hidden></div>
+<div class="menu" id="p-tmore" role="menu" hidden></div>
+
+<div class="pop glass-2 panel palette" id="p-palette" role="dialog" aria-label="Command palette" hidden>
+  <label class="search big"><svg class="icon"><use href="#i-search"/></svg><input id="pal-q" placeholder="Type a command or a page" aria-label="Command" autocomplete="off" aria-controls="pal-list"><kbd>esc</kbd></label>
+  <div id="pal-list" role="listbox" aria-label="Commands"></div>
+</div>
+
+<!-- Level 3: settings sheet and confirm -->
+<dialog id="settings" class="glass-3 sheet" aria-labelledby="set-title">
+  <div class="sheet-head"><h2 id="set-title">Website settings</h2><button class="tb-btn icon-only" data-close aria-label="Close settings"><svg class="icon"><use href="#i-x"/></svg></button></div>
+  <div class="sheet-body">
+    <div class="sections" role="tablist" aria-label="Settings sections" aria-orientation="vertical"></div>
+    <div class="section-panel" role="tabpanel" id="set-panel" tabindex="0"></div>
+  </div>
+</dialog>
+
+<dialog id="confirm" class="glass-3 sheet alert" role="alertdialog" aria-labelledby="cf-title" aria-describedby="cf-body">
+  <h2 id="cf-title">Make version 2 live?</h2>
+  <p id="cf-body">Visitors will see version 2 from 2 October. Your editor keeps your latest changes, so you can publish them again at any time.</p>
+  <div class="actions"><button class="btn-quiet" data-close>Cancel</button><button class="btn-publish" id="cf-ok">Make version 2 live</button></div>
+</dialog>
+
+<div id="hint" class="tip idle-hint" hidden>Click any text or picture to change it</div>
+<div id="toast" class="tip toast" role="status" aria-live="polite" hidden></div>
+<div id="tooltip" class="tip tooltip" role="tooltip" hidden></div>
+<button id="focus-pill" class="tip focus-pill" hidden>Back to editing <kbd>esc</kbd></button>
+
+<script src="a.js"></script>
+</body>
+</html>

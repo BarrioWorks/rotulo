@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agency / Home - Pagehaven Studio (Direction B, Spatial Workspace)</title>
+<link rel="preload" href="onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="studio-b.css?v=1792494200">
+</head>
+<body>
+<div class="capsule cap-nav glass-2" role="toolbar" aria-label="Website and page">
+  <button class="btn icon-only" data-act="back" aria-label="Back to my websites"><svg class="icon"><use href="icons.svg#i-chevron-left"/></svg></button>
+  <button class="btn crumb-site" data-act="settings" data-section="general" aria-label="Agency, website settings"><span class="full">Agency</span><span class="short">A</span></button>
+  <span class="crumb-slash" aria-hidden="true">/</span>
+  <button class="btn crumb-page" data-act="pages" data-from="nav" aria-haspopup="dialog" aria-expanded="false"><span data-page-name>Home</span><svg class="icon s16"><use href="icons.svg#i-chevron-down"/></svg></button>
+</div>
+
+<div class="capsule cap-pub glass-2" role="toolbar" aria-label="Publishing">
+  <span class="pub-status" data-pub-status><span class="dot"></span><span data-pub-text>2 changes not published</span></span>
+  <button class="btn btn-primary" data-act="publish" aria-haspopup="dialog" aria-expanded="false" data-pub-btn>Publish · 2</button>
+</div>
+
+<main class="stage" aria-label="Website canvas">
+  <div class="canvas">
+    <iframe data-canvas title="Agency website, Home page" src="http://agency-15.sites.localhost:5150/" sandbox="allow-scripts allow-same-origin"></iframe>
+    <div class="overlay" data-overlay></div>
+  </div>
+</main>
+
+<div class="dock glass-2" role="toolbar" aria-label="Commands" data-dock>
+  <div class="dock-fixed">
+    <button class="btn icon-only" data-act="undo" aria-label="Undo" title="Undo (Ctrl+Z)"><svg class="icon"><use href="icons.svg#i-undo"/></svg></button>
+    <button class="btn icon-only" data-act="redo" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled><svg class="icon"><use href="icons.svg#i-redo"/></svg></button>
+  </div>
+  <span class="sep" aria-hidden="true"></span>
+  <div class="dock-ctx" data-ctx aria-live="polite"></div>
+  <span class="sep focus-sep" aria-hidden="true"></span>
+  <div class="dock-fixed">
+    <button class="btn icon-only focus-btn" data-act="focus" aria-label="Focus mode" title="Focus mode (Ctrl+.)"><svg class="icon"><use href="icons.svg#i-focus"/></svg></button>
+  </div>
+</div>
+
+<div data-layer></div>
+<div class="sr" aria-live="polite" data-announce></div>
+<script src="studio-b.js?v=1792494200"></script>
+</body>
+</html>
