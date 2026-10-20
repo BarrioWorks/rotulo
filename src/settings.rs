@@ -80,13 +80,35 @@ impl Settings {
             .settings
             .clone()
             .ok_or_else(|| loco_rs::Error::string("config is missing `settings`"))?;
-        let settings: Self = serde_json::from_value(value)
+        let mut settings: Self = serde_json::from_value(value)
             .map_err(|error| loco_rs::Error::string(&format!("invalid `settings`: {error}")))?;
         settings.validate()?;
+        if ctx.environment == loco_rs::environment::Environment::Production
+            && !settings.app_origin.starts_with("https://")
+        {
+            return Err(loco_rs::Error::string(
+                "production app origin must use HTTPS",
+            ));
+        }
+        settings.app_origin = settings.app_origin.trim_end_matches('/').to_owned();
         Ok(settings)
     }
 
     fn validate(&self) -> loco_rs::Result<()> {
+        let origin = reqwest::Url::parse(&self.app_origin)
+            .map_err(|_| loco_rs::Error::string("app origin must be an absolute HTTP(S) origin"))?;
+        if !matches!(origin.scheme(), "http" | "https")
+            || origin.host_str().is_none()
+            || !origin.username().is_empty()
+            || origin.password().is_some()
+            || origin.query().is_some()
+            || origin.fragment().is_some()
+            || origin.path() != "/"
+        {
+            return Err(loco_rs::Error::string(
+                "app origin must be HTTP(S), without credentials, path, query or fragment",
+            ));
+        }
         if self.secret.len() < 32 {
             return Err(loco_rs::Error::string(
                 "settings.secret must be at least 32 bytes",
@@ -207,6 +229,32 @@ mod tests {
             "user_content_on_public_suffix": public_suffix,
         }))
         .unwrap()
+    }
+
+    #[test]
+    fn app_origin_is_an_http_origin_without_user_input_components() {
+        for origin in [
+            "//app.example",
+            "ftp://app.example",
+            "https://user@app.example",
+            "https://user:pass@app.example",
+            "https://app.example/path",
+            "https://app.example/?tracking=1",
+            "https://app.example/#fragment",
+        ] {
+            let mut value = settings("app.example", "sites.other.net", "preview.other.net", false);
+            value.app_origin = origin.to_owned();
+            assert!(value.validate().is_err(), "accepted {origin}");
+        }
+        for origin in [
+            "https://app.example",
+            "https://app.example/",
+            "http://127.0.0.1:5182",
+        ] {
+            let mut value = settings("app.example", "sites.other.net", "preview.other.net", false);
+            value.app_origin = origin.to_owned();
+            assert!(value.validate().is_ok(), "rejected {origin}");
+        }
     }
 
     #[test]

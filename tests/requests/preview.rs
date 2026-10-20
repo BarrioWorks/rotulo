@@ -12,6 +12,7 @@ async fn preview_hosts_isolate_drafts_and_only_serve_read_only_content_with_secu
             .to_str()
             .unwrap()
             .contains("frame-ancestors http://127.0.0.1:5150"));
+        r.assert_header("x-robots-tag", "noindex, nofollow");
         r.assert_header("referrer-policy", "no-referrer");
         r.assert_header("x-content-type-options", "nosniff");
         assert!(!r.headers().contains_key("set-cookie"));
@@ -34,20 +35,26 @@ async fn preview_hosts_isolate_drafts_and_only_serve_read_only_content_with_secu
             format!("{expired}.preview.localhost:5150"),
             "forged.preview.localhost:5150".into(),
         ] {
-            hosted(&server, &host, "/").await.assert_status_not_found();
+            for path in ["/", "/robots.txt", "/sitemap.xml"] {
+                let r = hosted(&server, &host, path).await;
+                r.assert_status_not_found();
+                r.assert_header("x-robots-tag", "noindex, nofollow");
+            }
         }
         let r = hosted(&server, &p.preview, "/projects")
             .add_header("cookie", &cookie)
             .await;
         r.assert_status_not_found();
+        r.assert_header("x-robots-tag", "noindex, nofollow");
         assert!(!r.text().contains("Your websites"));
-        server
+        let r = server
             .post("/api/imports")
             .add_header("host", p.preview.trim_start_matches("http://"))
             .add_header("origin", ORIGIN)
             .add_header("cookie", &cookie)
-            .await
-            .assert_status(axum::http::StatusCode::METHOD_NOT_ALLOWED);
+            .await;
+        r.assert_status(axum::http::StatusCode::METHOD_NOT_ALLOWED);
+        r.assert_header("x-robots-tag", "noindex, nofollow");
         let r = hosted(&server, &p.preview, "/..%2f..%2fetc/passwd").await;
         assert!(matches!(r.status_code().as_u16(), 400 | 404));
         assert!(!r.text().contains("root:x:"));
