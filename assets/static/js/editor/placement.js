@@ -1,6 +1,5 @@
 /** Where the floating toolbar goes. Pure, so the rules are tested without a browser. */
 /** Spots next to the selection, best first. Pinned is for selections taller than half the canvas. */
-const ORDER = ["above-start", "below-start", "above-end", "below-end", "right", "left", "pinned"];
 /** How far the toolbar stays inside the canvas edges. */
 export const TOOLBAR_INSET = 4;
 const INSET = TOOLBAR_INSET;
@@ -30,62 +29,23 @@ function offscreenDirection(target, canvas) {
         return "below";
     return target.x + target.width <= canvas.x ? "left" : "right";
 }
-export function placeToolbar({ target, canvas, obstructions, obstacles = [], size, previous = null, gap = 8 }) {
-    const visible = intersect(target, canvas);
-    if (!visible)
+export function placeToolbar({ target, canvas, size, gap = 8 }) {
+    if (!intersect(target, canvas))
         return { kind: "offscreen", direction: offscreenDirection(target, canvas) };
-    const minX = canvas.x + INSET;
-    const maxX = canvas.x + canvas.width - size.width - INSET;
-    const clampX = (x) => Math.max(minX, Math.min(x, maxX));
-    const topBars = obstructions.filter((o) => o.y < canvas.y + canvas.height / 2);
-    const pinnedTop = Math.max(canvas.y, ...topBars.map((o) => o.y + o.height)) + gap;
-    const right = visible.x + visible.width;
-    const bottom = visible.y + visible.height;
-    const sideY = Math.max(canvas.y + INSET, Math.min(visible.y, canvas.y + canvas.height - size.height - INSET));
-    function position(candidate) {
-        const at = (x, y) => ({ x, y, width: size.width, height: size.height });
-        switch (candidate) {
-            case "above-start": return at(clampX(visible.x), visible.y - gap - size.height);
-            case "below-start": return at(clampX(visible.x), bottom + gap);
-            case "above-end": return at(clampX(right - size.width), visible.y - gap - size.height);
-            case "below-end": return at(clampX(right - size.width), bottom + gap);
-            case "right": return at(right + gap, sideY);
-            case "left": return at(visible.x - gap - size.width, sideY);
-            case "pinned": return at(clampX(visible.x), pinnedTop);
-        }
-    }
-    /** The candidate's box when it fits the canvas and stays off the selection and the site's bars. */
-    function fit(candidate) {
-        const box = position(candidate);
-        const inside = box.x >= minX - 0.5 && box.x <= maxX + 0.5 && box.y >= canvas.y + INSET && box.y + size.height <= canvas.y + canvas.height - INSET;
-        if (!inside || obstructions.some((o) => intersect(box, o)))
-            return null;
-        if (candidate === "pinned")
-            return visible.height > canvas.height * 0.5 ? box : null;
-        return intersect(box, visible) ? null : box;
-    }
-    const clear = (candidate) => {
-        if (candidate === "docked")
-            return null;
-        const box = fit(candidate);
-        return box && coverage(box, obstacles) === 0 ? box : null;
+    const x = Math.max(canvas.x + INSET, Math.min(target.x, canvas.x + canvas.width - size.width - INSET));
+    const below = target.y + target.height + gap;
+    if (below + size.height <= canvas.y + canvas.height - INSET)
+        return { kind: "placed", x, y: below, candidate: "below-start" };
+    return { kind: "placed", x, y: Math.max(canvas.y + INSET, target.y - size.height - gap), candidate: "above-start" };
+}
+/** Properties open beyond the caption, away from the selected element. */
+export function placePanel({ caption, selection, canvas, size, gap = 8 }) {
+    const above = caption.y < selection.y;
+    return {
+        x: Math.max(canvas.x + INSET, Math.min(caption.x, canvas.x + canvas.width - size.width - INSET)),
+        y: above ? caption.y - gap - size.height : caption.y + caption.height + gap,
+        width: size.width, height: size.height,
     };
-    const keep = previous !== null && previous !== "pinned" ? clear(previous) : null;
-    if (keep && previous)
-        return { kind: "placed", x: keep.x, y: keep.y, candidate: previous };
-    for (const candidate of ORDER) {
-        const box = clear(candidate);
-        if (box)
-            return { kind: "placed", x: box.x, y: box.y, candidate };
-    }
-    // Every spot covers something: dock in a strip along the top of the canvas, just under the
-    // site's own top bar, or along the bottom when the selection itself sits at the top.
-    const strip = (y) => ({ x: canvas.x, y, width: canvas.width, height: size.height });
-    const bottomBars = obstructions.filter((o) => o.y >= canvas.y + canvas.height / 2);
-    const top = strip(pinnedTop - gap);
-    const bottomEdge = Math.min(canvas.y + canvas.height, ...bottomBars.map((o) => o.y));
-    const docked = intersect(top, visible) ? strip(bottomEdge - size.height) : top;
-    return { kind: "placed", x: docked.x, y: docked.y, candidate: "docked", width: docked.width };
 }
 /** The toolbar's widest size. Mirrors the `max-width` of `.ftb` in editor.css. */
 export const TOOLBAR_MAX_WIDTH = 640;

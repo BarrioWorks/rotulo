@@ -192,26 +192,26 @@ test("scrolling moves the toolbar target with the selection and reports the site
   assert.equal(store.get().focus.kind, "none");
 });
 
-test("a rail panel follows the selection when it applies and returns to the pages otherwise", () => {
+test("a surface panel follows the selection when it applies and closes otherwise", () => {
   const store = createStore(initialState(bootstrap, 0));
   store.dispatch({ type: "open_panel", panel: "style" });
-  assert.equal(store.get().rail.kind, "pages", "style needs a selection");
+  assert.equal(store.get().surface.kind, "none", "style needs a selection");
   store.dispatch({ type: "selected", selection: sel({ element: "a" }) });
   store.dispatch({ type: "open_panel", panel: "style" });
-  assert.deepEqual(store.get().rail, { kind: "panel", panel: "style", element: "a", subject: "heading", replaced: false });
+  assert.deepEqual(store.get().surface, { kind: "panel", panel: "style", element: "a", subject: "heading", replaced: false });
   store.dispatch({ type: "selected", selection: sel({ element: "b" }) });
-  assert.equal(store.get().rail.element, "b");
+  assert.equal(store.get().surface.element, "b");
   store.dispatch({ type: "selected", selection: sel({ element: "c", can: "i", tag: "img", kind: "image" }) });
-  assert.equal(store.get().rail.kind, "pages");
+  assert.equal(store.get().surface.kind, "none");
   store.dispatch({ type: "selected", selection: sel({ element: "d", kind: "heading", can: "tsb" }) });
   store.dispatch({ type: "open_panel", panel: "background" });
   store.dispatch({ type: "selected", selection: sel({ element: "e", kind: "card", tag: "div", can: "sb" }) });
-  assert.equal(store.get().rail.kind, "pages", "a panel opened for a heading does not stay open for a card");
+  assert.equal(store.get().surface.kind, "none", "a panel opened for a heading does not stay open for a card");
   store.dispatch({ type: "open_panel", panel: "page" });
   store.dispatch({ type: "deselected" });
-  assert.equal(store.get().rail.panel, "page", "page settings need no selection");
+  assert.equal(store.get().surface.panel, "page", "page settings need no selection");
   store.dispatch({ type: "close_panel" });
-  assert.equal(store.get().rail.kind, "pages");
+  assert.equal(store.get().surface.kind, "none");
 });
 
 test("the link panel for selected words closes when text editing ends", () => {
@@ -219,9 +219,9 @@ test("the link panel for selected words closes when text editing ends", () => {
   store.dispatch({ type: "selected", selection: sel() });
   store.dispatch({ type: "editing", active: true, formats: { bold: false, italic: false, link: false } });
   store.dispatch({ type: "open_panel", panel: "text-link" });
-  assert.equal(store.get().rail.panel, "text-link");
+  assert.equal(store.get().surface.panel, "text-link");
   store.dispatch({ type: "editing", active: false, formats: { bold: false, italic: false, link: false } });
-  assert.equal(store.get().rail.kind, "pages");
+  assert.equal(store.get().surface.kind, "none");
 });
 
 test("the toolbar shows at most five labelled actions, then More", () => {
@@ -331,10 +331,10 @@ test("undo puts away the 'Picture replaced' note and its fit choices", () => {
   store.dispatch({ type: "selected", selection: sel({ element: "i", kind: "image", tag: "img", can: "i" }) });
   store.dispatch({ type: "open_panel", panel: "image", replaced: true });
   saved(store, { undo: "image change" });
-  assert.equal(store.get().rail.replaced, true, "a new save keeps it");
+  assert.equal(store.get().surface.replaced, true, "a new save keeps it");
   saved(store, { undo: null, redo: "image change", log: "undo" });
-  assert.equal(store.get().rail.replaced, false);
-  assert.equal(store.get().rail.panel, "image");
+  assert.equal(store.get().surface.replaced, false);
+  assert.equal(store.get().surface.panel, "image");
 });
 
 test("Edit text starts with short text selected, so typing replaces it, and long paragraphs with the caret at the end", async () => {
@@ -358,4 +358,18 @@ test("reloading the editor's state keeps the page on screen on the origin it was
   assert.equal(store.get().canvasOrigin, bootstrap.preview_origin, "the open page keeps its own");
   store.dispatch({ type: "page_ready", path: "index.html", title: "Home", description: "", origin: "http://fresh.preview.localhost:5150" });
   assert.equal(store.get().canvasOrigin, "http://fresh.preview.localhost:5150");
+});
+
+test("one Surface replaces any other surface and panels retain their subject", () => {
+  const store = createStore(initialState(bootstrap, 0));
+  assert.equal(store.get().surface.kind, "none");
+  for (const surface of ["pages", "images", "settings", "publish", "none"]) {
+    store.dispatch({ type: "open_surface", surface });
+    assert.deepEqual(store.get().surface, { kind: surface });
+  }
+  store.dispatch({ type: "selected", selection: sel() });
+  store.dispatch({ type: "open_panel", panel: "style" });
+  assert.equal(store.get().surface.kind, "panel");
+  store.dispatch({ type: "open_surface", surface: "settings" });
+  assert.deepEqual(store.get().surface, { kind: "settings" });
 });

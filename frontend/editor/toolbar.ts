@@ -2,8 +2,8 @@ import { KIND_LABELS, type Kind } from "../protocol.js";
 import { h, icon, must, type IconName } from "../ui.js";
 import type { Canvas } from "./canvas.js";
 import type { Edits } from "./edits.js";
-import { closeMenus, openMenu, type MenuItem } from "./menu.js";
-import { collapseOrder, fitRow, placeToolbar, TOOLBAR_INSET, TOOLBAR_MAX_WIDTH, type Candidate, type Collapsible, type Direction } from "./placement.js";
+import { openMenu, type MenuItem } from "./menu.js";
+import { placeToolbar, type Candidate, type Direction } from "./placement.js";
 import { describeHref } from "./links.js";
 import { panelApplies, selection, type Panel, type Selection, type State, type Store } from "./state.js";
 
@@ -127,9 +127,13 @@ export interface Toolbar {
 
 export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
   const root = must<HTMLElement>(document, "[data-toolbar]");
+  const labelHost = h("div", { class: "caption-label" });
+  const actionHost = h("div", { class: "ftb-row", attrs: { "data-caption-actions": "" } });
+  root.append(labelHost, actionHost);
+  const persistent = new Map<string, HTMLButtonElement>();
   const offscreen = must<HTMLButtonElement>(document, "[data-offscreen]");
   let renderedKey = "";
-  let renderedSelection = "";
+
   let candidate: Candidate | null = null;
   let busy: { action: ActionId; percent: number; element: string } | null = null;
   /** After choosing a link around an image, its Link panel opens once the selection arrives. */
@@ -146,7 +150,7 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
 
   function openPanel(panel: Panel, replaced = false, trigger: string | null = null): void {
     panelTrigger = trigger;
-    const rail = store.get().rail;
+    const rail = store.get().surface;
     if (rail.kind === "panel" && rail.panel === panel && !replaced) {
       store.dispatch({ type: "close_panel" });
       return;
@@ -231,15 +235,14 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     if (opts.controls) b.setAttribute("aria-controls", opts.controls);
     if (opts.menu) b.setAttribute("aria-haspopup", "menu");
     if (opts.disabled) b.disabled = true;
-    b.addEventListener("click", () => onClick(b));
+    b.onclick = (event) => onClick(event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : b);
     return b;
   }
 
-  const sep = () => h("span", { class: "ftb-sep", attrs: { "aria-hidden": "true" } });
 
   function actionButton(id: ActionId, sel: Selection, s: State, withDetail: boolean): HTMLButtonElement {
     const spec = ACTIONS[id];
-    const open = s.rail.kind === "panel" && spec.panel !== undefined && s.rail.panel === spec.panel;
+    const open = s.surface.kind === "panel" && spec.panel !== undefined && s.surface.panel === spec.panel;
     const uploading = busy?.action === id && busy.element === sel.element;
     const label = uploading ? `Uploading ${busy?.percent ?? 0}%` : spec.label;
     const opts: ButtonOptions = { disabled: uploading };
@@ -261,21 +264,6 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     return button(id, label, spec.icon, () => run(id, sel), opts);
   }
 
-  function crumb(sel: Selection): HTMLElement {
-    const label = KIND_LABELS[sel.kind];
-    if (sel.ancestors.length === 0) return h("span", { class: "ftb-label", text: label });
-    return button("crumb", label, null, (b) => {
-      openMenu(b, [
-        { label: `${label}${sel.name ? ` · ${sel.name}` : ""}`, checked: true, run: () => {} },
-        "separator",
-        ...sel.ancestors.map((a): MenuItem => ({
-          label: `${KIND_LABELS[a.kind]}${a.name ? ` · ${a.name}` : ""}`,
-          run: () => canvas.send({ type: "select_element", element: a.element }),
-        })),
-      ], { label: "Select the part around this" });
-    }, { menu: true, tip: "Select the part around this", kbd: "←" });
-  }
-
   function sectionItems(sel: Selection): MenuItem[] {
     const can = sel.can;
     const items: MenuItem[] = [];
@@ -293,62 +281,32 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
    * For a part that is itself a plain section, the kind label and the Section menu would both say
    * "Section", so one menu leads the row: the section's actions, then the parts around it.
    */
-  function sectionLead(sel: Selection, items: MenuItem[]): HTMLElement {
-    const around = sel.ancestors.map((a): MenuItem => ({
-      label: `Select ${KIND_LABELS[a.kind].toLowerCase()}${a.name ? ` · ${a.name}` : ""}`,
-      run: () => canvas.send({ type: "select_element", element: a.element }),
-    }));
-    return button("section", "Section", null, (b) => openMenu(b, [...items, ...(around.length > 0 ? ["separator" as const, ...around] : [])], { label: "Section" }), { menu: true, tip: "Duplicate, hide or remove this section" });
-  }
-
-  function sectionGroup(sel: Selection, withMenu: boolean): HTMLElement[] {
-    const can = sel.can;
-    if (!/[xudc]/.test(can)) return [];
-    const items = withMenu ? sectionItems(sel) : [];
-    const out: HTMLElement[] = [];
-    if (items.length > 0) out.push(button("section", "Section", null, (b) => openMenu(b, items, { label: "Section" }), { menu: true }));
-    if (can.includes("u")) out.push(button("move-up", "Move section up", "move-up", () => void edits.moveSection(sel, "up"), { iconOnly: true, kbd: "Alt+Shift+↑" }));
-    if (can.includes("d")) out.push(button("move-down", "Move section down", "move-down", () => void edits.moveSection(sel, "down"), { iconOnly: true, kbd: "Alt+Shift+↓" }));
-    return out.length > 0 ? [sep(), ...out] : [];
-  }
-
   /**
    * The row for a selection. `collapsed` names what the canvas is too narrow for (see `fitRow`);
    * `measuring` always adds More so its width can be read.
    */
-  function rowFor(s: State, sel: Selection, collapsed: ReadonlySet<string> = new Set(), measuring = false): HTMLElement[] {
+  function rowFor(s: State, sel: Selection): HTMLElement[] {
     if (s.editing.active) {
       const f = s.editing.formats;
-      const linkOpen = s.rail.kind === "panel" && s.rail.panel === "text-link";
       return [
-        collapsed.has("label") ? null : h("span", { class: "ftb-label", text: "Editing text", attrs: { "data-collapse": "label" } }),
-        button("bold", "Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold, iconOnly: true, kbd: "Ctrl+B" }),
-        button("italic", "Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic, iconOnly: true, kbd: "Ctrl+I" }),
-        f.link
-          ? button("unlink", "Remove link", "unlink", () => canvas.send({ type: "format", command: "unlink", href: null }), { iconOnly: true })
-          : button("text-link", "Link the selected words", "link", () => openPanel("text-link", false, "text-link"), { expanded: linkOpen, iconOnly: true, controls: "ed-rail-panel" }),
-        sep(),
-        button("cancel", "Cancel", null, () => canvas.send({ type: "finish_text", commit: false }), { kbd: "Esc", tip: "Undo your typing" }),
-        button("done", "Done", "check", () => canvas.send({ type: "finish_text", commit: true }), { kbd: "Enter", tip: "Keep the text" }),
-      ].filter((el): el is HTMLElement => el !== null);
+        button("bold", "Bold", "bold", () => canvas.send({ type: "format", command: "bold", href: null }), { pressed: f.bold }),
+        button("italic", "Italic", "italic", () => canvas.send({ type: "format", command: "italic", href: null }), { pressed: f.italic }),
+        button("text-link", "Link", "link", () => openPanel("text-link", false, "text-link"), { expanded: s.surface.kind === "panel" && s.surface.panel === "text-link" }),
+        ...(f.link ? [button("unlink", "Remove link", "unlink", () => canvas.send({ type: "format", command: "unlink", href: null }))] : []),
+        button("done", "Done", "check", () => void canvas.finishText(), { tip: "Keep the text. Escape also keeps it." }),
+      ];
     }
     const actions = actionsFor(sel);
-    const primary = actions.primary.filter((id) => !collapsed.has(id));
-    const overflow = [...actions.primary.filter((id) => collapsed.has(id)), ...actions.overflow];
-    const ownMenu = KIND_LABELS[sel.kind] === "Section" ? sectionItems(sel) : [];
-    const lead = ownMenu.length > 0 ? sectionLead(sel, ownMenu) : crumb(sel);
-    const out: HTMLElement[] = [lead, ...primary.map((id) => actionButton(id, sel, s, !collapsed.has(`${id}:detail`))), ...sectionGroup(sel, ownMenu.length === 0)];
-    if (overflow.length > 0 || measuring) {
-      out.push(button("more", "More", "more", (b) => openMenu(b, overflow.map((id) => ({ label: ACTIONS[id].label, ...(ACTIONS[id].icon ? { icon: ACTIONS[id].icon as IconName } : {}), run: () => run(id, sel) })), { label: "More actions" }), { iconOnly: true, menu: true }));
-    }
-    return out;
-  }
-
-  function blockedRow(around: string | null): HTMLElement[] {
-    const note = h("div", { class: "ftb-note" }, icon("info", "icon-sm"),
-      h("span", { text: "This part is added by the website's own code while the page runs, so it can't be changed here." }));
-    if (!around) return [note];
-    return [note, h("div", { class: "ftb-row" }, button("around", "Select the part around it", "select-parent", () => canvas.send({ type: "select_element", element: around })))];
+    return [
+      ...actions.primary.map((id) => actionButton(id, sel, s, false)),
+      button("more", "More", "more", (b) => openMenu(b, [
+        ...actions.overflow.map((id): MenuItem => ({ label: ACTIONS[id].label, run: () => run(id, sel) })),
+        ...sectionItems(sel),
+        ...(sel.can.includes("u") ? [{ label: "Move section up", run: () => void edits.moveSection(sel, "up") }] : []),
+        ...(sel.can.includes("d") ? [{ label: "Move section down", run: () => void edits.moveSection(sel, "down") }] : []),
+        ...sel.ancestors.map((a) => ({ label: `Select ${KIND_LABELS[a.kind].toLowerCase()}`, run: () => canvas.send({ type: "select_element", element: a.element }) })),
+      ], { label: "More actions" }), { menu: true }),
+    ];
   }
 
   function keyOf(s: State): string {
@@ -356,12 +314,12 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     if (s.mode !== "edit" || s.canvasLoading || f.kind === "none") return "none";
     if (f.kind === "blocked") return `blocked:${f.around ?? ""}`;
     const sel = f.selection;
-    const panel = s.rail.kind === "panel" ? s.rail.panel : "";
+    const panel = s.surface.kind === "panel" ? s.surface.panel : "";
     return JSON.stringify([sel.element, sel.can, sel.kind, sel.name, sel.ancestors, sel.info.href, sel.info.alt, sel.info.hidden, sel.info.bgImage, s.editing, panel, busy?.element === sel.element ? busy : null, s.anchors.length, s.pages.length, s.path]);
   }
 
   function buttons(): HTMLButtonElement[] {
-    return [...root.querySelectorAll<HTMLButtonElement>("button.tb-btn:not([disabled])")];
+    return [...actionHost.querySelectorAll<HTMLButtonElement>("button.tb-btn:not([disabled]):not([hidden])")];
   }
 
   function rove(target: HTMLButtonElement | undefined): void {
@@ -373,140 +331,59 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     const s = store.get();
     const key = keyOf(s);
     const f = s.focus;
-    const selectionKey = JSON.stringify([s.path, f.kind, f.kind === "selected" ? f.selection.element : null]);
-    const active = document.activeElement;
-    const focusedKey = active instanceof HTMLElement && root.contains(active) ? active.dataset["key"] ?? null : null;
-    const selectionChanged = selectionKey !== renderedSelection;
-    if (!shouldRenderToolbar({ force, keyChanged: key !== renderedKey, selectionChanged, fieldFocused: false })) {
-      position(s, false);
-      return;
-    }
-    renderedKey = key;
-    renderedSelection = selectionKey;
-    if (selectionChanged) closeMenus();
+    const focused = document.activeElement;
+    const focusedKey = focused instanceof HTMLElement ? focused.dataset["key"] : undefined;
     if (key === "none") {
-      closeMenus();
-      root.classList.remove("is-visible");
-      root.replaceChildren();
-      offscreen.hidden = true;
-      candidate = null;
-      if (focusedKey) canvas.surface.focus({ preventScroll: true });
-      return;
+      root.classList.remove("is-visible"); actionHost.hidden = true; offscreen.hidden = true;
+      candidate = null; return;
     }
-    if (f.kind === "blocked") {
-      root.setAttribute("aria-label", "Part made by the website's code");
-      root.replaceChildren(...blockedRow(f.around));
-    } else if (f.kind === "selected") {
-      root.setAttribute("aria-label", s.editing.active ? "Text editing tools" : `${KIND_LABELS[f.selection.kind]} tools`);
-      fitSelectionRow(s, f.selection);
+    root.classList.add("is-visible"); actionHost.hidden = false;
+    const problem = s.saves.problem;
+    const save = problem ? "Not saved" : s.saves.pending > 0 ? "Saving…" : "Saved";
+    labelHost.textContent = f.kind === "blocked" ? "Can't edit this part" : `${f.kind === "selected" ? KIND_LABELS[f.selection.kind] : "Part"} · ${save}`;
+    if (problem) {
+      const retry = h("button", { class: "btn btn-ghost btn-sm", text: problem.kind === "conflict" ? "Reload" : "Retry", attrs: { type: "button" } });
+      retry.onclick = () => document.dispatchEvent(new Event("studio-retry")); labelHost.append(retry);
     }
-    const list = buttons();
-    const restore = focusedKey ? list.find((b) => b.dataset["key"] === focusedKey) : undefined;
-    for (const b of list) b.tabIndex = -1;
-    const first = restore ?? list.find((b) => b.dataset["key"] !== "crumb") ?? list[0];
-    if (first) first.tabIndex = 0;
-    if (restore) restore.focus({ preventScroll: true });
-    else if (focusedKey && first) first.focus({ preventScroll: true });
-    if (selectionChanged) candidate = null;
-    position(s, selectionChanged && root.classList.contains("is-visible"));
-    root.classList.add("is-visible");
+    if (force || key !== renderedKey) {
+      renderedKey = key;
+      const fresh = f.kind === "selected" ? rowFor(s, f.selection) : f.kind === "blocked" && f.around ? [button("around", "Select the part around it", "select-parent", () => canvas.send({ type: "select_element", element: f.around ?? "" }))] : [];
+      for (const b of persistent.values()) b.hidden = true;
+      for (const [order, node] of fresh.entries()) {
+        if (!(node instanceof HTMLButtonElement)) continue;
+        const id = node.dataset["key"] ?? "";
+        let kept = persistent.get(id);
+        if (!kept) { kept = node; persistent.set(id, kept); actionHost.append(kept); }
+        else {
+          for (const attr of [...kept.attributes]) if (!node.hasAttribute(attr.name)) kept.removeAttribute(attr.name);
+          for (const attr of [...node.attributes]) kept.setAttribute(attr.name, attr.value);
+          kept.replaceChildren(...node.childNodes); kept.onclick = node.onclick;
+        }
+        kept.hidden = false; kept.style.order = String(order);
+      }
+      const visible = buttons();
+      const first = visible.find((b) => b.dataset["key"] === focusedKey) ?? visible[0];
+      for (const b of visible) b.tabIndex = b === first ? 0 : -1;
+    }
+    position(s, false);
   }
 
-  /** The widest the toolbar may be: inside the visible canvas, and never past its cap. */
-  function availableWidth(): number {
-    return Math.floor(Math.min(TOOLBAR_MAX_WIDTH, canvas.visibleBox().width - 2 * TOOLBAR_INSET));
-  }
-
-  /** The width the current row was fitted to, so a narrower or wider canvas fits it again. */
-  let fittedWidth = 0;
-
-  /**
-   * Renders the selection's row so it fits the canvas: measures every button at full size, then
-   * moves the least used actions into More (and drops the link's destination or the "Editing
-   * text" label) until it fits. Buttons never wrap and labels are never cut.
-   */
-  function fitSelectionRow(s: State, sel: Selection): void {
-    const available = availableWidth();
-    fittedWidth = available;
-    root.style.width = "";
-    root.style.maxWidth = "";
-    delete root.dataset["placement"];
-    delete root.dataset["wrap"];
-    const row = h("div", { class: "ftb-row" }, ...rowFor(s, sel, new Set(), true));
-    root.replaceChildren(row);
-    const rowStyle = getComputedStyle(row);
-    const rootStyle = getComputedStyle(root);
-    const px = (value: string) => parseFloat(value) || 0;
-    const gap = px(rowStyle.columnGap);
-    const kids = [...row.children] as HTMLElement[];
-    const widthOf = (el: Element) => el.getBoundingClientRect().width;
-    const chrome = px(rowStyle.paddingLeft) + px(rowStyle.paddingRight) + px(rootStyle.borderLeftWidth) + px(rootStyle.borderRightWidth);
-    const total = chrome + kids.reduce((n, el) => n + widthOf(el), 0) + gap * Math.max(0, kids.length - 1);
-    const moreButton = kids.find((el) => el.dataset["key"] === "more");
-    const more = moreButton ? widthOf(moreButton) + gap : 0;
-    let order: Collapsible[];
-    if (s.editing.active) {
-      const label = kids.find((el) => el.dataset["collapse"] === "label");
-      order = label ? [{ key: "label", width: widthOf(label) + gap, into: "drop" }] : [];
-    } else {
-      const shown = actionsFor(sel).primary;
-      order = collapseOrder(shown.map((id) => {
-        const el = kids.find((k) => k.dataset["key"] === id);
-        const detail = el?.querySelector(".tb-detail");
-        const inner = el ? px(getComputedStyle(el).columnGap) : 0;
-        return { key: id, width: el ? widthOf(el) + gap : 0, detail: detail ? widthOf(detail) + inner : 0 };
-      }));
-    }
-    const hasMore = !s.editing.active && actionsFor(sel).overflow.length > 0;
-    const fit = fitRow({ width: total - more, available, order, more, hasMore });
-    if (fit.collapsed.length > 0 || !hasMore) root.replaceChildren(h("div", { class: "ftb-row" }, ...rowFor(s, sel, new Set(fit.collapsed))));
-    // Narrower than even the shortest row (a tiny phone preview): wrap rather than spill out.
-    if (!fit.fits) root.dataset["wrap"] = "";
-  }
-
-  function position(s: State, glide: boolean): void {
+  function position(s: State, _glide: boolean): void {
+    if (s.editing.active && candidate !== null) return;
     const f = s.focus;
     const rect = f.kind === "selected" ? f.selection.rect : f.kind === "blocked" ? f.rect : null;
-    if (!rect || !root.classList.contains("is-visible") && root.childElementCount === 0) return;
-    // The slug that names the part hangs under the selection's bottom edge; keep it visible too.
-    const target = canvas.toApp({ ...rect, height: rect.height + 24 / canvas.scale() });
+    if (!rect) return;
     const box = canvas.visibleBox();
-    const obstructions = s.obstructions.map((o) => canvas.toApp(o));
-    const obstacles = f.kind === "selected" ? s.obstacles.map((o) => canvas.toApp(o)) : [];
-    if (f.kind === "selected" && Math.abs(availableWidth() - fittedWidth) >= 1 && root.childElementCount > 0) {
-      render(true);
-      return;
-    }
-    root.style.width = "";
-    root.style.maxWidth = `${availableWidth()}px`;
-    const placement = placeToolbar({ target, canvas: box, obstructions, obstacles, size: { width: root.offsetWidth, height: root.offsetHeight }, previous: candidate });
+    const target = canvas.toApp(rect);
+    root.style.maxWidth = `${Math.max(100, box.width - 8)}px`;
+    const placement = placeToolbar({ target, canvas: box, obstructions: s.obstructions.map((r) => canvas.toApp(r)), size: { width: root.offsetWidth, height: root.offsetHeight } });
     if (placement.kind === "offscreen") {
-      root.classList.add("is-offscreen");
-      const label = f.kind === "selected" ? KIND_LABELS[f.selection.kind] : "The selected part";
-      const way = OFFSCREEN[placement.direction];
-      offscreen.hidden = false;
-      offscreen.dataset["direction"] = placement.direction;
-      must<HTMLElement>(offscreen, "[data-offscreen-text]").textContent = `${label} is ${way.words}`;
-      offscreen.querySelector("use")?.setAttribute("href", `/static/img/icons.svg#i-${way.icon}`);
-      const vertical = placement.direction === "above" || placement.direction === "below";
-      offscreen.style.left = vertical ? `${Math.round(box.x + box.width / 2)}px` : placement.direction === "left" ? `${Math.round(box.x + 12)}px` : "";
-      offscreen.style.right = placement.direction === "right" ? `${Math.round(window.innerWidth - (box.x + box.width) + 12)}px` : "";
-      offscreen.style.top = placement.direction === "above" ? `${Math.round(box.y + 12)}px` : vertical ? "" : `${Math.round(box.y + box.height / 2)}px`;
-      offscreen.style.bottom = placement.direction === "below" ? `${Math.round(window.innerHeight - (box.y + box.height) + 12)}px` : "";
-      return;
+      root.classList.add("is-offscreen"); offscreen.hidden = false;
+      must<HTMLElement>(offscreen, "[data-offscreen-text]").textContent = `Selection is ${OFFSCREEN[placement.direction].words}`;
+      offscreen.style.left = `${box.x + box.width / 2}px`; offscreen.style.top = `${box.y + 12}px`; return;
     }
-    offscreen.hidden = true;
-    root.classList.remove("is-offscreen");
-    candidate = placement.candidate;
-    root.dataset["placement"] = placement.candidate;
-    if (placement.width !== undefined) {
-      root.style.maxWidth = "none";
-      root.style.width = `${Math.round(placement.width)}px`;
-    }
-    if (glide) {
-      root.classList.add("is-gliding");
-      window.setTimeout(() => root.classList.remove("is-gliding"), 180);
-    }
+    offscreen.hidden = true; root.classList.remove("is-offscreen");
+    candidate = placement.candidate; root.dataset["placement"] = candidate;
     root.style.transform = `translate(${Math.round(placement.x)}px, ${Math.round(placement.y)}px)`;
   }
 
@@ -515,9 +392,9 @@ export function createToolbar({ store, canvas, edits }: ToolbarDeps): Toolbar {
     if (sel) canvas.send({ type: "reveal", element: sel.element, pulse: false });
   });
 
-  root.addEventListener("keydown", (event) => {
+  actionHost.addEventListener("keydown", (event) => {
     const list = buttons();
-    const index = list.indexOf(document.activeElement as HTMLButtonElement);
+    const index = list.findIndex((b) => b === document.activeElement);
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       if (index < 0) return;
       rove(list[(index + (event.key === "ArrowRight" ? 1 : -1) + list.length) % list.length]);
