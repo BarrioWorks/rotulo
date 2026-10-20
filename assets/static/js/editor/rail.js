@@ -9,6 +9,25 @@ function folderOf(path) {
     const i = path.lastIndexOf("/");
     return i < 0 ? "" : path.slice(0, i + 1);
 }
+/**
+ * How the Images list names a picture. Many templates reuse file names across folders
+ * ("portfolio/1.jpg", "team/1.jpg"), so a picture named by its file shows its folder too, and a
+ * picture with a description shows the description first and the file under it.
+ */
+function pictureLabel(name, src) {
+    let parts = [];
+    try {
+        parts = new URL(src).pathname.split("/").filter(Boolean).map((p) => decodeURIComponent(p));
+    }
+    catch {
+        parts = [];
+    }
+    const file = parts.slice(-2).join("/") || null;
+    const base = parts[parts.length - 1] ?? "";
+    if (!name || name === base)
+        return { label: file ?? (name || "Picture without a description"), file: null };
+    return { label: name, file };
+}
 /** Whether the owner has typed or chosen something in this field since the panel was built. */
 function edited(el) {
     return el.matches("input, textarea, select") && el.dataset["edited"] !== undefined;
@@ -232,6 +251,10 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
         startHeading.hidden = s.outline.heading === null;
         startPicture.hidden = s.outline.images.length === 0;
     }
+    function imageName(name, src) {
+        const { label, file } = pictureLabel(name, src);
+        return h("span", { class: "image-name" }, h("span", { class: "truncate", text: label }), file ? h("span", { class: "image-file truncate", text: file }) : null);
+    }
     function renderImages(s) {
         const images = s.outline.images;
         imagesCount.textContent = images.length > 0 ? String(images.length) : "";
@@ -241,7 +264,7 @@ export function createRail({ store, canvas, change, edits, returnFocus, openSett
         const focusedKey = document.activeElement instanceof HTMLElement && imageList.contains(document.activeElement) ? document.activeElement.dataset["key"] : undefined;
         imageList.replaceChildren(...images.map((img) => {
             const thumb = previewImage(img.src, s.canvasOrigin);
-            const b = h("button", { class: "image-row", attrs: { type: "button", "data-key": img.element } }, thumb ? h("img", { class: "image-thumb", attrs: { src: thumb, alt: "", loading: "lazy", referrerpolicy: "no-referrer" } }) : h("span", { class: "image-thumb" }), h("span", { class: "image-name truncate", text: img.name || "Picture without a description" }));
+            const b = h("button", { class: "image-row", attrs: { type: "button", "data-key": img.element } }, thumb ? h("img", { class: "image-thumb", attrs: { src: thumb, alt: "", loading: "lazy", referrerpolicy: "no-referrer" } }) : h("span", { class: "image-thumb" }), imageName(img.name, img.src));
             if (img.element === current)
                 b.setAttribute("aria-current", "true");
             b.addEventListener("click", () => {
