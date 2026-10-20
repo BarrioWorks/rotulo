@@ -14,8 +14,10 @@ def token(name):
     alias = re.fullmatch(r"var\(--([a-z0-9-]+)\)", value)
     return token(alias[1]) if alias else value
 
-T["white"], T["dark-photo"] = "#FFFFFF", "#2B2B2B"
+T["white"] = "#FFFFFF"
 
+# Control borders are measured against their surface fill. The selection ring
+# is measured together with its halo below, including on dark backgrounds.
 # (foreground, background, minimum, what it is)
 PAIRS = [
     ("ink", "surface", 4.5, "primary text"), ("ink", "ground", 4.5, "primary text"), ("ink", "sunken", 4.5, "primary text"),
@@ -39,8 +41,11 @@ PAIRS = [
     ("ink", "warning-soft", 4.5, "warning toast text"), ("warning", "warning-soft", 3.0, "warning toast icon"),
 ]
 
+def rgb(h):
+    return [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+
 def lum(h):
-    c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    c = rgb(h) if isinstance(h, str) else h
     c = [x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
 
@@ -53,7 +58,7 @@ print("| Foreground | Background | Ratio | Needs | Use |\n|---|---|---|---|---|"
 for fg, bg, need, use in PAIRS:
     r = ratio(token(fg), token(bg))
     failed |= r < need
-    print(f"| `{fg}` {T[fg]} | `{bg}` {T[bg]} | {r:.2f} | {need} | {use}{'  FAIL' if r < need else ''} |")
+    print(f"| `{fg}` {token(fg)} | `{bg}` {token(bg)} | {r:.2f} | {need} | {use}{'  FAIL' if r < need else ''} |")
 # The accent and opaque white halo together must cover arbitrary site pixels.
 for step in range(2001):
     grey = step / 2000
@@ -63,4 +68,35 @@ for step in range(2001):
     if max(contrasts) < 3:
         print(f"FAIL selection ring plus halo over grey {grey:.4f}")
         failed = True
+# Port of identity/measure.py's CSS saturate + source-over model, using
+# only the standard library so the check gate needs no image/numpy dependency.
+def composite(backdrop, tint, alpha, saturation):
+    matrix = (
+        (0.213 + 0.787 * saturation, 0.715 - 0.715 * saturation, 0.072 - 0.072 * saturation),
+        (0.213 - 0.213 * saturation, 0.715 + 0.285 * saturation, 0.072 - 0.072 * saturation),
+        (0.213 - 0.213 * saturation, 0.715 - 0.715 * saturation, 0.072 + 0.928 * saturation),
+    )
+    saturated = [min(1, max(0, sum(a * b for a, b in zip(row, backdrop)))) for row in matrix]
+    return [alpha * a + (1 - alpha) * b for a, b in zip(tint, saturated)]
+
+STATUS = [(name, 4.5) for name in ("accent", "success", "warning", "error")]
+LEVEL_TEXT = {
+    "glass-2": [("ink", 4.5), ("ink-2", 4.5), *STATUS],
+    "glass-3": [("ink", 4.5), ("ink-2", 4.5), ("ink-3", 4.5), *STATUS, ("control-edge", 3.0)],
+}
+BACKDROPS = {
+    "white": "#FFFFFF", "black": "#000000", "red": "#FF0000", "green": "#00FF00",
+    "blue": "#0000FF", "yellow": "#FFFF00", "magenta": "#FF00FF", "cyan": "#00FFFF",
+    "agency yellow": "#FFC800", "landwind blue": "#1A56DB",
+}
+for level, text in LEVEL_TEXT.items():
+    values = [float(v) for v in re.fullmatch(r"rgba\(([^)]+)\)", token(f"{level}-tint"))[1].split(",")]
+    tint, alpha = [v / 255 for v in values[:3]], values[3]
+    saturation = float(re.search(r"saturate\(([\d.]+)\)", token(f"{level}-filter"))[1])
+    for backdrop, colour in BACKDROPS.items():
+        surface = composite(rgb(colour), tint, alpha, saturation)
+        for fg, need in text:
+            r = ratio(token(fg), surface)
+            failed |= r < need
+            print(f"| `{fg}` | {level} over {backdrop} | {r:.2f} | {need} |{' FAIL' if r < need else ''} |")
 sys.exit(1 if failed else 0)
