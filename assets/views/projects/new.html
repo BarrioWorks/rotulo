@@ -2,6 +2,7 @@
 {% block title %}Import a website · Pagehaven{% endblock title %}
 {% block head %}<script type="module" src="/static/js/import.js"></script>{% endblock head %}
 {% block skip_target %}import{% endblock skip_target %}
+{% block body_class %}screens-body{% endblock body_class %}
 {% block body %}
 {% include "partials/app_header.html" %}
 <main class="page page-narrow import" id="import" data-upload-mb="{{ limits.upload_mb }}" data-content-mb="{{ limits.content_mb }}" data-file-count="{{ limits.file_count }}">
@@ -18,4 +19,5 @@
 
   {% include "partials/import_area.html" %}
 </main>
+{% include "partials/app_footer.html" %}
 {% endblock body %}

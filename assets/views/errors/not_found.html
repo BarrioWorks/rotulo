@@ -2,17 +2,14 @@
 {% block title %}Page not found · Pagehaven{% endblock title %}
 {% block body_class %}auth-body{% endblock body_class %}
 {% block body %}
-<header class="auth-header">
-  <a class="brand" href="/">
-    <img src="/static/img/logo.svg" alt="" width="28" height="28">
-    <span>Pagehaven</span>
-  </a>
-</header>
-<main id="main" class="auth">
+<header class="auth-header notice-header">{% include "partials/screen_brand.html" %}</header>
+<main id="main" class="auth notice-layout">
   <div class="auth-column notice">
+    <p class="notice-code">404</p>
     <h1>We couldn't find that page</h1>
     <p class="auth-lead">The link may be old, or this page may have moved. Go to your websites to pick up where you left off.</p>
     <a class="btn btn-primary btn-lg" href="/projects">Go to your websites</a>
   </div>
 </main>
+{% include "partials/app_footer.html" %}
 {% endblock body %}

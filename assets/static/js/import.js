@@ -301,6 +301,7 @@ function boot(root) {
             case "error":
                 must(root, "[data-error-title]").textContent = step.title;
                 must(root, "[data-error-message]").textContent = step.message;
+                must(root, "[data-source-recovery]").hidden = step.message !== SOURCE_ONLY;
                 help.open = step.help;
                 must(sections.error, "[data-retry]").focus();
                 break;
