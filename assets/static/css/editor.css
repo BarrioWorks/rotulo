@@ -1,14 +1,5 @@
 /* Pagehaven editor: shell, canvas, floating toolbar, rail panels, publishing and the small-screen
-   Manage view. Loads after app.css and uses only its tokens and components, plus the marked
-   foundation candidates below. */
-
-/* foundation candidates: values the editor needs that app.css does not have yet */
-:root {
-  --device-radius: 34px;       /* the phone screen inside its bezel; a device picture, not chrome */
-  --dialog-w-wide: 640px;      /* website settings, where the DNS table needs room */
-  --z-menu-over-toolbar: calc(var(--z-toolbar) + 1); /* menus opened from the floating toolbar */
-  --veil: color-mix(in srgb, var(--surface) 86%, transparent); /* loading veil over the old page */
-}
+   Manage view. Loads after app.css and uses only its tokens and components. */
 
 html:has(body.editor-body) { overflow: hidden; }
 body.editor-body { height: 100vh; overflow: hidden; background: var(--canvas-backdrop); }
@@ -300,7 +291,7 @@ body[data-boot="manage"] .manage { display: flex; }
 .manage-address .icon { color: var(--ink-3); flex: none; }
 .manage-address a { min-width: 0; overflow-wrap: anywhere; }
 .manage-address .copy-btn { margin-left: auto; min-height: var(--control-h-lg); }
-.manage-card { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4) 0 0; border-top: 2px solid var(--ink); }
+.manage-card { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s5); background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-canvas); }
 .manage-card .release-list { margin-top: 0; }
 .manage-card .btn { min-height: var(--control-h-lg); }
 .manage-card .pub-actions .btn { flex: 1; }

@@ -26,8 +26,6 @@ export function openMenu(trigger: HTMLElement, items: MenuItem[], options: { lab
 
   const menu = h("div", { class: "menu ed-menu", attrs: { role: "menu", "aria-label": options.label } });
   const buttons: HTMLButtonElement[] = [];
-  // Labels start at one x: when some items have an icon, the others keep an empty icon column.
-  const iconColumn = items.some((item) => item !== "separator" && item.icon !== undefined);
   for (const item of items) {
     if (item === "separator") {
       menu.append(h("div", { class: "menu-sep", attrs: { role: "separator" } }));
@@ -35,7 +33,7 @@ export function openMenu(trigger: HTMLElement, items: MenuItem[], options: { lab
     }
     const role = item.checked === undefined ? "menuitem" : "menuitemradio";
     const b = h("button", { class: `menu-item${item.danger ? " danger" : ""}`, attrs: { type: "button", role, tabindex: "-1" } },
-      item.icon ? icon(item.icon, "icon-sm") : iconColumn ? h("span", { class: "icon icon-sm", attrs: { "aria-hidden": "true" } }) : null,
+      item.icon ? icon(item.icon, "icon-sm") : null,
       h("span", { class: "grow truncate", text: item.label }),
       item.detail ? h("span", { class: "ed-menu-detail", text: item.detail }) : null,
       item.checked ? icon("check", "icon-sm") : null);
