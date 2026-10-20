@@ -3,13 +3,12 @@
 
 :root {
   /* The Harbor Bakery demo site drawn on the landing page. These are the site's colours, not Pagehaven's. */
-  --demo-cream: #FDF8F1;
-  --demo-line: #EADBC6;
-  --demo-ink: #2B1D15;
-  --demo-muted: #6E5C50;
-  --demo-crust: #8A3F17;
-  --demo-radius: 10px;
-  --demo-font: var(--font-ui);
+  --demo-cream: #FAF8F4;
+  --demo-line: #E4DED4;
+  --demo-ink: #221D19;
+  --demo-muted: #5E5650;
+  --demo-crust: #9A3B22;
+  --demo-font: Georgia, "Times New Roman", serif;
   --demo-title: 2.5rem;
 }
 
@@ -226,17 +225,19 @@
 
 .demo-site { background: var(--demo-cream); border-radius: var(--radius-canvas); box-shadow: var(--shadow-canvas); font-family: var(--demo-font); color: var(--demo-ink); }
 .demo-nav { display: flex; align-items: center; gap: var(--s5); padding: var(--s4) var(--s7); border-bottom: 1px solid var(--demo-line); font-size: var(--fs-meta); color: var(--demo-muted); }
-.demo-nav b { margin-right: auto; font-size: var(--fs-body); color: var(--demo-ink); }
-.demo-hero { padding: var(--s11) var(--s9) var(--s9); }
+.demo-nav b { margin-right: auto; font-size: var(--fs-lead); font-weight: 400; color: var(--demo-ink); }
+.demo-nav .is-current { color: var(--demo-ink); text-decoration: underline 2px var(--demo-crust); text-underline-offset: 6px; }
+.demo-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s8); align-items: center; padding: var(--s8) var(--s9) var(--s9); }
+.demo-photo { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.demo-meta { margin-top: var(--s4); font-family: var(--font-ui); font-size: var(--fs-meta); color: var(--demo-muted); }
 .demo-selected { position: relative; width: fit-content; max-width: 100%; }
-.demo-title { font-size: var(--demo-title); line-height: 1.08; font-weight: 700; letter-spacing: -0.02em; max-width: 15ch; outline: var(--select-stroke) solid var(--select); outline-offset: var(--s1); }
+.demo-title { font-size: var(--demo-title); line-height: 1.1; font-weight: 400; letter-spacing: -0.01em; text-wrap: balance; outline: var(--select-stroke) solid var(--select); outline-offset: var(--s1); }
 .demo-title.crop::before { inset: calc(-1 * (var(--crop-gap) + var(--crop-mark) + var(--s1))); }
 .mock-caption { position: absolute; left: 0; top: calc(100% + 12px); display: flex; gap: var(--s0); padding: var(--s1); font-family: var(--font-ui); }
 .mock-caption span { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: var(--control-h-sm); padding: 0 var(--s2); border-radius: var(--radius-control); font-size: var(--fs-label); font-weight: var(--fw-control); color: var(--ink-2); }
 .mock-caption span.is-on { background: var(--select-soft); color: var(--link); }
 .mock-kind { color: var(--select-strong); font-weight: var(--fw-micro); }
-.demo-text { margin-top: 80px; max-width: 46ch; font-size: var(--fs-lead); line-height: var(--lh-lead); color: var(--demo-muted); }
-.demo-button { display: inline-flex; align-items: center; height: var(--s8); margin-top: var(--s6); padding: 0 var(--s5); border-radius: var(--demo-radius); background: var(--demo-crust); color: var(--overlay-chip-ink); font-size: var(--fs-control); font-weight: 700; }
+.demo-text { margin-top: 76px; max-width: 46ch; font-size: var(--fs-lead); line-height: var(--lh-lead); color: var(--demo-muted); }
 
 .home-steps { max-width: var(--page-max); margin: 0 auto; padding: var(--s10) var(--gutter); }
 .steps { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s7); list-style: none; counter-reset: step; }
@@ -269,8 +270,8 @@
   .page-head { align-items: flex-start; flex-direction: column; }
   .mock-page, .mock-bar .pill { display: none; }
   .demo-nav span { display: none; }
-  .demo-hero { padding: var(--s5) var(--s5) var(--s7); }
-  .demo-selected { margin-top: var(--s6); }
+  .demo-hero { grid-template-columns: 1fr; gap: var(--s5); padding: var(--s5) var(--s5) var(--s7); }
+
   :root { --demo-title: 2rem; }
   .steps { grid-template-columns: 1fr; gap: var(--s6); }
   .promises > div { grid-template-columns: 1fr; }
