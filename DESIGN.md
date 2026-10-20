@@ -287,6 +287,9 @@ components:
   toast-error:
     backgroundColor: "{colors.error}"
     textColor: "{colors.on-primary}"
+  toast-warning:
+    backgroundColor: "{colors.warning-soft}"
+    textColor: "{colors.ink}"
   dialog:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
@@ -492,9 +495,12 @@ Solid, quiet and exact.
 
 ### Floating Toolbar
 The editor's signature tool. A sheet white bar with an ink edge and the float shadow that rises 4 px into place in 90 ms. Buttons are 30 px ghosts; pressed or expanded ones take the cyan wash with link-colored text, because they describe what is selected. Panels open below a hairline at 320 px.
+- **Fit:** The bar is never wider than 640 px or the visible canvas, whichever is narrower, including the phone view. When the actions do not fit, the least used ones move into More, starting from the end of the row; the link's destination is dropped before Link itself moves. Buttons never wrap and labels are never cut. Only a canvas narrower than the shortest row (crumb, section controls and More) lets the row wrap.
+- **Lead:** The row starts with the part's kind. For a plain section the Section menu is the lead, so the word appears once.
 
 ### Feedback
-- **Toasts:** Toast ink, 6 px radius, float shadow, centered at the bottom; errors are solid alert red. The action is an underlined text button.
+- **Toasts:** Toast ink, 6 px radius, float shadow, centered at the bottom, with a check icon. Errors are solid alert red with the alert icon. A warning (the change worked, but has a side effect such as a menu link that now goes nowhere) is the amber wash with ink text, an amber alert icon and the 1 px ink edge. The action is an underlined text button.
+- **Save status:** The editor top bar always says whether changes are saved and, after a dot, whether they are published: "Saved · Not published yet", "Saved · 3 changes not published", "Saving… · Published". "Saved" does not time out. A save problem replaces both with its own words in warning or error color; unpublished changes are not a problem and stay ink 2. Below 900 px only the save word shows; the whole line stays in the tooltip and the accessible name.
 - **Tooltips:** Toast ink, 3 px radius, meta type, shown after 500 ms on hover and at once on keyboard focus.
 - **Alerts:** Inline soft wash with the matching ink and an icon.
 - **Empty states:** A Newsreader title 2, one sentence in ink 2, one action.
