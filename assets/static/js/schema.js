@@ -8,6 +8,10 @@ export function num(min = -1e9, max = 1e9) {
 export function int(min = 0, max = Number.MAX_SAFE_INTEGER) {
     return (v) => (typeof v === "number" && Number.isInteger(v) && v >= min && v <= max ? v : undefined);
 }
+/** Binary data, such as a font file the app hands to the preview. */
+export function bytes(max) {
+    return (v) => (v instanceof ArrayBuffer && v.byteLength > 0 && v.byteLength <= max ? v : undefined);
+}
 export const bool = (v) => (typeof v === "boolean" ? v : undefined);
 export function lit(...values) {
     return (v) => (typeof v === "string" && values.includes(v) ? v : undefined);

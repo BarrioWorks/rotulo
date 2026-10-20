@@ -1,6 +1,6 @@
 import { toast } from "../ui.js";
 import { ApiError } from "./api.js";
-import type { History } from "./api.js";
+import type { Bootstrap, History } from "./api.js";
 import type { SaveLog, Store } from "./state.js";
 
 interface Saved {
@@ -18,6 +18,17 @@ export interface ChangeOptions {
   log?: SaveLog;
   /** The page the change was made on, for the change list. Defaults to the current page. */
   page?: string;
+  /**
+   * Builds the change's result from the server's state when a retry finds the change already
+   * applied (the first attempt timed out after the server saved it). Without it, that case
+   * stays a conflict.
+   */
+  recover?: (fresh: Bootstrap) => unknown;
+}
+
+/** The result of a draft edit, rebuilt from the server's state. */
+export function editRecovery(fresh: Bootstrap): Saved {
+  return { revision: fresh.project.revision, history: fresh.history, draft_changed_since_publish: fresh.draft_changed_since_publish };
 }
 
 export type Change = <T>(run: (baseRevision: number) => Promise<T>, options?: ChangeOptions) => Promise<T | null>;
@@ -42,7 +53,7 @@ const RETRY_MS = [1000, 3000, 10000];
  * once when the browser comes back online). After a conflict the queue stops and the conflict
  * dialog asks the user to reload.
  */
-export function createSaver(store: Store): Saver {
+export function createSaver(store: Store, fetchState: () => Promise<Bootstrap>): Saver {
   let tail: Promise<unknown> = Promise.resolve();
   let halted = false;
   let wake: (() => void) | null = null;
@@ -64,13 +75,16 @@ export function createSaver(store: Store): Saver {
   function change<T>(run: (baseRevision: number) => Promise<T>, options: ChangeOptions = {}): Promise<T | null> {
     store.dispatch({ type: "save_queued" });
     const job = tail.then(async (): Promise<T | null> => {
+      /** The revision the last attempt was sent with, when that attempt may have reached the server. */
+      let uncertainBase: number | null = null;
       for (let attempt = 0; ; attempt++) {
         if (halted) {
           store.dispatch({ type: "save_conflict" });
           return null;
         }
+        const base = store.get().project.revision;
         try {
-          const result = await run(store.get().project.revision);
+          const result = await run(base);
           if (isSaved(result)) {
             store.dispatch({
               type: "save_ok",
@@ -94,9 +108,31 @@ export function createSaver(store: Store): Saver {
           }
           const failure = error;
           if (failure.status === 0) {
+            uncertainBase = base;
             store.dispatch({ type: "save_offline" });
             await waitForRetry(attempt);
             continue;
+          }
+          // A retry refused as stale right after a lost answer: if the server is exactly one
+          // revision on, the lost attempt is what moved it, so the change landed.
+          if (failure.status === 409 && options.recover && uncertainBase !== null && failure.revision === uncertainBase + 1) {
+            try {
+              const fresh = await fetchState();
+              if (fresh.project.revision === uncertainBase + 1) {
+                store.dispatch({
+                  type: "save_ok",
+                  revision: fresh.project.revision,
+                  history: fresh.history,
+                  draftChanged: fresh.draft_changed_since_publish,
+                  log: options.log ?? "edit",
+                  page: options.page ?? store.get().path,
+                  at: Date.now(),
+                });
+                return options.recover(fresh) as T;
+              }
+            } catch {
+              // Fall through to the conflict below.
+            }
           }
           if (failure.status === 409) {
             halted = true;

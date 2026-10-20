@@ -60,3 +60,43 @@ export function describeHref(href, s) {
             }
     }
 }
+/** Digits, spaces, a leading +, dashes and brackets, with at least 3 digits. Saved as `tel:+4420…`. */
+export function checkPhone(raw) {
+    const value = raw.trim().replace(/^tel:/i, "");
+    if (!value)
+        return { ok: false, message: "Type a phone number, like +44 20 1234 5678." };
+    if (!/^\+?[\d\s()-]+$/.test(value))
+        return { ok: false, message: "A phone number can only have digits, spaces, a + at the start, dashes and brackets." };
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 3)
+        return { ok: false, message: "A phone number needs at least 3 digits." };
+    return { ok: true, href: `tel:${value.startsWith("+") ? "+" : ""}${digits}` };
+}
+export function checkEmail(raw) {
+    const value = raw.trim().replace(/^mailto:/i, "");
+    if (!value)
+        return { ok: false, message: "Type an email address, like name@example.com." };
+    if (!/^[^\s@,;<>"]+@[^\s@,;<>"]+\.[^\s@,;<>".]{2,}$/.test(value))
+        return { ok: false, message: "That doesn't look like an email address. Check it looks like name@example.com." };
+    return { ok: true, href: `mailto:${value}` };
+}
+/** A web address with or without `https://`. `example.com/menu` becomes `https://example.com/menu`. */
+export function checkWeb(raw) {
+    const value = raw.trim();
+    const wrong = { ok: false, message: "Type a web address, like example.com or https://example.com." };
+    if (!value || /\s/.test(value) || value.includes("@"))
+        return value ? wrong : { ok: false, message: "Type a web address, like example.com." };
+    const href = /^https?:\/\//i.test(value) ? value : /^[a-z][a-z0-9+.-]*:/i.test(value) ? null : `https://${value.replace(/^\/\//, "")}`;
+    if (!href)
+        return wrong;
+    try {
+        const url = new URL(href);
+        const host = url.hostname;
+        if (!/^https?:$/.test(url.protocol) || !(host === "localhost" || /^[^.]+(\.[^.]+)+$/.test(host)) || /\.$|^\./.test(host))
+            return wrong;
+    }
+    catch {
+        return wrong;
+    }
+    return { ok: true, href };
+}

@@ -1,8 +1,11 @@
 import { must } from "../ui.js";
 import { openMenu } from "./menu.js";
 import { pageLabel } from "./pages.js";
-import { changed, siteState, statusPill } from "./state.js";
+import { icon } from "../ui.js";
+import { changed, siteState, statusLine } from "./state.js";
 const SAVING_DELAY_MS = 400;
+/** How long "Saved" shows after a save lands before the line settles back to the publish state. */
+export const SAVED_VISIBLE_MS = 2000;
 function sentence(label) {
     return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -11,7 +14,9 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
     const redoBtn = must(document, '[data-action="redo"]');
     const pill = must(document, "[data-status-pill]");
     const pillText = must(pill, "[data-status-text]");
+    const pillMark = must(pill, "[data-status-mark]");
     const publishBtn = must(document, '[data-action="publish"]');
+    const viewLink = must(document, "[data-view-site]");
     const siteButton = must(document, "[data-site-menu]");
     const siteName = must(document, "[data-site-name]");
     const pageButton = must(document, "[data-page-switcher]");
@@ -20,6 +25,8 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
     const deviceButtons = [...document.querySelectorAll("[data-device]")];
     let savingVisible = false;
     let savingTimer = 0;
+    let savedVisible = false;
+    let savedTimer = 0;
     undoBtn.addEventListener("click", undo);
     redoBtn.addEventListener("click", redo);
     for (const b of modeButtons)
@@ -58,13 +65,19 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
         ], { label: "Pages" });
     }
     pageButton.addEventListener("click", openPages);
+    let renderedMark = null;
     function renderPill() {
         const s = store.get();
-        const view = statusPill(s, savingVisible);
+        const view = statusLine(s, savingVisible, savedVisible);
         pill.dataset["tone"] = view.tone;
-        pill.setAttribute("aria-busy", String(view.busy));
+        pill.setAttribute("aria-busy", String(view.mark === "saving"));
         pillText.textContent = view.text;
-        const saved = s.saves.savedAt ? `Saved ${new Date(s.saves.savedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}. ` : "Changes save automatically. ";
+        if (view.mark !== renderedMark) {
+            renderedMark = view.mark;
+            pillMark.replaceChildren(view.mark === "saved" ? icon("check", "icon-sm") : view.mark === "problem" ? icon("alert", "icon-sm") : "");
+            pillMark.dataset["mark"] = view.mark ?? "";
+        }
+        const saved = s.saves.savedAt ? `Last saved ${new Date(s.saves.savedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}. ` : "Changes save automatically. ";
         pill.dataset["tip"] = `${saved}Click for publishing and versions.`;
         pill.setAttribute("aria-label", `${view.text}. Publishing and versions`);
     }
@@ -78,6 +91,14 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
             redoBtn.setAttribute("aria-label", redoLabel);
             undoBtn.dataset["tip"] = undoLabel;
             redoBtn.dataset["tip"] = redoLabel;
+        }
+        if (prev && s.saves.savedAt !== prev.saves.savedAt && s.saves.savedAt !== null) {
+            savedVisible = true;
+            window.clearTimeout(savedTimer);
+            savedTimer = window.setTimeout(() => {
+                savedVisible = false;
+                renderPill();
+            }, SAVED_VISIBLE_MS);
         }
         if (changed(s, prev, "saves")) {
             const pending = s.saves.pending > 0;
@@ -98,10 +119,12 @@ export function createTopBar({ store, canvas, rail, publishing, undo, redo }) {
             renderPill();
             const site = siteState(s);
             publishBtn.disabled = !s.draftChanged;
-            publishBtn.textContent = s.draftChanged ? "Publish" : "Everything is live";
             publishBtn.dataset["tip"] = s.draftChanged
-                ? site.kind === "never" ? "Put your website online" : "Review your changes and put them online"
-                : "Visitors already see your latest changes";
+                ? site.kind === "never" ? "Review and publish your website" : "Review your changes and publish them"
+                : "Nothing new to publish. Visitors see your latest changes.";
+            viewLink.hidden = s.project.live_release === null || s.draftChanged;
+            viewLink.href = s.project.site_url;
+            viewLink.setAttribute("aria-label", "View website (opens in a new tab)");
         }
         if (changed(s, prev, "mode"))
             for (const b of modeButtons)

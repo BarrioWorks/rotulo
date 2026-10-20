@@ -7,6 +7,8 @@ import { OVERLAY } from "../overlay-theme.js";
 import {
   ANCHOR_ID,
   KIND_LABELS,
+  MAX_OBSTACLES,
+  MAX_OUTLINE_IMAGES,
   STYLE_KEYS,
   envelope,
   isSafeHref,
@@ -43,6 +45,8 @@ let hovered: Element | null = null;
 let blocked: Element | null = null;
 let editing: Editing | null = null;
 let frame = 0;
+/** One screen pixel in the site's CSS pixels: the inverse of the canvas scale. */
+let k = 1;
 
 function post(message: AgentMessage): void {
   parentWindow.postMessage(envelope(message), appOrigin);
@@ -55,32 +59,37 @@ const host = document.createElement("pagehaven-overlay");
 const shadow = host.attachShadow({ mode: "closed" });
 const sheet = new CSSStyleSheet();
 const O = OVERLAY;
+/* Every size goes through --k (1 / canvas scale), so marks keep their size on screen. */
+const px = (value: string) => `calc(var(--k, 1) * ${value})`;
+/** The dark twin beside the white hover line, so it reads on light pages. Agent-only. */
+const TWIN = "rgba(22, 22, 26, 0.5)";
+const UI_FONT = `"Pagehaven UI", system-ui, sans-serif`;
 sheet.replaceSync(`
   :host { all: initial; }
   * { box-sizing: border-box; }
-  .ring { position: fixed; pointer-events: none; border-radius: 2px; }
+  .ring { position: fixed; pointer-events: none; border-radius: ${px("2px")}; }
   .ring[hidden] { display: none; }
   .glide { transition: left 140ms cubic-bezier(0.16, 1, 0.3, 1), top 140ms cubic-bezier(0.16, 1, 0.3, 1), width 140ms cubic-bezier(0.16, 1, 0.3, 1), height 140ms cubic-bezier(0.16, 1, 0.3, 1); }
-  .hover { border: 1px dashed ${O.hover}; box-shadow: 0 0 0 1px ${O.halo}, inset 0 0 0 1px ${O.halo}; animation: fade 80ms ease-out; }
+  .hover { border: ${px("1px")} dashed ${O.halo}; box-shadow: 0 0 0 ${px("1px")} ${TWIN}, inset 0 0 0 ${px("1px")} ${TWIN}; animation: fade 80ms ease-out; }
   .hover.blocked { border-color: ${O.muted}; }
-  .select { border: ${O.stroke} solid ${O.accent}; box-shadow: 0 0 0 1px ${O.halo}, inset 0 0 0 1px ${O.halo}; }
-  .select.editing { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 5px ${O.accentSoft}, inset 0 0 0 1px ${O.halo}; }
+  .select { border: ${px(O.stroke)} solid ${O.accent}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}, inset 0 0 0 ${px("1px")} ${O.halo}; }
   .select.pulse { animation: pulse 400ms ease-out; }
-  .blocked-box { border: ${O.stroke} dashed ${O.muted}; box-shadow: 0 0 0 1px ${O.halo}, inset 0 0 0 1px ${O.halo}; }
-  .crop { position: absolute; width: ${O.cropMark}; height: ${O.cropMark}; border: 0 solid ${O.accent}; filter: drop-shadow(0 0 0.5px ${O.halo}) drop-shadow(0 0 0.5px ${O.halo}); }
-  .crop.tl { left: calc(-${O.cropGap} - ${O.cropMark}); top: calc(-${O.cropGap} - ${O.cropMark}); border-right-width: ${O.stroke}; border-bottom-width: ${O.stroke}; }
-  .crop.tr { right: calc(-${O.cropGap} - ${O.cropMark}); top: calc(-${O.cropGap} - ${O.cropMark}); border-left-width: ${O.stroke}; border-bottom-width: ${O.stroke}; }
-  .crop.bl { left: calc(-${O.cropGap} - ${O.cropMark}); bottom: calc(-${O.cropGap} - ${O.cropMark}); border-right-width: ${O.stroke}; border-top-width: ${O.stroke}; }
-  .crop.br { right: calc(-${O.cropGap} - ${O.cropMark}); bottom: calc(-${O.cropGap} - ${O.cropMark}); border-left-width: ${O.stroke}; border-top-width: ${O.stroke}; }
-  .slug { position: absolute; left: -${O.stroke}; display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 0 0 2px 2px; background: ${O.chipBg}; color: ${O.chipInk}; font: 600 12px/20px system-ui, sans-serif; letter-spacing: 0.01em; white-space: nowrap; box-shadow: 0 0 0 1px ${O.halo}; }
-  .slug.below { top: calc(100% + 1px); }
-  .slug.above { bottom: calc(100% + 1px); border-radius: 2px 2px 0 0; }
-  .slug.inside { top: 1px; left: 1px; border-radius: 0 0 2px 0; }
-  .veil { position: fixed; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.18) 0 6px, rgba(255, 255, 255, 0.18) 6px 12px); border: 1px dashed ${O.muted}; }
+  .blocked-box { border: ${px(O.stroke)} dashed ${O.muted}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}, inset 0 0 0 ${px("1px")} ${O.halo}; }
+  .crop { --arm: ${px(O.cropMark)}; --gap: ${px(O.cropGap)}; --w: ${px(O.stroke)}; position: absolute; width: var(--arm); height: var(--arm); border: 0 solid ${O.accent}; filter: drop-shadow(0 0 ${px("0.5px")} ${O.halo}) drop-shadow(0 0 ${px("0.5px")} ${O.halo}); }
+  .select.editing .crop { --arm: ${px(`calc(${O.cropMark} * 1.5)`)}; --w: ${px(`calc(${O.stroke} * 2)`)}; }
+  .crop.tl { left: calc(-1 * (var(--gap) + var(--arm))); top: calc(-1 * (var(--gap) + var(--arm))); border-right-width: var(--w); border-bottom-width: var(--w); }
+  .crop.tr { right: calc(-1 * (var(--gap) + var(--arm))); top: calc(-1 * (var(--gap) + var(--arm))); border-left-width: var(--w); border-bottom-width: var(--w); }
+  .crop.bl { left: calc(-1 * (var(--gap) + var(--arm))); bottom: calc(-1 * (var(--gap) + var(--arm))); border-right-width: var(--w); border-top-width: var(--w); }
+  .crop.br { right: calc(-1 * (var(--gap) + var(--arm))); bottom: calc(-1 * (var(--gap) + var(--arm))); border-left-width: var(--w); border-top-width: var(--w); }
+  .slug { position: absolute; left: ${px(`-${O.stroke}`)}; display: inline-flex; align-items: center; height: ${px("20px")}; padding: 0 ${px("6px")}; border-radius: 0 0 ${px("2px")} ${px("2px")}; background: ${O.chipBg}; color: ${O.chipInk}; font: 600 ${px("12px")}/${px("20px")} ${UI_FONT}; letter-spacing: 0.01em; white-space: nowrap; box-shadow: 0 0 0 ${px("1px")} ${O.halo}; }
+  .slug.below { top: calc(100% + ${px("1px")}); }
+  .slug.above { bottom: calc(100% + ${px("1px")}); border-radius: ${px("2px")} ${px("2px")} 0 0; }
+  .slug.inside { top: ${px("1px")}; left: ${px("1px")}; border-radius: 0 0 ${px("2px")} 0; }
+  .veil { position: fixed; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.18) 0 6px, rgba(255, 255, 255, 0.18) 6px 12px); border: ${px("1px")} dashed ${O.muted}; }
   .veil[hidden] { display: none; }
-  .badge { position: absolute; left: 8px; display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 3px; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 12px/24px system-ui, sans-serif; white-space: nowrap; }
+  .badge { position: absolute; left: ${px("8px")}; display: inline-flex; align-items: center; height: ${px("24px")}; padding: 0 ${px("8px")}; border-radius: ${px("3px")}; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 ${px("12px")}/${px("24px")} ${UI_FONT}; white-space: nowrap; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes pulse { 0% { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 0 ${O.accentSoft}, inset 0 0 0 1px ${O.halo}; } 40% { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 10px ${O.accentSoft}, inset 0 0 0 1px ${O.halo}; } 100% { box-shadow: 0 0 0 1px ${O.halo}, 0 0 0 0 transparent, inset 0 0 0 1px ${O.halo}; } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 0 ${O.accentSoft}, inset 0 0 0 ${px("1px")} ${O.halo}; } 40% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 ${px("10px")} ${O.accentSoft}, inset 0 0 0 ${px("1px")} ${O.halo}; } 100% { box-shadow: 0 0 0 ${px("1px")} ${O.halo}, 0 0 0 0 transparent, inset 0 0 0 ${px("1px")} ${O.halo}; } }
   @media (prefers-reduced-motion: reduce) { .glide, .hover, .select.pulse { transition: none; animation: none; } }
 `);
 shadow.adoptedStyleSheets = [sheet];
@@ -164,7 +173,14 @@ function place(box: HTMLElement, el: Element | null, offset: number): DOMRect | 
 function placeSlug(r: DOMRect | null): void {
   if (!r) return;
   slug.textContent = editing ? "Editing" : KIND_LABELS[kindOf(selected as HTMLElement)];
-  const placement = r.bottom + 26 < innerHeight ? "below" : r.top > 26 ? "above" : "inside";
+  const room = 26 * k;
+  const width = 90 * k;
+  const covers = (top: number) => (obstacleCache?.for === selected ? obstacleCache.els : []).some((el) => {
+    const b = boxOf(el);
+    return b.left < r.left + width && b.right > r.left && b.top < top + room - 4 * k && b.bottom > top + 4 * k;
+  });
+  // Below the bottom-left corner, unless that hides words; then above, then inside the corner.
+  const placement = r.bottom + room < innerHeight && !covers(r.bottom) ? "below" : r.top > room && !covers(r.top - room) ? "above" : "inside";
   slug.className = `slug ${placement}`;
 }
 
@@ -241,19 +257,94 @@ function redraw(): void {
   origin = { x: hostRect.left, y: hostRect.top };
   const active = mode === "edit";
   const bars = active ? obstructions() : [];
-  place(hoverBox, active && hovered !== selected && !editing ? hovered : null, 2);
+  place(hoverBox, active && hovered !== selected && !editing ? hovered : null, 3 * k);
   hoverBox.classList.toggle("blocked", hovered !== null && !canOf(hovered));
-  const r = place(selectBox, active ? selected : null, 3);
+  const r = place(selectBox, active ? selected : null, 3 * k);
   selectBox.classList.toggle("editing", editing !== null);
   if (active && selected) placeSlug(r);
-  place(blockedBox, active ? blocked : null, 2);
+  place(blockedBox, active ? blocked : null, 2 * k);
   drawHiddenSections(bars);
   post({
     type: "viewport",
     scrollY: Math.max(0, window.scrollY),
     rect: selected ? rectOf(selected) : blocked ? rectOf(blocked) : null,
     obstructions: bars,
+    obstacles: active && selected ? obstacleRects(selected) : [],
   });
+}
+
+/* Words and pictures around the selection. The toolbar avoids covering them. Found by hit
+   testing a grid around the selection, then measured every frame from the cached elements. */
+
+let obstacleCache: { for: HTMLElement; els: Element[]; foundAt: number; stale: boolean } | null = null;
+
+function ownText(el: Element): boolean {
+  for (const node of el.childNodes) if (node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() !== "") return true;
+  return false;
+}
+
+/** The element whose box is the content at a hit point: a picture or icon, or the words of a text block. */
+function contentAt(hit: Element, sel: HTMLElement): Element | null {
+  let el: Element | null = hit;
+  for (let depth = 0; el && depth < 4 && el !== document.body; depth++, el = el.parentElement) {
+    if (el === sel || el.contains(sel) || sel.contains(el)) return null;
+    if (el instanceof SVGElement) return el.ownerSVGElement && el.localName !== "svg" ? el.ownerSVGElement : el;
+    if (MEDIA.has(el.localName) || el.localName === "i") return el;
+    if (ownText(el)) return el;
+  }
+  return null;
+}
+
+function findObstacles(sel: HTMLElement): Element[] {
+  const r = sel.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth || innerWidth;
+  const band = 72 * k;
+  const rows: number[] = [];
+  for (let i = 0; i < 4; i++) rows.push(r.top - band + (i * (band - 2)) / 3, r.bottom + 2 + (i * (band + 24 * k)) / 3);
+  for (let i = 1; i <= 3; i++) rows.push(r.top + (i * r.height) / 4);
+  const found = new Set<Element>();
+  const step = Math.max(24, vw / 36);
+  for (const y of rows) {
+    if (y < 0 || y >= innerHeight) continue;
+    for (let x = step / 2; x < vw; x += step) {
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) continue;
+      const hit = document.elementFromPoint(x, y);
+      if (!hit || hit === host || hit === document.body || hit === document.documentElement) continue;
+      const content = contentAt(hit, sel);
+      if (content) found.add(content);
+    }
+  }
+  return [...found];
+}
+
+function boxOf(el: Element): DOMRect {
+  if (MEDIA.has(el.localName) || el instanceof SVGElement || el.localName === "i") return el.getBoundingClientRect();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  return range.getBoundingClientRect();
+}
+
+function obstacleRects(sel: HTMLElement): Rect[] {
+  const now = performance.now();
+  if (!obstacleCache || obstacleCache.for !== sel || (obstacleCache.stale && now - obstacleCache.foundAt > 250)) {
+    obstacleCache = { for: sel, els: findObstacles(sel), foundAt: now, stale: false };
+  }
+  const r = sel.getBoundingClientRect();
+  const centre = r.top + r.height / 2;
+  return obstacleCache.els
+    .filter((el) => el.isConnected)
+    .map((el) => boxOf(el))
+    .filter((b) => b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight)
+    .sort((a, b) => Math.abs(a.top + a.height / 2 - centre) - Math.abs(b.top + b.height / 2 - centre))
+    .slice(0, MAX_OBSTACLES)
+    .map(rectFrom);
+}
+
+/** Marks the cached obstacles stale; they are found again at most every 250 ms. */
+function staleObstacles(): void {
+  if (!obstacleCache || obstacleCache.stale) return;
+  obstacleCache.stale = true;
+  window.setTimeout(schedule, 260);
 }
 
 function schedule(): void {
@@ -344,6 +435,18 @@ function looksLikeButton(el: HTMLElement): boolean {
   return s.display !== "inline" && (filled || bordered) && parseFloat(s.paddingTop) >= 6 && parseFloat(s.paddingLeft) >= 6;
 }
 
+/** Something the owner can see as a shape of its own: a fill, a frame, a shadow or a photo. */
+function hasOwnBox(el: HTMLElement): boolean {
+  const s = getComputedStyle(el);
+  const filled = s.backgroundColor !== "rgba(0, 0, 0, 0)" && s.backgroundColor !== "transparent";
+  const framed = parseFloat(s.borderTopWidth) > 0 && s.borderTopStyle !== "none" && parseFloat(s.borderLeftWidth) > 0 && s.borderLeftStyle !== "none";
+  return filled || framed || s.boxShadow !== "none" || s.backgroundImage.includes("url(");
+}
+
+function fullWidth(el: Element): boolean {
+  return el.getBoundingClientRect().width >= (document.documentElement.clientWidth || innerWidth) * 0.9;
+}
+
 function kindOf(el: HTMLElement): Kind {
   const can = canOf(el);
   const tag = el.localName;
@@ -357,12 +460,13 @@ function kindOf(el: HTMLElement): Kind {
     if (parseFloat(s.fontSize) >= bodyFontSize() * 1.5 && Number(s.fontWeight) >= 600) return "heading";
   }
   if (tag === "nav" || (can.includes("x") && el.querySelector("nav"))) return "menu";
+  if (hasPhoto(el) && fullWidth(el)) return "banner";
   if (tag === "header" && can.includes("x")) return "header";
   if (tag === "footer" && can.includes("x")) return "footer";
   if (can.includes("x")) return "section";
   if (tag === "li") return "list-item";
   if (can.includes("t")) return "text";
-  return "box";
+  return hasOwnBox(el) ? "card" : "box";
 }
 
 function words(text: string | null | undefined, max = 60): string {
@@ -372,9 +476,9 @@ function words(text: string | null | undefined, max = 60): string {
 
 function nameOf(el: HTMLElement, kind: Kind): string {
   if (kind === "image") return words(el.getAttribute("alt"));
-  if (kind === "section" || kind === "header" || kind === "footer" || kind === "menu" || kind === "box") {
+  if (kind === "section" || kind === "header" || kind === "footer" || kind === "menu" || kind === "box" || kind === "banner" || kind === "card") {
     const heading = el.querySelector("h1, h2, h3, h4, [role=heading]");
-    const byId = el.id && (kind === "section" || kind === "header" || kind === "footer") ? el.id.replace(/[-_]+/g, " ") : "";
+    const byId = el.id && (kind === "section" || kind === "header" || kind === "footer" || kind === "banner") ? el.id.replace(/[-_]+/g, " ") : "";
     return words(heading?.textContent ?? el.getAttribute("aria-label") ?? byId);
   }
   return words(el.textContent);
@@ -412,14 +516,34 @@ function info(el: HTMLElement): SelectionInfo {
     styles: styleSnapshot(el),
     bgImage: hasPhoto(el),
     image: img ? { naturalWidth: cap(img.naturalWidth), naturalHeight: cap(img.naturalHeight), width: cap(r.width), height: cap(r.height) } : null,
+    anchorLinks: anchorLinksTo(el),
   };
 }
 
+/** How many links elsewhere on the page jump to this part or into it. */
+function anchorLinksTo(el: HTMLElement): number {
+  const ids = new Set([el, ...el.querySelectorAll("[id]")].map((e) => e.id).filter(Boolean));
+  if (ids.size === 0) return 0;
+  let count = 0;
+  for (const a of document.querySelectorAll('a[href^="#"]')) {
+    let id = (a.getAttribute("href") ?? "").slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      /* keep the raw fragment */
+    }
+    if (ids.has(id) && !el.contains(a)) count++;
+  }
+  return Math.min(count, 1000);
+}
+
+/** The parts around the selection for the breadcrumb. Invisible wrappers ("box") are left out. */
 function ancestorsOf(el: HTMLElement): Ancestor[] {
-  return chain(el.parentElement).slice(0, 8).map((a) => {
-    const kind = kindOf(a);
-    return { element: idOf(a) as string, kind, name: nameOf(a, kind) };
-  });
+  return chain(el.parentElement)
+    .map((a) => ({ a, kind: kindOf(a) }))
+    .filter(({ kind }) => kind !== "box")
+    .slice(0, 8)
+    .map(({ a, kind }) => ({ element: idOf(a) as string, kind, name: nameOf(a, kind), photo: canOf(a).includes("b") && hasPhoto(a) }));
 }
 
 function select(el: HTMLElement | null, glide = true): void {
@@ -447,6 +571,7 @@ function select(el: HTMLElement | null, glide = true): void {
       ancestors: ancestorsOf(el),
       rect: rectOf(el),
       info: info(el),
+      obstacles: mode === "edit" ? obstacleRects(el) : [],
     });
   } else {
     post({ type: "deselect" });
@@ -640,6 +765,7 @@ function sameOrigin(src: string): URL | null {
 /** Re-sends the selection so the toolbar shows the element's new state. */
 function refresh(el: Element | null): void {
   if (el && el === selected && !editing) select(selected, false);
+  sendFacts();
   schedule();
 }
 
@@ -647,17 +773,24 @@ function handle(message: EditorMessage): void {
   switch (message.type) {
     case "init":
       setMode(message.mode);
-      if (message.scrollY !== null) window.scrollTo({ top: message.scrollY, behavior: "instant" });
+      if (message.scale !== null) setScale(message.scale);
+      if (message.scrollY !== null) restoreScroll(message.scrollY);
       if (message.select !== null) {
         const el = byId(message.select);
         if (editable(el)) {
           select(el, false);
-          reveal(el, false);
+          if (message.scrollY === null) reveal(el, false);
         }
       }
       break;
     case "mode":
       setMode(message.mode);
+      break;
+    case "scale":
+      setScale(message.scale);
+      break;
+    case "font":
+      void loadFont(message.data);
       break;
     case "select_relative":
       if (mode === "edit" && !editing) selectRelative(message.direction);
@@ -751,6 +884,53 @@ function handle(message: EditorMessage): void {
       break;
     }
   }
+}
+
+function setScale(scale: number): void {
+  k = 1 / scale;
+  host.style.setProperty("--k", String(k));
+  staleObstacles();
+  schedule();
+}
+
+async function loadFont(data: ArrayBuffer): Promise<void> {
+  try {
+    const face = new FontFace("Pagehaven UI", data, { weight: "400 700", style: "normal" });
+    await face.load();
+    document.fonts.add(face);
+  } catch {
+    /* The slug keeps the system font. */
+  }
+}
+
+/**
+ * Scrolls back to where the owner was before a reload. Pictures above that point may still be
+ * loading and grow the page, so it scrolls again once they have, unless the owner scrolled.
+ */
+function restoreScroll(y: number): void {
+  window.scrollTo({ top: y, behavior: "instant" });
+  if (document.readyState === "complete") return;
+  let settled = window.scrollY;
+  const moved = () => Math.abs(window.scrollY - settled) > 2;
+  const again = () => {
+    if (moved()) return;
+    window.scrollTo({ top: y, behavior: "instant" });
+    settled = window.scrollY;
+  };
+  const stop = () => {
+    document.removeEventListener("load", again, true);
+    window.removeEventListener("wheel", stop);
+    window.removeEventListener("keydown", stop, true);
+    window.removeEventListener("touchstart", stop);
+  };
+  document.addEventListener("load", again, true);
+  window.addEventListener("load", () => {
+    again();
+    stop();
+  }, { once: true });
+  window.addEventListener("wheel", stop, { once: true, passive: true });
+  window.addEventListener("keydown", stop, { once: true, capture: true });
+  window.addEventListener("touchstart", stop, { once: true, passive: true });
 }
 
 function setMode(next: Mode): void {
@@ -955,24 +1135,58 @@ function anchors(): { id: string; name: string }[] {
   return out;
 }
 
+function fileName(src: string): string {
+  try {
+    return words(decodeURIComponent(new URL(src, location.href).pathname.split("/").pop() ?? ""));
+  } catch {
+    return "";
+  }
+}
+
+/** The main heading (the first visible h1, else the largest text that reads as a heading) and the page's pictures. */
+function outline(): Extract<AgentMessage, { type: "outline" }> {
+  const headings = [...document.querySelectorAll<HTMLElement>("[data-ph-can*='t']")].filter((el) => editable(el) && visible(el) && kindOf(el) === "heading");
+  const size = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize) || 0;
+  const heading = headings.find((el) => el.localName === "h1")
+    ?? headings.reduce<HTMLElement | null>((best, el) => (!best || size(el) > size(best) ? el : best), null);
+  const images = [...document.querySelectorAll<HTMLImageElement>("img")]
+    .filter((img) => editable(img) && canOf(img).includes("i") && visible(img))
+    .slice(0, MAX_OUTLINE_IMAGES)
+    .map((img) => {
+      const src = (img.currentSrc || img.src).slice(0, 2048);
+      return { element: idOf(img) as string, name: words(img.getAttribute("alt")) || fileName(src), src };
+    });
+  return { type: "outline", heading: heading ? idOf(heading) : null, images };
+}
+
 let factsTimer = 0;
 function sendFacts(): void {
   window.clearTimeout(factsTimer);
   factsTimer = window.setTimeout(() => {
     post({ type: "palette", colors: palette() });
     post({ type: "anchors", items: anchors() });
+    post(outline());
   }, 300);
 }
 
-window.addEventListener("scroll", schedule, { capture: true, passive: true });
+let scrollSettle = 0;
+window.addEventListener("scroll", () => {
+  schedule();
+  window.clearTimeout(scrollSettle);
+  scrollSettle = window.setTimeout(staleObstacles, 120);
+}, { capture: true, passive: true });
 window.addEventListener("resize", () => {
   barCandidates = null;
+  staleObstacles();
   schedule();
 });
 new MutationObserver((records) => {
   if (!host.isConnected) start();
   if (selected && !selected.isConnected) select(null);
-  if (records.some((r) => r.type === "childList" || r.attributeName === "class" || r.attributeName === "style")) barCandidates = null;
+  if (records.some((r) => r.type === "childList" || r.attributeName === "class" || r.attributeName === "style")) {
+    barCandidates = null;
+    if (records.some((r) => !host.contains(r.target) && r.target !== host)) staleObstacles();
+  }
   if (records.some((r) => r.attributeName === "open" && r.target !== host)) raise();
   schedule();
 }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });

@@ -33,8 +33,12 @@
       <a class="btn btn-ghost btn-icon btn-sm" href="/projects" aria-label="Back to your websites" data-tip="Your websites">
         <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg>
       </a>
+      <button class="btn btn-ghost btn-icon btn-sm ed-rail-toggle" type="button" data-rail-toggle aria-expanded="false" aria-controls="ed-rail" aria-label="Pages and settings" data-tip="Pages and settings">
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-page"/></svg>
+      </button>
       <button class="ed-crumb ed-site" type="button" data-site-menu aria-haspopup="menu" aria-expanded="false" data-tip="Settings, versions and shortcuts">
         <span class="ed-site-name truncate" data-site-name>{{ project.name }}</span>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-down"/></svg>
       </button>
       <span class="ed-slash" aria-hidden="true">/</span>
       <button class="ed-crumb ed-page" type="button" data-page-switcher aria-haspopup="menu" aria-expanded="false" data-tip="Switch page" data-kbd="Ctrl+K">
@@ -72,15 +76,27 @@
     </div>
 
     <div class="ed-top-right">
-      <button class="pill ed-status" type="button" data-status-pill data-tone="neutral" aria-haspopup="dialog" aria-expanded="false">
-        <span class="ed-status-spinner" aria-hidden="true"></span><span data-status-text>Saved</span>
+      <button class="ed-status" type="button" data-status-pill data-tone="neutral" aria-haspopup="dialog" aria-expanded="false">
+        <span class="ed-status-mark" data-status-mark aria-hidden="true"></span><span class="ed-status-text" data-status-text></span>
       </button>
+      <a class="btn btn-secondary ed-view" target="_blank" rel="noopener noreferrer" data-view-site hidden>
+        <span>View website</span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-view-live"/></svg>
+      </a>
       <button class="btn btn-primary ed-publish" type="button" data-action="publish" aria-haspopup="dialog" aria-expanded="false">Publish</button>
     </div>
   </header>
 
-  <aside class="ed-rail" aria-label="Pages and properties" data-rail>
+  <aside class="ed-rail" id="ed-rail" aria-label="Pages and properties" data-rail>
     <section class="rail-pages" data-rail-pages aria-labelledby="rail-pages-title">
+      <div class="rail-start" data-rail-start aria-labelledby="rail-start-title" role="group">
+        <h2 class="rail-start-title" id="rail-start-title">Start here</h2>
+        <p class="rail-start-text">Click any text or picture on your page to change it.</p>
+        <ul class="rail-shortcuts" role="list">
+          <li><button class="rail-shortcut" type="button" data-start="heading" hidden>Change the main heading</button></li>
+          <li><button class="rail-shortcut" type="button" data-start="picture" hidden>Replace a picture</button></li>
+          <li><button class="rail-shortcut" type="button" data-start="settings">Change your web address</button></li>
+        </ul>
+      </div>
       <div class="rail-head">
         <h2 class="rail-title" id="rail-pages-title">Pages</h2>
         <button class="btn btn-ghost btn-icon btn-sm" type="button" data-action="add-page" aria-label="Add page" data-tip="Add page">
@@ -89,6 +105,21 @@
       </div>
       <div class="rail-note" data-page-note hidden></div>
       <ul class="page-list" data-page-list role="list"></ul>
+      <ul class="rail-rows" role="list" aria-label="Website">
+        <li><button class="rail-row" type="button" data-row="settings"><span class="grow">Website settings</span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></button></li>
+        <li><button class="rail-row" type="button" data-row="history"><span class="grow">Version history</span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></button></li>
+        <li><button class="rail-row" type="button" data-row="images"><span class="grow">Images</span><span class="rail-row-count tnum" data-images-count></span><svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-right"/></svg></button></li>
+      </ul>
+    </section>
+    <section class="rail-images" data-rail-images aria-labelledby="rail-images-title" hidden>
+      <div class="rail-panel-head">
+        <button class="btn btn-ghost btn-sm rail-back" type="button" data-images-back data-kbd="Esc" data-tip="Back to the pages">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-chevron-left"/></svg><span>Pages</span>
+        </button>
+        <h2 class="rail-title" id="rail-images-title">Images</h2>
+        <p class="rail-subject" data-images-subject></p>
+      </div>
+      <ul class="image-list" role="list" data-image-list></ul>
     </section>
     <section class="rail-panel" id="ed-rail-panel" data-rail-panel role="group" aria-labelledby="ed-rail-title" hidden></section>
   </aside>
@@ -127,7 +158,7 @@
     </button>
   </div>
   <div class="sheet-body">
-    <p class="hint">Every publish is saved as a version. Make an earlier version live if something went wrong, or open it in the editor to start from it.</p>
+    <p class="hint">Every publish is saved as a version. Publish an earlier version again if something went wrong, or open it in the editor to start from it.</p>
     <ul class="release-list" role="list" data-release-list></ul>
   </div>
 </dialog>

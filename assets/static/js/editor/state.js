@@ -19,6 +19,8 @@ export function initialState(data, now) {
         canvasLoading: true,
         scrollY: 0,
         obstructions: [],
+        obstacles: [],
+        outline: { heading: null, images: [] },
         palette: [],
         anchors: [],
         rail: { kind: "pages" },
@@ -59,12 +61,12 @@ export function panelApplies(panel, selection, editing) {
 function selectionOf(focus) {
     return focus.kind === "selected" ? focus.selection : null;
 }
-/** Keeps an open panel on the new selection when it applies, otherwise returns to the pages. */
+/** Keeps an open panel on a new selection of the same kind when it applies, otherwise returns to the pages. */
 function retarget(rail, focus, editing) {
-    if (rail.kind === "pages" || rail.panel === "page")
+    if (rail.kind !== "panel" || rail.panel === "page")
         return rail;
     const selection = selectionOf(focus);
-    if (!selection || !panelApplies(rail.panel, selection, editing))
+    if (!selection || selection.kind !== rail.subject || !panelApplies(rail.panel, selection, editing))
         return { kind: "pages" };
     return selection.element === rail.element ? rail : { ...rail, element: selection.element, replaced: false };
 }
@@ -101,7 +103,7 @@ export function reduce(state, action) {
         case "zoom":
             return { ...state, zoom: action.zoom };
         case "open_page":
-            return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, rail: retarget(state.rail, { kind: "none" }, false) };
+            return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, outline: { heading: null, images: [] }, rail: retarget(state.rail, { kind: "none" }, false) };
         case "canvas_loading":
             return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
         case "page_ready":
@@ -110,7 +112,7 @@ export function reduce(state, action) {
             return { ...state, canvasLoading: false, pageMeta: { title: action.title, description: action.description } };
         case "selected": {
             const focus = { kind: "selected", selection: action.selection };
-            return { ...state, focus, rail: retarget(state.rail, focus, state.editing.active) };
+            return { ...state, focus, obstacles: action.obstacles ?? [], rail: retarget(state.rail, focus, state.editing.active) };
         }
         case "blocked":
             return { ...state, focus: { kind: "blocked", rect: action.rect, around: action.around }, editing: { ...state.editing, active: false }, rail: retarget(state.rail, { kind: "none" }, false) };
@@ -123,8 +125,12 @@ export function reduce(state, action) {
                 : focus.kind === "blocked"
                     ? { ...focus, rect: action.rect }
                     : { kind: "selected", selection: { ...focus.selection, rect: action.rect } };
-            return { ...state, scrollY: action.scrollY, focus: next, obstructions: action.obstructions };
+            return { ...state, scrollY: action.scrollY, focus: next, obstructions: action.obstructions, obstacles: action.obstacles ?? state.obstacles };
         }
+        case "outline":
+            return { ...state, outline: action.outline };
+        case "open_images":
+            return { ...state, rail: { kind: "images" } };
         case "palette":
             return { ...state, palette: action.colors };
         case "anchors":
@@ -137,7 +143,8 @@ export function reduce(state, action) {
             const selection = selectionOf(state.focus);
             if (!panelApplies(action.panel, selection, state.editing.active))
                 return state;
-            return { ...state, rail: { kind: "panel", panel: action.panel, element: action.panel === "page" ? null : (selection?.element ?? null), replaced: action.replaced ?? false } };
+            const page = action.panel === "page";
+            return { ...state, rail: { kind: "panel", panel: action.panel, element: page ? null : (selection?.element ?? null), subject: page ? null : (selection?.kind ?? null), replaced: action.replaced ?? false } };
         }
         case "close_panel":
             return state.rail.kind === "pages" ? state : { ...state, rail: { kind: "pages" } };
@@ -202,26 +209,37 @@ export function siteState(s) {
         return { kind: "current", live: live.number };
     return { kind: "changes", live: live.number, count: s.changes.length };
 }
-/** The one status pill in the top bar: save problems first, then saving, then what is live. */
-export function statusPill(s, savingVisible) {
+/** How many changes, in words: "1 change", "3 changes". */
+function changesText(n) {
+    return n === 1 ? "1 change" : `${n} changes`;
+}
+/** The publication state in the editor's one vocabulary: published, not published. */
+export function publishText(site) {
+    switch (site.kind) {
+        case "never": return "Not published yet";
+        case "current": return "Published";
+        case "changes": return site.count > 0 ? `${changesText(site.count)} not published` : "Changes not published";
+        case "older": return `Visitors see version ${site.live}`;
+    }
+}
+/**
+ * The status in the top bar, as plain words: save problems first, then saving and a short
+ * "Saved" after each save, then whether the website is published. `savingVisible` and
+ * `savedVisible` are timers the top bar owns, so this stays pure.
+ */
+export function statusLine(s, savingVisible, savedVisible = false) {
     const problem = s.saves.problem;
     if (problem?.kind === "conflict")
-        return { tone: "error", text: "Changed in another tab", busy: false };
+        return { tone: "error", text: "Changed in another tab", mark: "problem" };
     if (problem?.kind === "error")
-        return { tone: "error", text: "Not saved", busy: false };
-    if (problem?.kind === "offline") {
-        const n = s.saves.pending;
-        return { tone: "warning", text: n > 0 ? `Offline · ${n === 1 ? "1 change" : `${n} changes`} waiting` : "Offline", busy: false };
-    }
+        return { tone: "error", text: "Couldn't save", mark: "problem" };
+    if (problem?.kind === "offline")
+        return { tone: "warning", text: "Offline: changes will be saved when you're back", mark: "problem" };
     if (s.saves.pending > 0 && savingVisible)
-        return { tone: "neutral", text: "Saving…", busy: true };
-    const site = siteState(s);
-    switch (site.kind) {
-        case "never": return { tone: "neutral", text: "Not online yet", busy: false };
-        case "current": return { tone: "success", text: "Live · up to date", busy: false };
-        case "changes": return { tone: "warning", text: site.count > 0 ? `${site.count === 1 ? "1 change" : `${site.count} changes`} not live` : "Changes not live", busy: false };
-        case "older": return { tone: "warning", text: `Visitors see version ${site.live}`, busy: false };
-    }
+        return { tone: "neutral", text: "Saving…", mark: "saving" };
+    if (s.saves.pending === 0 && savedVisible && s.saves.savedAt !== null)
+        return { tone: "neutral", text: "Saved", mark: "saved" };
+    return { tone: "neutral", text: publishText(siteState(s)), mark: null };
 }
 /** Publishing makes sense only when the draft differs from what is live. */
 export function canPublish(s) {

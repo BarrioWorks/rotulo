@@ -15,24 +15,31 @@ const ACTIONS = {
     "parent-link": { label: "Link", icon: "link", applies: (sel) => !sel.can.includes("l") && sel.ancestors.slice(0, 3).some((a) => a.kind === "link" || a.kind === "button") },
     style: { label: "Style", icon: "text-style", applies: (sel) => sel.can.includes("s") && sel.can.includes("t"), panel: "style" },
     background: { label: "Background", icon: "background", applies: (sel) => sel.can.includes("s"), panel: "background" },
-    "bg-photo": { label: "Replace background photo", icon: "replace-image", applies: (sel) => sel.can.includes("b") && sel.info.bgImage },
+    "bg-photo": { label: "Change background photo", icon: "replace-image", applies: (sel) => sel.can.includes("b") && sel.info.bgImage },
+    "banner-photo": { label: "Change banner photo", icon: "replace-image", applies: (sel) => !(sel.can.includes("b") && sel.info.bgImage) && bannerOf(sel) !== null },
     show: { label: "Show section", icon: "preview", applies: (sel) => sel.can.includes("x") && sel.info.hidden },
 };
-const TEXT = ["edit-text", "style", "link", "parent-link", "bg-photo", "background"];
+/** The nearest part around the selection that shows a photo the owner can change: the banner behind a heading. */
+export function bannerOf(sel) {
+    return sel.ancestors.find((a) => a.photo) ?? null;
+}
+const TEXT = ["edit-text", "style", "link", "parent-link", "banner-photo", "bg-photo", "background"];
 const SECTION = ["show", "bg-photo", "background", "edit-text"];
 /** The order actions appear in per kind. The first five that apply are shown, the rest go under More. */
 export const ACTION_ORDER = {
     heading: TEXT,
     text: TEXT,
     "list-item": TEXT,
-    link: ["edit-text", "link", "style", "bg-photo", "background"],
-    button: ["edit-text", "link", "style", "bg-photo", "background"],
+    link: ["edit-text", "link", "style", "banner-photo", "bg-photo", "background"],
+    button: ["edit-text", "link", "style", "banner-photo", "bg-photo", "background"],
     image: ["replace-image", "description", "parent-link"],
+    banner: SECTION,
     section: SECTION,
     header: SECTION,
     footer: SECTION,
     menu: SECTION,
-    box: ["bg-photo", "edit-text", "link", "parent-link", "background"],
+    card: ["bg-photo", "edit-text", "link", "parent-link", "banner-photo", "background"],
+    box: ["bg-photo", "edit-text", "link", "parent-link", "banner-photo", "background"],
 };
 const MAX_PRIMARY = 5;
 /** Actions that would crowd a section row; they move under More there. */
@@ -52,6 +59,39 @@ export function actionsFor(sel) {
     if (primary.length === 0 && overflow.length > 0)
         primary.push(overflow.shift());
     return { primary, overflow };
+}
+const OFFSCREEN = {
+    above: { words: "above", icon: "move-up" },
+    below: { words: "below", icon: "move-down" },
+    left: { words: "to the left", icon: "chevron-left" },
+    right: { words: "to the right", icon: "chevron-right" },
+};
+function fileName(src) {
+    if (!src)
+        return "";
+    try {
+        return decodeURIComponent(new URL(src).pathname.split("/").pop() ?? "");
+    }
+    catch {
+        return "";
+    }
+}
+/** What a screen reader hears when a part is selected. Never an empty name. */
+export function describeSelection(sel, s) {
+    const kind = KIND_LABELS[sel.kind];
+    if (sel.kind === "image") {
+        const alt = (sel.info.alt ?? "").trim();
+        if (alt)
+            return `${kind} selected: ${alt}`;
+        const file = fileName(sel.info.src);
+        return file ? `${kind} selected: ${file}, a picture without a description` : `${kind} selected: a picture without a description`;
+    }
+    const name = sel.name.replace(/[.!?…]+$/, "");
+    if (name)
+        return `${kind} selected: ${name}`;
+    if (sel.info.href !== null)
+        return `${kind} selected: goes to ${describeHref(sel.info.href, s)}`;
+    return `${kind} selected`;
 }
 export function createToolbar({ store, canvas, edits }) {
     const root = must(document, "[data-toolbar]");
@@ -118,8 +158,14 @@ export function createToolbar({ store, canvas, edits }) {
                 });
                 break;
             case "bg-photo":
-                void withFile(id, sel.element, (file, progress) => edits.replaceBackground(sel, file, progress));
+                void withFile(id, sel.element, (file, progress) => edits.replaceBackground(sel.element, file, progress));
                 break;
+            case "banner-photo": {
+                const banner = bannerOf(sel);
+                if (banner)
+                    void withFile(id, sel.element, (file, progress) => edits.replaceBackground(banner.element, file, progress, "Banner photo changed"));
+                break;
+            }
             case "parent-link": {
                 const link = sel.ancestors.slice(0, 3).find((a) => a.kind === "link" || a.kind === "button");
                 if (link) {
@@ -176,7 +222,9 @@ export function createToolbar({ store, canvas, edits }) {
         if (id === "edit-text")
             opts.kbd = "Enter";
         if (id === "bg-photo")
-            opts.tip = "Upload a new photo for the background";
+            opts.tip = "Choose a new photo for the background";
+        if (id === "banner-photo")
+            opts.tip = `Choose a new photo for the banner behind this ${KIND_LABELS[sel.kind].toLowerCase()}`;
         return button(id, label, spec.icon, () => run(id, sel), opts);
     }
     function crumb(sel) {
@@ -319,19 +367,24 @@ export function createToolbar({ store, canvas, edits }) {
         if (!rect || !root.classList.contains("is-visible") && root.childElementCount === 0)
             return;
         // The slug that names the part hangs under the selection's bottom edge; keep it visible too.
-        const target = canvas.toApp({ ...rect, height: rect.height + 24 });
+        const target = canvas.toApp({ ...rect, height: rect.height + 24 / canvas.scale() });
         const box = canvas.visibleBox();
         const obstructions = s.obstructions.map((o) => canvas.toApp(o));
-        const placement = placeToolbar({ target, canvas: box, obstructions, size: { width: root.offsetWidth, height: root.offsetHeight }, previous: candidate });
+        const obstacles = f.kind === "selected" ? s.obstacles.map((o) => canvas.toApp(o)) : [];
+        root.style.width = "";
+        const placement = placeToolbar({ target, canvas: box, obstructions, obstacles, size: { width: root.offsetWidth, height: root.offsetHeight }, previous: candidate });
         if (placement.kind === "offscreen") {
             root.classList.add("is-offscreen");
             const label = f.kind === "selected" ? KIND_LABELS[f.selection.kind] : "The selected part";
+            const way = OFFSCREEN[placement.direction];
             offscreen.hidden = false;
             offscreen.dataset["direction"] = placement.direction;
-            must(offscreen, "[data-offscreen-text]").textContent = `${label} is ${placement.direction}`;
-            offscreen.querySelector("use")?.setAttribute("href", `/static/img/icons.svg#i-move-${placement.direction === "above" ? "up" : "down"}`);
-            offscreen.style.left = `${Math.round(box.x + box.width / 2)}px`;
-            offscreen.style.top = placement.direction === "above" ? `${Math.round(box.y + 12)}px` : "";
+            must(offscreen, "[data-offscreen-text]").textContent = `${label} is ${way.words}`;
+            offscreen.querySelector("use")?.setAttribute("href", `/static/img/icons.svg#i-${way.icon}`);
+            const vertical = placement.direction === "above" || placement.direction === "below";
+            offscreen.style.left = vertical ? `${Math.round(box.x + box.width / 2)}px` : placement.direction === "left" ? `${Math.round(box.x + 12)}px` : "";
+            offscreen.style.right = placement.direction === "right" ? `${Math.round(window.innerWidth - (box.x + box.width) + 12)}px` : "";
+            offscreen.style.top = placement.direction === "above" ? `${Math.round(box.y + 12)}px` : vertical ? "" : `${Math.round(box.y + box.height / 2)}px`;
             offscreen.style.bottom = placement.direction === "below" ? `${Math.round(window.innerHeight - (box.y + box.height) + 12)}px` : "";
             return;
         }
@@ -339,6 +392,8 @@ export function createToolbar({ store, canvas, edits }) {
         root.classList.remove("is-offscreen");
         candidate = placement.candidate;
         root.dataset["placement"] = placement.candidate;
+        if (placement.width !== undefined)
+            root.style.width = `${Math.round(placement.width)}px`;
         if (glide) {
             root.classList.add("is-gliding");
             window.setTimeout(() => root.classList.remove("is-gliding"), 180);

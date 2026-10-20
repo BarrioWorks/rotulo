@@ -19,6 +19,11 @@ export function int(min = 0, max = Number.MAX_SAFE_INTEGER): Parser<number> {
   return (v) => (typeof v === "number" && Number.isInteger(v) && v >= min && v <= max ? v : undefined);
 }
 
+/** Binary data, such as a font file the app hands to the preview. */
+export function bytes(max: number): Parser<ArrayBuffer> {
+  return (v) => (v instanceof ArrayBuffer && v.byteLength > 0 && v.byteLength <= max ? v : undefined);
+}
+
 export const bool: Parser<boolean> = (v) => (typeof v === "boolean" ? v : undefined);
 
 export function lit<const L extends string>(...values: L[]): Parser<L> {

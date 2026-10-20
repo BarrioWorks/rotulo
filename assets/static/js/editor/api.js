@@ -68,11 +68,6 @@ export class ApiError extends Error {
         this.revision = revision;
     }
 }
-let conflictHandler = () => { };
-/** Called for every 409, before the request's own error handling. */
-export function onConflict(handler) {
-    conflictHandler = handler;
-}
 async function request(method, path, body, parse) {
     const headers = { Accept: "application/json" };
     let payload;
@@ -104,8 +99,6 @@ async function request(method, path, body, parse) {
     if (!response.ok) {
         const err = parseErrorBody(json);
         const error = new ApiError(response.status, err?.error ?? "failed", err?.message ?? "Something went wrong. Please try again.", err?.revision ?? null);
-        if (response.status === 409)
-            conflictHandler(error);
         throw error;
     }
     if (parse === null)

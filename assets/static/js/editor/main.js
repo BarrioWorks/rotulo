@@ -1,18 +1,18 @@
-import { KIND_LABELS } from "../protocol.js";
 import { announce, h, icon, installTooltips, must, toast } from "../ui.js";
-import { ApiError, api, onConflict } from "./api.js";
+import { ApiError, api } from "./api.js";
 import { createCanvas } from "./canvas.js";
 import { createEdits } from "./edits.js";
 import { closeMenus, menuOpen } from "./menu.js";
 import { createPublishing } from "./publish.js";
 import { createRail } from "./rail.js";
-import { createSaver } from "./saves.js";
+import { createSaver, editRecovery } from "./saves.js";
 import { createStore, initialState, selection } from "./state.js";
-import { createToolbar } from "./toolbar.js";
+import { createToolbar, describeSelection } from "./toolbar.js";
 import { createTopBar } from "./topbar.js";
 const root = must(document, "#editor");
 const pid = root.dataset["pid"] ?? "";
-const narrow = window.matchMedia("(max-width: 899px)");
+/** Below this width (a phone) the editor shows the Manage view. Laptops at 200 % zoom stay above it. */
+const narrow = window.matchMedia("(max-width: 599px)");
 function showFatal(message) {
     const retry = h("button", { class: "btn btn-secondary btn-sm", text: "Try again", attrs: { type: "button" } });
     retry.addEventListener("click", () => window.location.reload());
@@ -139,13 +139,13 @@ async function main() {
         return;
     }
     const store = createStore(initialState(data, Date.now()));
-    const saver = createSaver(store);
+    const saver = createSaver(store, () => api.bootstrap(pid));
     const change = saver.change;
     const conflict = must(document, 'dialog[data-dialog="conflict"]');
     must(conflict, "[data-conflict-reload]").addEventListener("click", () => window.location.reload());
     conflict.addEventListener("cancel", (event) => event.preventDefault());
-    onConflict(() => {
-        if (!conflict.open)
+    store.subscribe((s, prev) => {
+        if (s.saves.problem?.kind === "conflict" && prev?.saves.problem?.kind !== "conflict" && !conflict.open)
             conflict.showModal();
     });
     /** Refreshes pages, history and the preview address, in order with the other changes. */
@@ -161,7 +161,10 @@ async function main() {
             return;
         await canvas?.finishText();
         const label = action === "undo" ? s.history.undo_label : s.history.redo_label;
-        const result = await change((base) => (action === "undo" ? api.undo(pid, base) : api.redo(pid, base)), { log: action });
+        const result = await change((base) => (action === "undo" ? api.undo(pid, base) : api.redo(pid, base)), {
+            log: action,
+            recover: (fresh) => ({ ...editRecovery(fresh), pages: fresh.pages.map((p) => p.path) }),
+        });
         if (!result)
             return;
         announce(`${action === "undo" ? "Undone" : "Redone"}${label ? `: ${label}` : ""}`);
@@ -198,11 +201,16 @@ async function main() {
         onText(element, html, page) {
             void change((base) => api.edit(pid, base, page, { op: "set_text", element, html }), {
                 page,
+                recover: editRecovery,
                 onRejected: () => canvas?.reload(element),
             });
         },
         async refreshPreview() {
             await refresh();
+        },
+        onPageClick() {
+            publishing.closeReview(false);
+            closeMenus();
         },
     });
     const edits = createEdits({ store, canvas, change, undo });
@@ -216,6 +224,8 @@ async function main() {
             if (!toolbar.focus())
                 canvas?.surface.focus({ preventScroll: true });
         },
+        openSettings: (trigger) => publishing.openSettings(trigger),
+        openHistory: (trigger) => publishing.openHistory(trigger),
     });
     const topBar = createTopBar({ store, canvas, rail, publishing, undo, redo });
     must(document, "[data-manage-settings]").addEventListener("click", (event) => publishing.openSettings(event.currentTarget));
@@ -229,7 +239,7 @@ async function main() {
         lastAnnounced = key;
         if (sel) {
             const hint = sel.can.includes("t") ? "Press Enter to edit the text." : "Press Tab for its tools.";
-            announce(`${KIND_LABELS[sel.kind]} selected${sel.name ? `: ${sel.name.replace(/[.!?…]+$/, "")}` : ""}. ${hint}`);
+            announce(`${describeSelection(sel, s)}. ${hint}`);
         }
         else if (s.focus.kind === "blocked") {
             announce("This part is made by the website's own code and can't be changed here.");

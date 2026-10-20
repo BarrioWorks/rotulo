@@ -1,5 +1,9 @@
 import { toast } from "../ui.js";
 import { ApiError } from "./api.js";
+/** The result of a draft edit, rebuilt from the server's state. */
+export function editRecovery(fresh) {
+    return { revision: fresh.project.revision, history: fresh.history, draft_changed_since_publish: fresh.draft_changed_since_publish };
+}
 function isSaved(value) {
     return typeof value === "object" && value !== null && "revision" in value && "history" in value && "draft_changed_since_publish" in value;
 }
@@ -12,7 +16,7 @@ const RETRY_MS = [1000, 3000, 10000];
  * once when the browser comes back online). After a conflict the queue stops and the conflict
  * dialog asks the user to reload.
  */
-export function createSaver(store) {
+export function createSaver(store, fetchState) {
     let tail = Promise.resolve();
     let halted = false;
     let wake = null;
@@ -32,13 +36,16 @@ export function createSaver(store) {
     function change(run, options = {}) {
         store.dispatch({ type: "save_queued" });
         const job = tail.then(async () => {
+            /** The revision the last attempt was sent with, when that attempt may have reached the server. */
+            let uncertainBase = null;
             for (let attempt = 0;; attempt++) {
                 if (halted) {
                     store.dispatch({ type: "save_conflict" });
                     return null;
                 }
+                const base = store.get().project.revision;
                 try {
-                    const result = await run(store.get().project.revision);
+                    const result = await run(base);
                     if (isSaved(result)) {
                         store.dispatch({
                             type: "save_ok",
@@ -64,9 +71,32 @@ export function createSaver(store) {
                     }
                     const failure = error;
                     if (failure.status === 0) {
+                        uncertainBase = base;
                         store.dispatch({ type: "save_offline" });
                         await waitForRetry(attempt);
                         continue;
+                    }
+                    // A retry refused as stale right after a lost answer: if the server is exactly one
+                    // revision on, the lost attempt is what moved it, so the change landed.
+                    if (failure.status === 409 && options.recover && uncertainBase !== null && failure.revision === uncertainBase + 1) {
+                        try {
+                            const fresh = await fetchState();
+                            if (fresh.project.revision === uncertainBase + 1) {
+                                store.dispatch({
+                                    type: "save_ok",
+                                    revision: fresh.project.revision,
+                                    history: fresh.history,
+                                    draftChanged: fresh.draft_changed_since_publish,
+                                    log: options.log ?? "edit",
+                                    page: options.page ?? store.get().path,
+                                    at: Date.now(),
+                                });
+                                return options.recover(fresh);
+                            }
+                        }
+                        catch {
+                            // Fall through to the conflict below.
+                        }
                     }
                     if (failure.status === 409) {
                         halted = true;

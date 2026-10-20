@@ -15,8 +15,8 @@ export interface Publishing {
   openReview(trigger?: HTMLElement | null): void;
   openHistory(trigger?: HTMLElement | null): void;
   openSettings(trigger?: HTMLElement | null): void;
-  /** Closes the review popover. Returns true if it was open. */
-  closeReview(): boolean;
+  /** Closes the review popover, returning focus to its trigger unless told not to. Returns true if it was open. */
+  closeReview(restoreFocus?: boolean): boolean;
 }
 
 export function displayUrl(url: string): string {
@@ -104,11 +104,11 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     store.dispatch({ type: "published", release: result.release });
     store.dispatch({ type: "project", project: { ...store.get().project, site_url: result.site_url } });
     closeReview();
-    announce(`Version ${result.release.number} is live`);
-    toast(`Your changes are online. Version ${result.release.number} is live.`, { action: { label: "View website", run: viewWebsite } });
+    announce(`Published. Visitors now see version ${result.release.number}.`);
+    toast(`Published. Visitors now see version ${result.release.number}.`, { action: { label: "View website", run: viewWebsite } });
   }
 
-  /* Review: what changes, where it goes live, and the one button that does it */
+  /* Review: what changes, where it is published, and the one button that does it */
 
   function review(s: State, where: "popover" | "manage"): HTMLElement[] {
     const site = siteState(s);
@@ -120,7 +120,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
       const retry = h("button", { class: "link-btn", text: "Try now", attrs: { type: "button" } });
       retry.addEventListener("click", () => saver.retryNow());
       out.push(h("div", { class: "alert alert-warn", attrs: { role: "status" } }, icon("alert", "icon-sm"),
-        h("span", { class: "grow", text: `You're offline. ${plainList(s.saves.pending, "change is", "changes are")} waiting and will save when you're back online. ` }), retry));
+        h("span", { class: "grow", text: `You're offline. ${plainList(s.saves.pending, "change is", "changes are")} waiting and will be saved when you're back. ` }), retry));
     } else if (problem?.kind === "error") {
       out.push(h("div", { class: "alert alert-error", attrs: { role: "alert" } }, icon("alert", "icon-sm"), h("span", { text: `Your last change was not saved. ${problem.message}` })));
     } else if (problem?.kind === "conflict") {
@@ -136,7 +136,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
 
     const summary = changeSummary(s);
     const changesList = summary.length > 0
-      ? h("ul", { class: "pub-changes", attrs: { "aria-label": "Changes that are not live" } }, ...summary.map((row) =>
+      ? h("ul", { class: "pub-changes", attrs: { "aria-label": "Changes that are not published" } }, ...summary.map((row) =>
         h("li", {}, h("span", { class: "pub-page", text: row.page }), h("span", { class: "pub-labels", text: row.labels.join(", ") }))))
       : null;
     const more = s.changes.length > 8 ? h("p", { class: "pub-meta", text: `and ${s.changes.length - 8} more` }) : null;
@@ -154,21 +154,22 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     const parts: (HTMLElement | null)[] = [];
     switch (site.kind) {
       case "never":
-        parts.push(title("Put your website online?"), errorBox,
-          h("p", { class: "pub-text", text: "Your website will be live at this address. You can change the address in Website settings." }), addressRow, actions("Publish"));
+        parts.push(title("Publish your website?"), errorBox,
+          changesList ?? h("p", { class: "pub-text", text: "Your whole website will be published, exactly as it shows in the editor." }), more,
+          h("p", { class: "pub-text", text: "Visitors will find it at this address. You can change the address in Website settings." }), addressRow, actions("Publish"));
         break;
       case "changes":
-        parts.push(title("Put your changes online?"), errorBox,
-          changesList ?? h("p", { class: "pub-text", text: "You have changes from an earlier visit that are not live yet." }), more, liveLine, addressRow, actions("Publish"));
+        parts.push(title("Publish your changes?"), errorBox,
+          changesList ?? h("p", { class: "pub-text", text: "You have changes from an earlier visit that are not published yet." }), more, liveLine, addressRow, actions("Publish"));
         break;
       case "older":
         parts.push(title(`Visitors see version ${site.live}`), errorBox,
-          h("p", { class: "pub-text", text: site.draftChanged ? `Your editor has newer changes than version ${site.live}. Publish to put them online.` : `Your editor shows the same website as version ${site.live}.` }),
+          h("p", { class: "pub-text", text: site.draftChanged ? `Your editor has newer changes than version ${site.live}. Publish to show them to visitors.` : `Your editor shows the same website as version ${site.live}.` }),
           changesList, addressRow, site.draftChanged ? actions("Publish my latest changes") : null);
         break;
       case "current": {
         const view = h("a", { class: "btn btn-secondary btn-sm", attrs: { href: s.project.site_url, target: "_blank", rel: "noopener noreferrer" } }, h("span", { text: "View website" }), icon("view-live", "icon-sm"));
-        parts.push(title("Everything is live."), liveLine, addressRow, h("div", { class: "pub-actions pub-actions-start" }, view));
+        parts.push(title("Everything is published."), liveLine, addressRow, h("div", { class: "pub-actions pub-actions-start" }, view));
         break;
       }
     }
@@ -216,6 +217,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     publishError = null;
     pop.hidden = false;
     trigger?.setAttribute("aria-expanded", "true");
+    document.body.toggleAttribute("data-review-open", true);
     renderReview();
     placeReview();
     document.addEventListener("pointerdown", onOutside, true);
@@ -228,6 +230,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
     if (pop.hidden) return false;
     pop.hidden = true;
     pop.replaceChildren();
+    document.body.toggleAttribute("data-review-open", false);
     document.removeEventListener("pointerdown", onOutside, true);
     popTrigger?.setAttribute("aria-expanded", "false");
     if (restore) {
@@ -251,11 +254,11 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
 
   /* Version history */
 
-  async function makeLive(release: Release): Promise<void> {
+  async function publishAgain(release: Release): Promise<void> {
     const ok = await confirmDialog({
-      title: `Make version ${release.number} live?`,
+      title: `Publish version ${release.number} again?`,
       text: `Visitors will see version ${release.number} right away. Your editor keeps your newer changes, so you can publish them again later.`,
-      ok: `Make version ${release.number} live`,
+      ok: `Publish version ${release.number}`,
     });
     if (!ok) return;
     const live = await change(async () => {
@@ -294,8 +297,8 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
       const isLive = r.number === liveNumber;
       const actions = h("div", { class: "release-actions" });
       if (!isLive) {
-        const live = h("button", { class: "btn btn-secondary btn-sm", text: "Make live", attrs: { type: "button", "aria-label": `Make version ${r.number} live` } });
-        live.addEventListener("click", () => void makeLive(r));
+        const live = h("button", { class: "btn btn-secondary btn-sm", text: "Publish again", attrs: { type: "button", "aria-label": `Publish version ${r.number} again` } });
+        live.addEventListener("click", () => void publishAgain(r));
         actions.append(live);
       }
       if (!compact) {
@@ -306,7 +309,7 @@ export function createPublishing({ store, saver, afterRestore }: PublishDeps): P
       return h("li", { class: `release${isLive ? " is-live" : ""}` },
         h("div", { class: "release-head" },
           h("span", { class: "release-number", text: `Version ${r.number}` }),
-          isLive ? h("span", { class: "pill pill-published", text: "Live" }) : null),
+          isLive ? h("span", { class: "pill pill-published", text: "Published" }) : null),
         h("p", { class: "release-meta" }, h("time", { text: dateTime(r.created_at), attrs: { datetime: r.created_at } }), h("span", { text: ` · ${timeAgo(r.created_at)}` })),
         actions);
     });

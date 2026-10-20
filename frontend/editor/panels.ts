@@ -2,11 +2,11 @@ import { isSafeHref, isStyleValue, type StyleChanges, type StyleKey } from "../p
 import { announce, h, icon, toast } from "../ui.js";
 import { api } from "./api.js";
 import type { Canvas } from "./canvas.js";
-import type { Edits } from "./edits.js";
+import type { Edits, Fit } from "./edits.js";
 import { pageLabel } from "./pages.js";
-import type { Change } from "./saves.js";
+import { editRecovery, type Change } from "./saves.js";
 import { selection, type Panel, type Selection, type Store } from "./state.js";
-import { classifyHref, relativeHref } from "./links.js";
+import { checkEmail, checkPhone, checkWeb, classifyHref, relativeHref, type LinkCheck } from "./links.js";
 
 export interface PanelContext {
   store: Store;
@@ -77,6 +77,10 @@ function swatches(ctx: PanelContext, keyPrefix: string, current: string | undefi
   const site = ctx.store.get().palette;
   const colors = [...new Set([...site, "#ffffff", "#000000"])].slice(0, 12);
   const row = h("div", { class: "swatches", attrs: { role: "group", "aria-label": "Colours" } });
+  if (current === "transparent") {
+    // No colour of its own: the page shows through. Shown as a checkerboard, never as black.
+    row.append(h("span", { class: "swatch swatch-none", attrs: { role: "img", "aria-label": "Now: none, the page shows through", "data-tip": "None. The page shows through." } }));
+  }
   colors.forEach((color, i) => {
     const name = site.includes(color) ? `Site colour ${i + 1}, ${colorName(color)}` : colorName(color);
     const s = h("button", { class: "swatch", attrs: { type: "button", "data-key": `${keyPrefix}:${color}`, "aria-label": name, "data-tip": name, "aria-pressed": String(current?.toLowerCase() === color) } });
@@ -85,7 +89,7 @@ function swatches(ctx: PanelContext, keyPrefix: string, current: string | undefi
     row.append(s);
   });
   const custom = h("input", { class: "color-input", attrs: { type: "color", "data-key": `${keyPrefix}:custom`, "aria-label": "Pick any colour", "data-tip": "Pick any colour" } });
-  custom.value = current && /^#[0-9a-f]{6}$/i.test(current) ? current : "#000000";
+  custom.value = current && /^#[0-9a-f]{6}$/i.test(current) ? current : "#ffffff";
   custom.addEventListener("change", () => onPick(custom.value));
   const reset = h("button", { class: "btn btn-ghost btn-sm", text: "Original", attrs: { type: "button", "data-key": `${keyPrefix}:reset`, "data-tip": "Back to the website's own colour" } });
   reset.addEventListener("click", () => onPick(null));
@@ -159,7 +163,7 @@ function backgroundPanel(ctx: PanelContext, sel: Selection): HTMLElement {
       const file = await ctx.edits.chooseImage();
       if (!file) return;
       replace.setAttribute("aria-busy", "true");
-      await ctx.edits.replaceBackground(sel, file, () => {});
+      await ctx.edits.replaceBackground(sel.element, file, () => {});
       replace.removeAttribute("aria-busy");
     });
     body.append(group("Background photo",
@@ -237,42 +241,59 @@ function linkForm(ctx: PanelContext, initialHref: string, opts: { newTab: boolea
     phone: h("label", { class: "field", attrs: { for: "rail-link-phone" } }, h("span", { class: "label", text: "Phone number" }), phone),
   };
 
+  function clearError(): void {
+    error.hidden = true;
+    for (const el of [web, email, phone]) el.removeAttribute("aria-invalid");
+  }
+
   function sync(): void {
     kind = typeSelect.value as Destination;
     for (const [d, row] of Object.entries(rows)) row.hidden = d !== kind;
     goTo.hidden = pageSelect.value === s.path;
-    error.hidden = true;
-    for (const el of [web, email, phone]) el.removeAttribute("aria-invalid");
+    clearError();
   }
   typeSelect.addEventListener("change", sync);
   pageSelect.addEventListener("change", sync);
   sync();
 
-  function href(): string {
+  /** The link to save, or what to fix. The server's own check stays the authority. */
+  function check(): LinkCheck {
     switch (kind) {
       case "page": {
         const hash = initial.kind === "page" && initial.path === pageSelect.value ? initial.hash : "";
-        return relativeHref(s.path, pageSelect.value) + hash;
+        return { ok: true, href: relativeHref(s.path, pageSelect.value) + hash };
       }
       case "anchor":
-        return `#${anchorSelect.value}`;
+        return { ok: true, href: `#${anchorSelect.value}` };
       case "email":
-        return email.value.trim() ? `mailto:${email.value.trim()}` : "";
+        return checkEmail(email.value);
       case "phone":
-        return phone.value.trim() ? `tel:${phone.value.trim().replace(/[^\d+]/g, "")}` : "";
-      case "web": {
-        const value = web.value.trim();
-        return /^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(value) && !value.includes("@") ? `https://${value}` : value;
-      }
+        return checkPhone(phone.value);
+      case "web":
+        return checkWeb(web.value);
     }
   }
 
-  function showError(message: string): void {
+  function fieldFor(): HTMLInputElement | null {
+    return kind === "web" ? web : kind === "email" ? email : kind === "phone" ? phone : null;
+  }
+
+  function showError(message: string, focus = true): void {
     error.textContent = message;
     error.hidden = false;
-    const fieldEl = kind === "web" ? web : kind === "email" ? email : kind === "phone" ? phone : null;
+    const fieldEl = fieldFor();
     fieldEl?.setAttribute("aria-invalid", "true");
-    fieldEl?.focus();
+    if (focus) fieldEl?.focus();
+  }
+
+  // Once an error shows, it follows the typing and clears as soon as the value works.
+  for (const el of [web, email, phone]) {
+    el.addEventListener("input", () => {
+      if (error.hidden) return;
+      const result = check();
+      if (result.ok) clearError();
+      else showError(result.message, false);
+    });
   }
 
   const submit = h("button", { class: "btn btn-secondary btn-sm", text: opts.submitLabel, attrs: { type: "submit", "data-key": "link-save" } });
@@ -282,12 +303,16 @@ function linkForm(ctx: PanelContext, initialHref: string, opts: { newTab: boolea
     h("div", { class: "rail-actions" }, submit));
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const value = href();
-    if (!value || !isSafeHref(value)) {
-      showError(kind === "email" ? "Type an email address, like name@example.com." : kind === "phone" ? "Type a phone number." : "That link can't be used. Use a web address starting with https://, an email address, a phone number or a page of this website.");
+    const result = check();
+    if (!result.ok) {
+      showError(result.message);
       return;
     }
-    opts.onSubmit(value, newTab.checked, showError);
+    if (!isSafeHref(result.href)) {
+      showError("That link can't be used. Use a web address, an email address, a phone number or a page of this website.");
+      return;
+    }
+    opts.onSubmit(result.href, newTab.checked, showError);
   });
   return form;
 }
@@ -302,6 +327,7 @@ function linkPanel(ctx: PanelContext, sel: Selection): HTMLElement {
       canvas.send({ type: "preview_link", element: sel.element, href, newTab: kindIsWeb(href) && newTab });
       void change((base) => api.edit(store.get().project.pid, base, page, { op: "set_link", element: sel.element, href, new_tab: kindIsWeb(href) && newTab }), {
         page,
+        recover: editRecovery,
         toastRejection: false,
         onRejected: (error) => {
           showError(error.message);
@@ -336,7 +362,7 @@ function textLinkPanel(ctx: PanelContext): HTMLElement {
 /* Images */
 
 /** Shows a thumbnail only for pictures served by the preview itself. */
-function previewImage(src: string | null, origin: string): string | null {
+export function previewImage(src: string | null, origin: string): string | null {
   if (!src) return null;
   try {
     const url = new URL(src);
@@ -346,6 +372,25 @@ function previewImage(src: string | null, origin: string): string | null {
   }
 }
 
+/** Fill the old picture's frame (cropped), or show all of the new picture inside it. */
+function fitControl(ctx: PanelContext, sel: Selection, current: Fit): HTMLElement {
+  const choices: [Fit, string][] = [["fill", "Fill the frame"], ["whole", "Show whole picture"]];
+  const seg = h("div", { class: "seg seg-block", attrs: { role: "group", "aria-label": "How the picture fits its space" } },
+    ...choices.map(([fit, label]) => {
+      const b = h("button", { text: label, attrs: { type: "button", "data-key": `fit:${fit}`, "aria-pressed": String(fit === current) } });
+      b.addEventListener("click", async () => {
+        if (fit === current) return;
+        seg.setAttribute("aria-busy", "true");
+        const ok = await ctx.edits.refit(sel, fit);
+        seg.removeAttribute("aria-busy");
+        if (ok) ctx.store.dispatch({ type: "open_panel", panel: "image", replaced: true });
+      });
+      return b;
+    }));
+  return h("div", { class: "field" }, seg,
+    h("span", { class: "hint", text: current === "fill" ? "The new picture is trimmed to the shape of the old one, so the layout stays the same." : "All of the picture shows, with empty bands where the shapes differ." }));
+}
+
 function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
   const body = h("div", { class: "rail-panel-body" });
   if (ctx.replaced) {
@@ -353,6 +398,8 @@ function imagePanel(ctx: PanelContext, sel: Selection): HTMLElement {
     undo.addEventListener("click", () => ctx.edits.undo());
     body.append(h("div", { class: "alert alert-success", attrs: { tabindex: "-1", "data-replaced": "", "data-key": "replaced", role: "status" } },
       icon("success", "icon-sm"), h("span", { class: "grow", text: "Picture replaced." }), undo));
+    const last = ctx.edits.replacementOf(sel.element);
+    if (last?.framed) body.append(fitControl(ctx, sel, last.fit));
   }
   const image = sel.info.image;
   const src = previewImage(sel.info.src, ctx.store.get().previewOrigin);
@@ -452,7 +499,7 @@ function pagePanel(ctx: PanelContext): HTMLElement {
     const titleValue = title.value.trim();
     const descriptionValue = description.value.trim();
     const page = ctx.store.get().path;
-    const result = await ctx.change((base) => api.edit(ctx.store.get().project.pid, base, page, { op: "set_page_meta", title: titleValue, description: descriptionValue }), { page });
+    const result = await ctx.change((base) => api.edit(ctx.store.get().project.pid, base, page, { op: "set_page_meta", title: titleValue, description: descriptionValue }), { page, recover: editRecovery });
     if (result) {
       ctx.store.dispatch({ type: "page_meta", title: titleValue, description: descriptionValue });
       announce("Page settings saved");

@@ -5,7 +5,7 @@ import { pageLabel, slugify } from "./pages.js";
 import type { Canvas } from "./canvas.js";
 import type { Edits } from "./edits.js";
 import { openMenu } from "./menu.js";
-import { renderPanel, PANEL_TITLES } from "./panels.js";
+import { previewImage, renderPanel, PANEL_TITLES } from "./panels.js";
 import type { Change } from "./saves.js";
 import { changed, selection, type State, type Store } from "./state.js";
 
@@ -16,6 +16,8 @@ export interface RailDeps {
   edits: Edits;
   /** Moves focus back to the toolbar button that opened a panel, or to the canvas. */
   returnFocus(): void;
+  openSettings(trigger: HTMLElement): void;
+  openHistory(trigger: HTMLElement): void;
 }
 
 export interface Rail {
@@ -29,10 +31,17 @@ function folderOf(path: string): string {
   return i < 0 ? "" : path.slice(0, i + 1);
 }
 
-export function createRail({ store, canvas, change, edits, returnFocus }: RailDeps): Rail {
+export function createRail({ store, canvas, change, edits, returnFocus, openSettings, openHistory }: RailDeps): Rail {
   const pid = () => store.get().project.pid;
   const pagesView = must<HTMLElement>(document, "[data-rail-pages]");
   const panelView = must<HTMLElement>(document, "[data-rail-panel]");
+  const imagesView = must<HTMLElement>(document, "[data-rail-images]");
+  const imageList = must<HTMLUListElement>(imagesView, "[data-image-list]");
+  const imagesSubject = must<HTMLElement>(imagesView, "[data-images-subject]");
+  const imagesCount = must<HTMLElement>(document, "[data-images-count]");
+  const start = must<HTMLElement>(document, "[data-rail-start]");
+  const startHeading = must<HTMLButtonElement>(start, '[data-start="heading"]');
+  const startPicture = must<HTMLButtonElement>(start, '[data-start="picture"]');
   const list = must<HTMLUListElement>(document, "[data-page-list]");
   const note = must<HTMLElement>(document, "[data-page-note]");
   let renderedPanelKey = "";
@@ -194,10 +203,81 @@ export function createRail({ store, canvas, change, edits, returnFocus }: RailDe
 
   must<HTMLButtonElement>(document, '[data-action="add-page"]').addEventListener("click", () => pageDialog("add"));
 
+  /* First-time guidance, the website rows and the page's pictures */
+
+  function selectInCanvas(element: string | null): void {
+    if (!element) return;
+    canvas.send({ type: "select_element", element });
+    canvas.surface.focus({ preventScroll: true });
+  }
+
+  startHeading.addEventListener("click", () => selectInCanvas(store.get().outline.heading));
+  startPicture.addEventListener("click", () => selectInCanvas(store.get().outline.images[0]?.element ?? null));
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-start="settings"], [data-row="settings"]')) b.addEventListener("click", () => openSettings(b));
+  const historyRow = must<HTMLButtonElement>(document, '[data-row="history"]');
+  historyRow.addEventListener("click", () => openHistory(historyRow));
+  must<HTMLButtonElement>(document, '[data-row="images"]').addEventListener("click", () => {
+    store.dispatch({ type: "open_images" });
+    imageList.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
+  });
+  const imagesBack = must<HTMLButtonElement>(imagesView, "[data-images-back]");
+  imagesBack.addEventListener("click", () => {
+    store.dispatch({ type: "close_panel" });
+    must<HTMLButtonElement>(document, '[data-row="images"]').focus({ preventScroll: true });
+  });
+  imagesView.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    imagesBack.click();
+  });
+
+  /* On narrow windows the rail is a drawer: the toggle opens it, a panel opens it, a click in the page closes it. */
+  const editorRoot = must<HTMLElement>(document, "#editor");
+  const toggle = must<HTMLButtonElement>(document, "[data-rail-toggle]");
+  const drawer = window.matchMedia("(max-width: 899px)");
+  function setDrawer(open: boolean): void {
+    editorRoot.toggleAttribute("data-rail-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+  }
+  toggle.addEventListener("click", () => {
+    const open = !editorRoot.hasAttribute("data-rail-open");
+    setDrawer(open);
+    if (open) document.querySelector<HTMLElement>(".ed-rail button:not([hidden])")?.focus({ preventScroll: true });
+  });
+  drawer.addEventListener("change", () => setDrawer(false));
+
+  function renderStart(s: State): void {
+    start.hidden = s.mode !== "edit" || s.focus.kind !== "none";
+    startHeading.hidden = s.outline.heading === null;
+    startPicture.hidden = s.outline.images.length === 0;
+  }
+
+  function renderImages(s: State): void {
+    const images = s.outline.images;
+    imagesCount.textContent = images.length > 0 ? String(images.length) : "";
+    const page = s.pages.find((p) => p.path === s.path);
+    imagesSubject.textContent = images.length === 0 ? "No pictures you can change on this page." : `${images.length === 1 ? "1 picture" : `${images.length} pictures`} on ${page ? pageLabel(page, s.project.name) : s.path}. Choose one to select it.`;
+    const current = selection(s)?.element ?? null;
+    const focusedKey = document.activeElement instanceof HTMLElement && imageList.contains(document.activeElement) ? document.activeElement.dataset["key"] : undefined;
+    imageList.replaceChildren(...images.map((img) => {
+      const thumb = previewImage(img.src, s.previewOrigin);
+      const b = h("button", { class: "image-row", attrs: { type: "button", "data-key": img.element } },
+        thumb ? h("img", { class: "image-thumb", attrs: { src: thumb, alt: "", loading: "lazy", referrerpolicy: "no-referrer" } }) : h("span", { class: "image-thumb" }),
+        h("span", { class: "image-name truncate", text: img.name || "Picture without a description" }));
+      if (img.element === current) b.setAttribute("aria-current", "true");
+      b.addEventListener("click", () => {
+        canvas.send({ type: "select_element", element: img.element });
+      });
+      return h("li", {}, b);
+    }));
+    if (focusedKey) imageList.querySelector<HTMLElement>(`[data-key="${CSS.escape(focusedKey)}"]`)?.focus({ preventScroll: true });
+  }
+
   /* The panel view */
 
   function panelKey(s: State): string {
-    if (s.rail.kind === "pages") return "pages";
+    if (s.rail.kind !== "panel") return s.rail.kind;
     const sel = selection(s);
     return JSON.stringify([s.rail, s.rail.panel === "page" ? [s.path, s.pageMeta] : sel ? [sel.element, sel.info, sel.name] : null, s.palette, s.anchors, s.pages, s.editing.active]);
   }
@@ -224,13 +304,15 @@ export function createRail({ store, canvas, change, edits, returnFocus }: RailDe
     renderedPanelKey = key;
     renderedPanel = kind;
     renderedElement = element;
-    if (s.rail.kind === "pages") {
-      pagesView.hidden = false;
+    if (s.rail.kind !== "panel") {
+      pagesView.hidden = s.rail.kind !== "pages";
+      imagesView.hidden = s.rail.kind !== "images";
       panelView.hidden = true;
       panelView.replaceChildren();
       if (inPanel) returnFocus();
       return;
     }
+    imagesView.hidden = true;
     const focusedKey = inPanel ? active.dataset["key"] ?? null : null;
     const sel = selection(s);
     const back = h("button", { class: "btn btn-ghost btn-sm rail-back", attrs: { type: "button", "data-key": "back", "data-kbd": "Esc", "data-tip": "Back to the pages" } }, icon("chevron-left", "icon-sm"), h("span", { text: "Pages" }));
@@ -275,8 +357,12 @@ export function createRail({ store, canvas, change, edits, returnFocus }: RailDe
 
   store.subscribe((s, prev) => {
     if (changed(s, prev, "pages", "path", "project")) renderPages();
+    if (changed(s, prev, "mode", "focus", "outline")) renderStart(s);
+    if (changed(s, prev, "outline", "pages", "path", "focus", "previewOrigin")) renderImages(s);
     renderRail();
     if (s.rail.kind === "panel" && prev?.rail.kind === "pages") announce(`${PANEL_TITLES[s.rail.panel]} panel open`);
+    if (drawer.matches && prev && s.rail !== prev.rail) setDrawer(s.rail.kind !== "pages");
+    if (drawer.matches && prev && s.rail.kind === "pages" && s.focus.kind !== "none" && selection(s)?.element !== selection(prev)?.element) setDrawer(false);
   });
 
   return {

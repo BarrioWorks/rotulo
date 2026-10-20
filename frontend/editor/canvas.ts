@@ -8,6 +8,8 @@ export interface CanvasHandlers {
   onText(element: string, html: string, page: string): void;
   /** Called before loading a page when the preview address may have expired. */
   refreshPreview(): Promise<void>;
+  /** A click or key in the page. The app document never sees those, so popovers close here. */
+  onPageClick(): void;
 }
 
 export interface Canvas {
@@ -23,6 +25,8 @@ export interface Canvas {
   finishText(): Promise<void>;
   /** Maps a rect from the site's CSS pixels to app pixels. */
   toApp(rect: Rect): Box;
+  /** App pixels per site CSS pixel. */
+  scale(): number;
   /** The part of the canvas the owner can see, in app pixels. */
   visibleBox(): Box;
 }
@@ -55,6 +59,17 @@ export function frameLayout(device: State["device"], zoom: State["zoom"], availa
   const layoutWidth = Math.max(width, DESKTOP_WIDTH);
   const scale = zoom === "actual" ? 1 : width / layoutWidth;
   return { scale, viewport: { width: layoutWidth, height: height / scale }, frame: { width: layoutWidth * scale, height } };
+}
+
+/** The app's interface font, handed to the agent as bytes so the slug in the site matches the app. */
+const UI_FONT_URL = "/static/fonts/schibsted-grotesk-400-700.woff2";
+let uiFont: Promise<ArrayBuffer | null> | null = null;
+
+function loadUiFont(): Promise<ArrayBuffer | null> {
+  uiFont ??= fetch(UI_FONT_URL, { credentials: "same-origin" })
+    .then((r) => (r.ok ? r.arrayBuffer() : null))
+    .catch(() => null);
+  return uiFont;
 }
 
 function makeIframe(title: string): HTMLIFrameElement {
@@ -109,6 +124,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
     surface.style.height = `${layout.frame.height}px`;
     surface.style.setProperty("--canvas-scale", String(layout.scale));
     for (const iframe of [active, pending]) if (iframe) sizeIframe(iframe);
+    if (!awaitingReady) send({ type: "scale", scale: layout.scale });
     const percent = Math.round(layout.scale * 100);
     zoomLabel.textContent = s.zoom === "fit" ? `Fit ${percent}%` : `${percent}%`;
     zoomButton.setAttribute("aria-label", s.zoom === "fit" ? `Zoom: fit to window, ${percent} percent. Show at actual size` : "Zoom: actual size. Fit to window");
@@ -252,31 +268,42 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
         setLoadingVeil(false);
         swap();
         store.dispatch({ type: "page_ready", path: expectedPath, title: message.title, description: message.description });
-        active.contentWindow?.postMessage(envelope({ type: "init", mode: store.get().mode, scrollY: restore.scrollY, select: restore.select }), store.get().previewOrigin);
+        active.contentWindow?.postMessage(envelope({ type: "init", mode: store.get().mode, scrollY: restore.scrollY, select: restore.select, scale: layout.scale }), store.get().previewOrigin);
+        const ready = active;
+        void loadUiFont().then((data) => {
+          if (data && ready === active) send({ type: "font", data });
+        });
         if (restore.select && restore.pulse) send({ type: "reveal", element: restore.select, pulse: true });
         restore = { scrollY: null, select: null, pulse: false };
         break;
       }
       case "select":
+        handlers.onPageClick();
         if (textSession?.element !== message.element) textSession = null;
         store.dispatch({
           type: "selected",
           selection: { element: message.element, can: message.can, tag: message.tag, kind: message.kind, name: message.name, ancestors: message.ancestors, rect: message.rect, info: message.info },
+          obstacles: message.obstacles,
         });
         reclaimFocus();
         break;
       case "blocked":
+        handlers.onPageClick();
         textSession = null;
         store.dispatch({ type: "blocked", rect: message.rect, around: message.around });
         reclaimFocus();
         break;
       case "deselect":
+        handlers.onPageClick();
         textSession = null;
         store.dispatch({ type: "deselected" });
         reclaimFocus();
         break;
       case "viewport":
-        store.dispatch({ type: "viewport", scrollY: message.scrollY, rect: message.rect, obstructions: message.obstructions });
+        store.dispatch({ type: "viewport", scrollY: message.scrollY, rect: message.rect, obstructions: message.obstructions, obstacles: message.obstacles });
+        break;
+      case "outline":
+        store.dispatch({ type: "outline", outline: { heading: message.heading, images: message.images } });
         break;
       case "palette":
         store.dispatch({ type: "palette", colors: message.colors });
@@ -367,6 +394,7 @@ export function createCanvas(store: Store, handlers: CanvasHandlers): Canvas {
     },
     send,
     finishText,
+    scale: () => layout.scale,
     toApp(rect) {
       const r = active.getBoundingClientRect();
       return { x: r.left + rect.x * layout.scale, y: r.top + rect.y * layout.scale, width: rect.width * layout.scale, height: rect.height * layout.scale };

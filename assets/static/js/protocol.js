@@ -3,7 +3,7 @@
  * Both sides check origin and source first, then parse every message with these parsers
  * and drop anything that does not match exactly.
  */
-import { arr, bool, lit, num, obj, opt, str } from "./schema.js";
+import { arr, bool, bytes, lit, num, obj, opt, str } from "./schema.js";
 export const CHANNEL = "pagehaven";
 export const ELEMENT_ID = /^[0-9a-z]{1,10}$/;
 export const CAPABILITIES = /^[tilsbxudc]{0,9}$/;
@@ -12,19 +12,21 @@ const TAG = /^[a-z][a-z0-9-]{0,31}$/;
 export const ANCHOR_ID = /^[A-Za-z][\w-]{0,63}$/;
 const HEX6 = /^#[0-9a-f]{6}$/;
 /** What the agent thinks the selected element is, from its tag, capabilities and computed style. */
-export const KINDS = ["image", "button", "link", "heading", "menu", "header", "footer", "section", "list-item", "text", "box"];
+export const KINDS = ["image", "button", "link", "heading", "menu", "banner", "header", "footer", "section", "card", "list-item", "text", "box"];
 export const KIND_LABELS = {
     image: "Image",
     button: "Button",
     link: "Link",
     heading: "Heading",
     menu: "Menu",
+    banner: "Banner",
     header: "Header",
     footer: "Footer",
     section: "Section",
+    card: "Card",
     "list-item": "List item",
     text: "Text",
-    box: "Box",
+    box: "Area",
 };
 export const STYLE_KEYS = [
     "color",
@@ -114,10 +116,17 @@ const parseSelectionInfo = obj({
     bgImage: bool,
     /** For images: the file's own size and the size it is shown at, in CSS px. */
     image: opt(obj({ naturalWidth: size, naturalHeight: size, width: size, height: size })),
+    /** Links on this page that jump to this part or something inside it (`href="#id"`). */
+    anchorLinks: num(0, 1000),
 });
 const kind = lit(...KINDS);
+export const MAX_OBSTACLES = 12;
+export const MAX_OUTLINE_IMAGES = 40;
+/** The canvas scale, so the agent draws its marks at a constant size on screen. */
+const scale = num(0.05, 8);
 const name = str(60);
-const parseAncestor = obj({ element: elementId, kind, name });
+/** `photo`: the ancestor can take a background photo and shows one now (a banner behind a heading). */
+const parseAncestor = obj({ element: elementId, kind, name, photo: bool });
 const agentMessages = {
     ready: obj({
         type: lit("ready"),
@@ -138,12 +147,20 @@ const agentMessages = {
         ancestors: arr(parseAncestor, 8),
         rect: parseRect,
         info: parseSelectionInfo,
+        /** Visible words and pictures around the selection, nearest first, so the toolbar can avoid them. */
+        obstacles: arr(parseRect, MAX_OBSTACLES),
     }),
     /** A click on something the site's code made. `around` is the nearest editable ancestor. */
     blocked: obj({ type: lit("blocked"), rect: parseRect, around: opt(elementId) }),
     deselect: obj({ type: lit("deselect") }),
-    /** Sent every frame that moves. `obstructions` are the site's own fixed or sticky bars. */
-    viewport: obj({ type: lit("viewport"), scrollY: scroll, rect: opt(parseRect), obstructions: arr(parseRect, 4) }),
+    /** Sent every frame that moves. `obstructions` are the site's own fixed or sticky bars; `obstacles` as in `select`. */
+    viewport: obj({ type: lit("viewport"), scrollY: scroll, rect: opt(parseRect), obstructions: arr(parseRect, 4), obstacles: arr(parseRect, MAX_OBSTACLES) }),
+    /** The page's main heading and its pictures, for the rail's shortcuts and picture list. */
+    outline: obj({
+        type: lit("outline"),
+        heading: opt(elementId),
+        images: arr(obj({ element: elementId, name, src: str(2048) }), MAX_OUTLINE_IMAGES),
+    }),
     /** The page's own colours, most used first, for the style swatches. */
     palette: obj({ type: lit("palette"), colors: arr(str(7, HEX6), 10) }),
     /** Parts of the page a link can jump to. */
@@ -158,8 +175,12 @@ const editorMessages = {
         mode: lit("edit", "preview"),
         scrollY: opt(scroll),
         select: opt(elementId),
+        scale: opt(scale),
     }),
     mode: obj({ type: lit("mode"), mode: lit("edit", "preview") }),
+    scale: obj({ type: lit("scale"), scale }),
+    /** The app's interface font, as bytes, for the slug inside the site. Fetched by the app from its own origin. */
+    font: obj({ type: lit("font"), data: bytes(256 * 1024) }),
     /** Keyboard selection: the part around, the first part inside, or the next or previous part. */
     select_relative: obj({ type: lit("select_relative"), direction: lit("parent", "child", "next", "prev") }),
     /** Breadcrumb selection. The agent re-checks the id and its capabilities. */

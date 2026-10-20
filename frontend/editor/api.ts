@@ -111,13 +111,6 @@ export class ApiError extends Error {
   }
 }
 
-let conflictHandler: (error: ApiError) => void = () => {};
-
-/** Called for every 409, before the request's own error handling. */
-export function onConflict(handler: (error: ApiError) => void): void {
-  conflictHandler = handler;
-}
-
 type Body = FormData | Record<string, unknown> | undefined;
 
 async function request<T>(method: "GET" | "POST" | "DELETE", path: string, body: Body, parse: Parser<T> | null): Promise<T> {
@@ -153,7 +146,6 @@ async function request<T>(method: "GET" | "POST" | "DELETE", path: string, body:
       err?.message ?? "Something went wrong. Please try again.",
       err?.revision ?? null,
     );
-    if (response.status === 409) conflictHandler(error);
     throw error;
   }
   if (parse === null) return undefined as T;

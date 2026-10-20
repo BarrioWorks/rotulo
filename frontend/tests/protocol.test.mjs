@@ -19,10 +19,11 @@ const info = {
   text: "See today's menu",
   styles: { color: "#ffffff", "font-size": "16px" },
   bgImage: false,
+  anchorLinks: 0,
   image: null,
 };
-const ancestors = [{ element: "s1", kind: "section", name: "Menu" }];
-const select = envelope({ type: "select", element: "w", can: "tls", tag: "a", kind: "link", name: "See today's menu", ancestors, rect, info });
+const ancestors = [{ element: "s1", kind: "section", name: "Menu", photo: false }];
+const select = envelope({ type: "select", element: "w", can: "tls", tag: "a", kind: "link", name: "See today's menu", ancestors, rect, info, obstacles: [rect] });
 
 test("the editor accepts a well-formed selection from the agent", () => {
   const parsed = parseAgentMessage(select);
@@ -69,12 +70,13 @@ test("the page cannot ask for undo or redo; inside a text editor those keys stay
 });
 
 test("the agent accepts init with optional scroll and selection", () => {
-  assert.deepEqual(parseEditorMessage(envelope({ type: "init", mode: "edit" })), { type: "init", mode: "edit", scrollY: null, select: null });
-  assert.deepEqual(parseEditorMessage(envelope({ type: "init", mode: "preview", scrollY: 120, select: "1d" })), {
+  assert.deepEqual(parseEditorMessage(envelope({ type: "init", mode: "edit" })), { type: "init", mode: "edit", scrollY: null, select: null, scale: null });
+  assert.deepEqual(parseEditorMessage(envelope({ type: "init", mode: "preview", scrollY: 120, select: "1d", scale: 0.79 })), {
     type: "init",
     mode: "preview",
     scrollY: 120,
     select: "1d",
+    scale: 0.79,
   });
   assert.equal(parseEditorMessage(envelope({ type: "init", mode: "design" })), undefined);
 });
@@ -142,7 +144,7 @@ test("image metrics are finite numbers in range", () => {
 });
 
 test("the viewport carries at most four obstruction rects", () => {
-  const viewport = envelope({ type: "viewport", scrollY: 10, rect: null, obstructions: [rect] });
+  const viewport = envelope({ type: "viewport", scrollY: 10, rect: null, obstructions: [rect], obstacles: [] });
   assert.ok(parseAgentMessage(viewport));
   assert.equal(parseAgentMessage({ ...viewport, obstructions: Array(5).fill(rect) }), undefined);
   assert.equal(parseAgentMessage({ ...viewport, obstructions: [{ ...rect, x: Number.POSITIVE_INFINITY }] }), undefined);
@@ -185,4 +187,35 @@ test("background previews carry an element and a capped URL", () => {
   assert.ok(parseEditorMessage(envelope({ type: "preview_background", element: "k", src: "http://tok.preview.localhost/images/uploads/a.jpg" })));
   assert.equal(parseEditorMessage(envelope({ type: "preview_background", element: "k", src: "x".repeat(2049) })), undefined);
   assert.equal(parseEditorMessage(envelope({ type: "preview_background", element: "k" })), undefined);
+});
+
+test("obstacles around the selection are capped rects", () => {
+  assert.equal(parseAgentMessage({ ...select, obstacles: Array(12).fill(rect) })?.obstacles.length, 12);
+  assert.equal(parseAgentMessage({ ...select, obstacles: Array(13).fill(rect) }), undefined, "at most twelve");
+  assert.equal(parseAgentMessage({ ...select, obstacles: [{ ...rect, width: -4 }] }), undefined);
+  assert.equal(parseAgentMessage({ ...select, obstacles: undefined }), undefined, "the field is required");
+});
+
+test("banner photos on ancestors must be flagged as booleans", () => {
+  assert.equal(parseAgentMessage({ ...select, ancestors: [{ ...ancestors[0], photo: "yes" }] }), undefined);
+  assert.equal(parseAgentMessage({ ...select, ancestors: [{ ...ancestors[0], kind: "banner", photo: true }] })?.ancestors[0].kind, "banner");
+});
+
+test("the page outline names a heading and at most forty pictures", () => {
+  const outline = envelope({ type: "outline", heading: "h1", images: [{ element: "i1", name: "Loaves", src: "https://tok.preview.localhost/a.jpg" }] });
+  assert.ok(parseAgentMessage(outline));
+  assert.ok(parseAgentMessage({ ...outline, heading: null }));
+  assert.equal(parseAgentMessage({ ...outline, heading: "BAD ID" }), undefined);
+  assert.equal(parseAgentMessage({ ...outline, images: Array(41).fill(outline.images[0]) }), undefined);
+  assert.equal(parseAgentMessage({ ...outline, images: [{ ...outline.images[0], name: "x".repeat(61) }] }), undefined);
+});
+
+test("the canvas scale and the interface font are bounded", () => {
+  assert.ok(parseEditorMessage(envelope({ type: "scale", scale: 0.79 })));
+  assert.equal(parseEditorMessage(envelope({ type: "scale", scale: 0 })), undefined);
+  assert.equal(parseEditorMessage(envelope({ type: "scale", scale: Number.NaN })), undefined);
+  assert.ok(parseEditorMessage(envelope({ type: "font", data: new ArrayBuffer(46584) })));
+  assert.equal(parseEditorMessage(envelope({ type: "font", data: new ArrayBuffer(256 * 1024 + 1) })), undefined, "capped at 256 KB");
+  assert.equal(parseEditorMessage(envelope({ type: "font", data: "AAEC" })), undefined, "bytes only");
+  assert.equal(parseAgentMessage(envelope({ type: "font", data: new ArrayBuffer(8) })), undefined, "the page cannot send fonts to the app");
 });

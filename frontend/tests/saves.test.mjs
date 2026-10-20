@@ -10,7 +10,7 @@ globalThis.window = {
 };
 
 const { ApiError } = await import("../../assets/static/js/editor/api.js");
-const { createSaver } = await import("../../assets/static/js/editor/saves.js");
+const { createSaver, editRecovery } = await import("../../assets/static/js/editor/saves.js");
 const { createStore, initialState } = await import("../../assets/static/js/editor/state.js");
 
 const bootstrap = {
@@ -24,7 +24,7 @@ const bootstrap = {
 
 test("a change that fails offline stays queued and lands when the network is back", async () => {
   const store = createStore(initialState(bootstrap, 0));
-  const saver = createSaver(store);
+  const saver = createSaver(store, async () => bootstrap);
   let attempts = 0;
   const done = saver.change(async (base) => {
     attempts += 1;
@@ -45,7 +45,7 @@ test("a change that fails offline stays queued and lands when the network is bac
 
 test("later changes wait behind the one being retried, in order", async () => {
   const store = createStore(initialState(bootstrap, 0));
-  const saver = createSaver(store);
+  const saver = createSaver(store, async () => bootstrap);
   const order = [];
   let first = true;
   const a = saver.change(async () => {
@@ -65,4 +65,40 @@ test("later changes wait behind the one being retried, in order", async () => {
   saver.retryNow();
   await Promise.all([a, b]);
   assert.deepEqual(order, ["a", "b"]);
+});
+
+const landed = { ...bootstrap, project: { ...bootstrap.project, revision: 4 }, history: { ...bootstrap.history, can_undo: true, undo_label: "edit text" } };
+
+test("a retry after a lost answer is not a conflict when the first attempt already landed", async () => {
+  const store = createStore(initialState(bootstrap, 0));
+  const saver = createSaver(store, async () => landed);
+  const sent = [];
+  const done = saver.change(async (base) => {
+    sent.push(base);
+    if (sent.length === 1) throw new ApiError(0, "network", "timed out");
+    throw new ApiError(409, "conflict", "stale", 4);
+  }, { recover: editRecovery });
+  await new Promise((r) => setTimeout(r, 10));
+  saver.retryNow();
+  const result = await done;
+  assert.deepEqual(sent, [3, 3], "the retry carries the same base revision");
+  assert.equal(result.revision, 4);
+  assert.equal(store.get().saves.problem, null, "no 'Changed in another tab'");
+  assert.equal(store.get().project.revision, 4);
+  assert.deepEqual(store.get().changes.map((c) => c.label), ["edit text"]);
+});
+
+test("a stale retry is still a conflict when someone else moved the website further", async () => {
+  const store = createStore(initialState(bootstrap, 0));
+  const saver = createSaver(store, async () => ({ ...landed, project: { ...landed.project, revision: 6 } }));
+  let attempts = 0;
+  const done = saver.change(async () => {
+    attempts += 1;
+    if (attempts === 1) throw new ApiError(0, "network", "timed out");
+    throw new ApiError(409, "conflict", "stale", 6);
+  }, { recover: editRecovery });
+  await new Promise((r) => setTimeout(r, 10));
+  saver.retryNow();
+  assert.equal(await done, null);
+  assert.deepEqual(store.get().saves.problem, { kind: "conflict" });
 });
