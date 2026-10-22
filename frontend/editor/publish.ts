@@ -523,7 +523,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }: Publish
   function dnsTable(domain: Domain, dns: Dns | null): HTMLElement {
     const apex = domain.hostname.split(".").length === 2;
     const rows: [string, string, string, string][] = [["TXT", domain.txt_name, domain.txt_value, "Proves that you own this domain."]];
-    if (dns) rows.push(apex ? ["A", domain.hostname, dns.a_record, "Points your domain to Pagehaven."] : ["CNAME", domain.hostname, dns.cname_target, "Points your domain to Pagehaven. Some providers want only the first part of the name, like www."]);
+    if (dns) rows.push(apex ? ["A", domain.hostname, dns.a_record, "Points your domain to Rótulo."] : ["CNAME", domain.hostname, dns.cname_target, "Points your domain to Rótulo. Some providers want only the first part of the name, like www."]);
     return h("table", { class: "table dns-table" },
       h("thead", {}, h("tr", {}, h("th", { text: "Type", attrs: { scope: "col" } }), h("th", { text: "Name", attrs: { scope: "col" } }), h("th", { text: "Value", attrs: { scope: "col" } }))),
       h("tbody", {}, ...rows.map(([type, name, value, why]) => h("tr", {},

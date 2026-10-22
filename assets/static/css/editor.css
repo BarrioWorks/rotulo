@@ -1,4 +1,4 @@
-/* Pagehaven editor: shell, canvas, floating toolbar, rail panels, publishing and the small-screen
+/* Rótulo editor: shell, canvas, floating toolbar, rail panels, publishing and the small-screen
    Manage view. Loads after app.css and uses only its tokens and components. */
 
 html:has(body.editor-body) { overflow: hidden; }

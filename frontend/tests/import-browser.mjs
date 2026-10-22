@@ -34,7 +34,7 @@ export function runImportBrowserChecks() {
     { kind: "refused", message: SOURCE_ONLY }, "exact source refusal");
   equal(classifyIndex(summarizeIndex(`<div id=root></div>${module}`), false, 1), {
     kind: "warning",
-    message: "This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.",
+    message: "This website builds its pages in the browser with JavaScript. It will publish and work, but Rótulo can only edit text and images that are written in its HTML files.",
   }, "exact JavaScript warning");
   for (const token of ["<!--", "<script ", "<div id=root "]) {
     const hostile = token.repeat(Math.ceil(65536 / token.length)).slice(0, 65536);

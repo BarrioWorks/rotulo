@@ -1,4 +1,4 @@
-# Apple platform guidance, translated for the Pagehaven Studio editor
+# Apple platform guidance, translated for the Rótulo Studio editor
 
 Agent B research for the Studio redesign (`../brief.md` sections 3 to 8 and 12). Written 2026-10-20.
 
@@ -6,7 +6,7 @@ Agent B research for the Studio redesign (`../brief.md` sections 3 to 8 and 12).
 
 **Sources.** HIG pages render client side, so their text was read from Apple's documentation JSON for each page (`developer.apple.com/tutorials/data/design/human-interface-guidelines/<page>.json`). Links point to the readable page. Apple has no standalone Inspectors page (`/inspectors` returned 404). Inspector guidance lives in Panels, Split views and Toolbars. WWDC25 quotes were checked word for word against the transcript HTML.
 
-**Two Pagehaven facts this spec depends on** (read from code):
+**Two Rótulo facts this spec depends on** (read from code):
 
 - The imported site runs in a sandboxed cross-origin iframe. The parent page cannot read its pixels, so Apple-style glass that adapts to what is behind it is impossible (1.3).
 - During a text session, keystrokes reach the iframe document, not the parent. `frontend/editor/main.ts` listens on the parent and `frontend/agent/agent.ts` handles Enter and Escape inside the frame. Section 5 relies on this.
@@ -26,9 +26,9 @@ Agent B research for the Studio redesign (`../brief.md` sections 3 to 8 and 12).
 
 ### Adopt, and do not copy
 
-- [Adaptation] Adopt the three layers, the regular variant only (Pagehaven chrome carries text), concentric radii, a single tinted primary action, and the three accessibility modifiers. Those map to `prefers-reduced-transparency`, `prefers-contrast: more` and `prefers-reduced-motion`. MDN marks `prefers-reduced-transparency` "Limited availability", so it cannot be the only path ([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-transparency)).
+- [Adaptation] Adopt the three layers, the regular variant only (Rótulo chrome carries text), concentric radii, a single tinted primary action, and the three accessibility modifiers. Those map to `prefers-reduced-transparency`, `prefers-contrast: more` and `prefers-reduced-motion`. MDN marks `prefers-reduced-transparency` "Limited availability", so it cannot be the only path ([MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-transparency)).
 - [Adaptation] Do not copy lensing and refraction. That needs SVG displacement inside `backdrop-filter`, which only some engines accept, and it repaints every scroll frame.
-- [Adaptation] Do not copy adaptive light and dark flipping. Pagehaven cannot sample the cross-origin canvas, so the tint is fixed at a value proven safe for any backdrop.
+- [Adaptation] Do not copy adaptive light and dark flipping. Rótulo cannot sample the cross-origin canvas, so the tint is fixed at a value proven safe for any backdrop.
 - [Adaptation] Do not copy specular highlights, elastic stretching or morphing. These are continuous effects the brief rules out.
 
 ### Spec: three levels
@@ -103,7 +103,7 @@ The scrim is a flat dim with no blur. A full-viewport blur is the most expensive
 ```
 
 - [Adaptation] Increased contrast follows Apple's described behavior: black or white with a contrasting border.
-- [Adaptation] Reduced transparency goes fully opaque. Apple says "frostier", but Pagehaven cannot verify how frosty is enough over an unknown site.
+- [Adaptation] Reduced transparency goes fully opaque. Apple says "frostier", but Rótulo cannot verify how frosty is enough over an unknown site.
 - [Adaptation] Without `backdrop-filter`, the solid default declared before `@supports` applies.
 - [Adaptation] Dark chrome, if it ships, uses `rgb(28 28 30 / 0.80)` with `#f5f5f5` and `#c4c4c4` inks.
 
@@ -156,7 +156,7 @@ Rules that follow:
 
 - [Adaptation] Adopt leading, center and trailing as three floating islands, and keep every action at every width.
 - [Adaptation] Do not copy the menu-bar rule. A web page has none. The command palette is the secondary index, and every action stays visible without it.
-- [Adaptation] Do not copy toolbar customization. Apple recommends it for apps used "for long periods of time." Pagehaven owners edit occasionally.
+- [Adaptation] Do not copy toolbar customization. Apple recommends it for apps used "for long periods of time." Rótulo owners edit occasionally.
 
 ### Spec
 
@@ -231,8 +231,8 @@ Basis: settings is a dialog because typed multi-section forms exceed Apple's "sm
 
 - [Official] In Keynote, Replace sits in the Format sidebar's Image tab, placeholders carry a Replace Image button in the corner, and "The new image retains the dimensions of the original." ([Keynote for Mac](https://support.apple.com/guide/keynote/tan77aea6844/mac), [Keynote for iPad](https://support.apple.com/guide/keynote-ipad/tan77aea6844/ipados))
 - [Official] Pages' Format sidebar "Shows formatting options for whatever is selected," and shows document controls when nothing is selected ([Pages sidebars](https://support.apple.com/guide/pages/tan0870f78aa/mac)). On iPad the same controls open from a Format button and adapt to the selection type ([Pages for iPad](https://support.apple.com/guide/pages-ipad/tana29e86157/ipados)). Freeform: "Select the text box, then use the formatting tools" ([Freeform](https://support.apple.com/guide/freeform/frfm8d145c1b/mac)).
-- [Adaptation] Pagehaven takes three things from these apps. A replaced image keeps its frame, which Pagehaven already does. Controls follow the selection. A Replace button sits on the selected image's corner as well as in the contextual bar.
-- [Adaptation] Pagehaven does not take a persistent inspector. Apple's inspector is a trailing pane ([Panels](https://developer.apple.com/design/human-interface-guidelines/panels)). The brief removes permanent panels, and Apple suggests popovers "when you want more room for content." Style opens as a popover from the contextual bar.
+- [Adaptation] Rótulo takes three things from these apps. A replaced image keeps its frame, which Rótulo already does. Controls follow the selection. A Replace button sits on the selected image's corner as well as in the contextual bar.
+- [Adaptation] Rótulo does not take a persistent inspector. Apple's inspector is a trailing pane ([Panels](https://developer.apple.com/design/human-interface-guidelines/panels)). The brief removes permanent panels, and Apple suggests popovers "when you want more room for content." Style opens as a popover from the contextual bar.
 
 ---
 

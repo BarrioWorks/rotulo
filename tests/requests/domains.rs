@@ -34,12 +34,12 @@ async fn dns_answer(
 async fn dns_server() -> DnsServer {
     let records = Records::default();
     let url =
-        std::env::var("PAGEHAVEN_DOH").unwrap_or_else(|_| "http://127.0.0.1:5399/dns-query".into());
+        std::env::var("ROTULO_DOH").unwrap_or_else(|_| "http://127.0.0.1:5399/dns-query".into());
     let url = reqwest::Url::parse(&url).unwrap();
     assert_eq!(
         url.host_str(),
         Some("127.0.0.1"),
-        "DNS fixture needs a loopback PAGEHAVEN_DOH"
+        "DNS fixture needs a loopback ROTULO_DOH"
     );
     let listener =
         tokio::net::TcpListener::bind(("127.0.0.1", url.port_or_known_default().unwrap()))
@@ -84,11 +84,11 @@ async fn dns_proof_routes_custom_domains_and_new_ownership_takes_over_atomically
         let p = Project::new(&server, &alice).await;
         let d = add(&server, &p, &alice).await;
         assert_eq!(d["status"], "pending");
-        assert_eq!(d["txt_name"], "_pagehaven.www.harbor-example.com");
+        assert_eq!(d["txt_name"], "_rotulo.www.harbor-example.com");
         assert!(d["txt_value"]
             .as_str()
             .unwrap()
-            .starts_with("pagehaven-verify="));
+            .starts_with("rotulo-verify="));
         let pending = check(&server, &p, &alice, &d["id"]).await;
         assert_eq!(pending["status"], "pending");
         assert!(pending["last_error"].as_str().unwrap().contains("TXT"));
@@ -207,24 +207,20 @@ async fn disabled_custom_domains_refuse_changes_routing_and_certificates() {
         let p = Project::new(&server, &cookie).await;
         p.publish(&server, &cookie).await;
         let d = add(&server, &p, &cookie).await;
-        pagehaven::db::exec(
+        rotulo::db::exec(
             &ctx.db,
             "UPDATE domains SET verified_at = ? WHERE id = ?",
-            [
-                pagehaven::db::now().into(),
-                d["id"].as_i64().unwrap().into(),
-            ],
+            [rotulo::db::now().into(), d["id"].as_i64().unwrap().into()],
         )
         .await
         .unwrap();
         hosted(&server, "www.harbor-example.com:5150", "/")
             .await
             .assert_status_ok();
-        let mut settings = pagehaven::state::Pagehaven::from(&ctx).settings.clone();
+        let mut settings = rotulo::state::Rotulo::from(&ctx).settings.clone();
         settings.custom_domains = false;
-        ctx.shared_store.insert(Arc::new(
-            pagehaven::state::Pagehaven::new(settings).unwrap(),
-        ));
+        ctx.shared_store
+            .insert(Arc::new(rotulo::state::Rotulo::new(settings).unwrap()));
         for (route, body) in [
             (
                 "domains".to_owned(),

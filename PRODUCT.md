@@ -12,26 +12,26 @@ web
 
 Owners of small businesses (a bakery, a studio, a local service) whose website was made for them by an AI tool such as Lovable, Bolt, v0 or Claude, or comes from a Bootstrap or Tailwind template. They are not technical. They want to change a headline, a photo, a phone number or a button link without writing a prompt, spending AI credits or hiring a developer, and then put the site online at an address they can share.
 
-They use Pagehaven on a computer. The editor needs a screen at least 900 px wide; the dashboard, sign in and import pages also work on a phone. **(assumption)** Most sessions are short and occasional: a few changes, then publish.
+They use Rótulo on a computer. The editor needs a screen at least 900 px wide; the dashboard, sign in and import pages also work on a phone. **(assumption)** Most sessions are short and occasional: a few changes, then publish.
 
 A second audience, for now: venture investors watching a live demo (`docs/demo-script.md`). They judge whether the product looks finished and trustworthy within a few minutes. **(assumption)** They watch on a laptop or a projected 1280 to 1440 px wide screen.
 
 ## Product Purpose
 
-Pagehaven is the ownership layer for an AI-built or template website. The owner imports the finished site as a ZIP, changes it by clicking on the page, and publishes it to a Pagehaven address (`<name>.<sites domain>`) or their own domain. Every publish is a saved version, and any earlier version can be made live again.
+Rótulo is the ownership layer for an AI-built or template website. The owner imports the finished site as a ZIP, changes it by clicking on the page, and publishes it to a Rótulo address (`<name>.<sites domain>`) or their own domain. Every publish is a saved version, and any earlier version can be made live again.
 
 Success: a nontechnical owner imports a site, makes a change and publishes it without help, and trusts that nothing on the site changed except what they touched.
 
 ## Positioning
 
-Pagehaven edits the HTML the site actually ships, in place. It does not convert the page into a template model, it does not re-generate it with AI, and it never runs uploaded code on the server. Untouched markup stays exactly as it was. Hosting, versions and rollback come with it.
+Rótulo edits the HTML the site actually ships, in place. It does not convert the page into a template model, it does not re-generate it with AI, and it never runs uploaded code on the server. Untouched markup stays exactly as it was. Hosting, versions and rollback come with it.
 
 ## Operating Context
 
-- Import: a ZIP exported from the tool that made the site. Pagehaven checks every file, leaves out server code and secrets, and reports what it skipped. Source projects that need a build are refused with an explanation.
+- Import: a ZIP exported from the tool that made the site. Rótulo checks every file, leaves out server code and secrets, and reports what it skipped. Source projects that need a build are refused with an explanation.
 - Edit: the real page in a sandboxed preview, with a floating toolbar for text, images, links, styles (colors, size, weight, alignment, spacing) and top-level sections (hide, duplicate, move, remove). Pages can be added, renamed and deleted. Undo and redo cover every change. Changes save automatically.
 - Publish: one click. Each publish creates an immutable version. Version history offers "Make live" (rollback) and "Edit this version".
-- Own domain: the owner adds a hostname and gets the exact DNS records to create; Pagehaven checks them. In production this stays off until TLS is approved.
+- Own domain: the owner adds a hostname and gets the exact DNS records to create; Rótulo checks them. In production this stays off until TLS is approved.
 - Two tabs on the same site: a stale change is refused and the user is told to reload.
 
 ## Capabilities and Constraints
@@ -43,7 +43,7 @@ Pagehaven edits the HTML the site actually ships, in place. It does not convert 
 
 ## Brand Commitments
 
-- Name: Pagehaven. Logo and favicon in `assets/static/img/logo.svg` and `favicon.svg`.
+- Name: Rótulo. Logo and favicon in `assets/static/img/logo.svg` and `favicon.svg`.
 - Tagline in use: "Your AI-built website. Yours to edit."
 - Original visual brief: inspired by Craft.do but original. Warm whites, soft shadows, rounded controls. Calm and premium. Made for nontechnical people.
 - Voice: plain, short sentences. Second person ("your website"). No developer jargon in the interface: say "website", "page", "address", "version", "publish", not "deploy", "build", "slug", "release", "DOM".
@@ -57,10 +57,10 @@ Pagehaven edits the HTML the site actually ships, in place. It does not convert 
 
 1. The owner's site stays theirs. Never change what they did not touch, and always offer a way back (undo, versions).
 2. Plain words over technical accuracy in the interface. Technical detail goes in docs, not on screen.
-3. The site is the hero. Pagehaven's own interface stays quiet around the owner's page.
+3. The site is the hero. Rótulo's own interface stays quiet around the owner's page.
 4. Show state honestly: saved or not, published or not, which version is live.
 5. Safe by construction. Security boundaries are never traded for convenience.
 
 ## Accessibility & Inclusion
 
-WCAG 2.2 AA for Pagehaven's own interface: text contrast, visible keyboard focus, labelled controls, hit targets of at least 24 px (44 px where touch is likely), and `prefers-reduced-motion` respected. **(assumption)** Some owners are older and less confident with computers, so legible text sizes and clear wording matter more than density.
+WCAG 2.2 AA for Rótulo's own interface: text contrast, visible keyboard focus, labelled controls, hit targets of at least 24 px (44 px where touch is likely), and `prefers-reduced-motion` respected. **(assumption)** Some owners are older and less confident with computers, so legible text sizes and clear wording matter more than density.

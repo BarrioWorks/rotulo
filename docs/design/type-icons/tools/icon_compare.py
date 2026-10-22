@@ -30,7 +30,7 @@ for sid, c, l, t, p, action in GLYPHS:
     cells.append(f'<td>{filled(P / f"{p}.svg", 16)}{filled(P / f"{p}.svg", 20)}<code>{p}</code></td>')
     rows.append('<tr>' + ''.join(cells) + '</tr>')
 
-out.write_text(f'''<!doctype html><html lang="en"><meta charset="utf-8"><title>Pagehaven icon candidates</title>
+out.write_text(f'''<!doctype html><html lang="en"><meta charset="utf-8"><title>Rótulo icon candidates</title>
 <style>
 body{{margin:0;padding:32px;background:#f8f7f4;color:#1c1b18;font:14px/1.4 system-ui,sans-serif}}
 h1{{font-size:20px;margin:0 0 4px}} p{{margin:0 0 20px;color:#57534b;max-width:70ch}}
@@ -41,7 +41,7 @@ td svg{{display:inline-block;vertical-align:middle;margin-right:10px;color:#1c1b
 td.act{{width:270px}} code{{display:block;font:11px ui-monospace,monospace;color:#6f6a61;margin-top:2px}}
 .none{{color:#b0aa9f;font-size:12px}}
 </style>
-<h1>Icon candidates for every Pagehaven action</h1>
+<h1>Icon candidates for every Rótulo action</h1>
 <p>Current sprite at its real sizes (15 and 18 px, 1.7 stroke). Lucide and Tabler at the proposed 16 and 20 px with a 1.5 stroke. Phosphor Regular is filled outlines, so its weight cannot follow a CSS stroke token.</p>
 <table><tr><th>Action</th><th>Current sprite</th><th>Lucide (ISC)</th><th>Tabler (MIT)</th><th>Phosphor Regular (MIT)</th></tr>
 {''.join(rows)}</table></html>

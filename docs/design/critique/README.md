@@ -81,7 +81,7 @@ Landing scores 7 and 10 as n/a because it is a Persuade surface.
 | Identical dashboard cards | Acceptable. The structure repeats but thumbnails differ. |
 
 **Proof contract.**
-- The crop-mark selection with a named slug is implemented and is the most recognisable Pagehaven element. On full-bleed elements (the hero header, the site nav) the crop marks fall outside the canvas clip and the selection is a plain rectangle (`15-…png`, `42-…png`). Full-bleed sections are where owners click most.
+- The crop-mark selection with a named slug is implemented and is the most recognisable Rótulo element. On full-bleed elements (the hero header, the site nav) the crop marks fall outside the canvas clip and the selection is a plain rectangle (`15-…png`, `42-…png`). Full-bleed sections are where owners click most.
 - A 1 px cyan rule over a pale photo (the replacement hero, `34-…png`) is hard to see. The Proof table measured cyan against white and a dark photo, not against light cyan sky.
 - The comp's sidebar carried publishing state, versions and an Images count. The build moved those into popovers, as the editor spec asked, but left the sidebar with nothing in it.
 
@@ -179,7 +179,7 @@ Landing scores 7 and 10 as n/a because it is a Persuade surface.
 | A7 | 1.4.3, 1.4.11 Contrast | Pass on all samples. Pill text 5.11:1, zoom label 7.23:1, crumbs 8.87:1. The one failure Assessment B found, the `/` separator at 1.68:1, is `aria-hidden` and decorative. | Computed in page | Pass |
 | A8 | 2.5.8 Target Size | Pass for controls (30 × 30 icon buttons, 28 px swatches). The block-level site-address links in manage mode are 22 px tall at 390 px (Assessment B). | `44` | P3 |
 | A9 | 2.3.3, reduced motion | `app.css:173` zeroes the motion tokens, but `app.css:571` also forces every animation to 1 ms and one iteration. That freezes `.spinner` mid-turn. `agent.ts:84` handles the canvas overlay correctly. Keep the token approach and give loading a non-motion indicator rather than a global kill. | CSS read | P3 |
-| A10 | 1.3.1, 2.4.4 | Accessible names carry a stray comma and space: "Pagehaven , your websites" and "Agency , open in the editor". | Accessibility tree | P3 |
+| A10 | 1.3.1, 2.4.4 | Accessible names carry a stray comma and space: "Rótulo , your websites" and "Agency , open in the editor". | Accessibility tree | P3 |
 | A11 | 3.3.1, 3.3.3 | Pass. Register, sign-in, wrong ZIP and delete-confirm errors are specific, inline and tied to fields. | `03`, `06`, `47`, `51` | Pass |
 
 ## 7. Broken or confusing behaviour

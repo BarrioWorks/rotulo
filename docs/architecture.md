@@ -1,9 +1,9 @@
-# Pagehaven architecture
+# Rótulo architecture
 
-Pagehaven imports a finished static website from a ZIP, lets its owner edit it visually, and publishes immutable releases. One Loco process serves three kinds of host. The backend never runs uploaded code.
+Rótulo imports a finished static website from a ZIP, lets its owner edit it visually, and publishes immutable releases. One Loco process serves three kinds of host. The backend never runs uploaded code.
 
 ```
-                 Browser                                    One Loco process (pagehaven-cli start)
+                 Browser                                    One Loco process (rotulo-cli start)
  ┌──────────────────────────────────────┐        ┌──────────────────────────────────────────────────┐
  │ App origin  https://APP              │ HTTPS  │ host router (src/hosts.rs)                        │
  │  dashboard, import, editor shell     ├───────►│  APP            → app routes, session cookie      │
@@ -78,16 +78,16 @@ The server parses the page, checks that the target exists and accepts that opera
 
 The editor agent (`frontend/agent/agent.ts`) runs inside the preview. It draws hover and selection outlines, runs `contenteditable` text editing, and reports what the user selected. The toolbar lives in the app page. Messages in both directions are checked for the exact origin, the exact window, and the message schema. The parent never inserts markup from a message into its own DOM.
 
-**Compatibility boundary.** Pagehaven edits the HTML that the server sends. Content that the site's JavaScript creates at runtime (a client-rendered single-page app, a carousel's clones) has no `data-ph-id` and is not editable. The editor says so when such an element is clicked. Pagehaven never compiles source code.
+**Compatibility boundary.** Rótulo edits the HTML that the server sends. Content that the site's JavaScript creates at runtime (a client-rendered single-page app, a carousel's clones) has no `data-ph-id` and is not editable. The editor says so when such an element is clicked. Rótulo never compiles source code.
 
 ## Import security model
 
 See `docs/threat-model.md` for the threats. The importer (`src/import/`) treats the upload as hostile:
 
 1. Streams the upload to a 0700 staging directory and stops at the size limit.
-2. Reads the ZIP with Pagehaven's own strict reader over `flate2`: one end-of-central-directory record, central directory exactly where it claims, no ZIP64, no multi-disk, no encryption, methods `stored` and `deflate` only, local headers that agree with the central directory, entries that do not overlap, CRC-32 checked.
+2. Reads the ZIP with Rótulo's own strict reader over `flate2`: one end-of-central-directory record, central directory exactly where it claims, no ZIP64, no multi-disk, no encryption, methods `stored` and `deflate` only, local headers that agree with the central directory, entries that do not overlap, CRC-32 checked.
 3. Normalizes each path itself: no absolute paths, drive letters, backslashes, `.` or `..`, empty segments, control characters, or case-insensitive duplicates. Depth and length are limited. Unix symlinks and device entries are rejected.
-4. Classifies every file by an explicit policy table: hosted (with Pagehaven's own MIME type), skipped with a reason (server code, secrets, archives, OS junk, unknown types), and checks content against the claimed type (UTF-8 for text, magic bytes for images and fonts).
+4. Classifies every file by an explicit policy table: hosted (with Rótulo's own MIME type), skipped with a reason (server code, secrets, archives, OS junk, unknown types), and checks content against the claimed type (UTF-8 for text, magic bytes for images and fonts).
 5. Inflates with running counters for per-file and total bytes, so lying size fields cannot exceed the limits.
 6. Finds the site root (`.`, `dist`, `build`, `out`, `_site`, `public`, a single wrapper folder), rejects source projects that need a build, and asks the user when two roots are equally plausible.
 7. Checks that local scripts and stylesheets referenced from every page exist. Missing images and fonts become warnings.
@@ -105,15 +105,15 @@ Limits live in config (`settings.limits`). A global semaphore bounds concurrent 
 
 Rollback points `live_release_id` at an earlier release. Releases are never modified. "Edit this version" restores a release into the draft as one undoable edit.
 
-Published responses carry Pagehaven's MIME type, `X-Content-Type-Options: nosniff`, and a referrer policy. There is no directory listing and nothing on the user-content hosts runs on the server.
+Published responses carry Rótulo's MIME type, `X-Content-Type-Options: nosniff`, and a referrer policy. There is no directory listing and nothing on the user-content hosts runs on the server.
 
 ## Custom domains
 
-The owner adds a hostname. Pagehaven shows a TXT record (`_pagehaven.<host>` = `pagehaven-verify=<token>`) and a CNAME or A record. "Check" resolves the TXT record over DNS-over-HTTPS. A verified hostname routes to that project only, and a hostname can be verified by one project at a time. A newer successful proof by another owner takes it over, because current DNS control is the proof of ownership. The reverse proxy asks `GET /internal/tls/allowed?domain=` before it issues a certificate, so certificates are only issued for verified hostnames.
+The owner adds a hostname. Rótulo shows a TXT record (`_rotulo.<host>` = `rotulo-verify=<token>`) and a CNAME or A record. "Check" resolves the TXT record over DNS-over-HTTPS. A verified hostname routes to that project only, and a hostname can be verified by one project at a time. A newer successful proof by another owner takes it over, because current DNS control is the proof of ownership. The reverse proxy asks `GET /internal/tls/allowed?domain=` before it issues a certificate, so certificates are only issued for verified hostnames.
 
 ## Frontend
 
-The app pages are Tera templates with a small amount of TypeScript. The editor and the agent are plain TypeScript compiled by `tsc` to ES modules in `assets/static/js/`. There is no framework and no runtime npm dependency. GrapesJS was not used: it converts imported pages into its own component model and re-renders them, which loses markup the owner did not touch, and it brings a large bundle for features Pagehaven does not offer.
+The app pages are Tera templates with a small amount of TypeScript. The editor and the agent are plain TypeScript compiled by `tsc` to ES modules in `assets/static/js/`. There is no framework and no runtime npm dependency. GrapesJS was not used: it converts imported pages into its own component model and re-renders them, which loses markup the owner did not touch, and it brings a large bundle for features Rótulo does not offer.
 
 ## Project deletion and storage gap
 

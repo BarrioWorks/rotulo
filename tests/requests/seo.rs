@@ -46,7 +46,7 @@ async fn rendered_metadata_and_private_response_policies() {
             r.assert_status_ok();
             let html = r.text();
             let document = scraper::Html::parse_document(&html);
-            let metadata = pagehaven::controllers::seo::metadata(ORIGIN);
+            let metadata = rotulo::controllers::seo::metadata(ORIGIN);
             let page = &metadata[key];
             let titles: Vec<_> = document
                 .select(&scraper::Selector::parse("head title").unwrap())

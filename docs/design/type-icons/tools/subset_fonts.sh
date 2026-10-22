@@ -1,5 +1,5 @@
 #!/bin/sh
-# Rebuild Pagehaven's two self-hosted font files from upstream sources.
+# Rebuild Rótulo's two self-hosted font files from upstream sources.
 # Usage: subset_fonts.sh <InterVariable.ttf> <Newsreader[opsz,wght].ttf> <out dir>
 # Needs fonttools and brotli in a throwaway venv (python3 -m venv v && v/bin/pip install fonttools brotli). Not an app dependency.
 # Sources: https://github.com/rsms/inter/releases (v4.1, SIL OFL 1.1)

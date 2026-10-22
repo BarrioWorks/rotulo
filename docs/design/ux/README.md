@@ -1,4 +1,4 @@
-# Pagehaven UX and interaction redesign
+# Rótulo UX and interaction redesign
 
 Subagent B (UX and interaction design). Owner of `docs/design/ux/` only. No app file was edited.
 
@@ -79,7 +79,7 @@ Evidence: `shots/09` to `shots/25`, `shots/28`.
 | 2 | Real world | 3 | Labels are plain ("Header", "Link", "Replace image"). The "Select parent" icon has no meaning for owners. |
 | 3 | Control and freedom | 3 | Undo and redo are solid. Clicking a portfolio card in edit mode opened the site's own modal, and Escape did not close it (`shots/14`). |
 | 4 | Consistency | 2 | There are two Publish buttons. The toolbar flips above or below and lands on content. Double-click edits text, but the toolbar also has "Edit text". |
-| 5 | Error prevention | 2 | "Remove section" is an unlabelled trash icon next to Hide. Colour swatches are Pagehaven's palette, not the site's. A phone-view edit silently changes the computer view too. |
+| 5 | Error prevention | 2 | "Remove section" is an unlabelled trash icon next to Hide. Colour swatches are Rótulo's palette, not the site's. A phone-view edit silently changes the computer view too. |
 | 6 | Recognition | 2 | Section actions are icon-only (`shots/20`). Shortcuts are invisible. The hero background photo and the portfolio grid photos look editable but are not. |
 | 7 | Efficiency | 2 | Ctrl+Z and Ctrl+Shift+Z work. There is no keyboard way to select anything on the page. |
 | 8 | Minimalist | 2 | The sidebar holds pages, publish, versions, DNS records, page settings, website settings and images at once. The toolbar and its panels cover the content being edited (`shots/10`, `shots/15`, `shots/17`). |
@@ -313,7 +313,7 @@ After a choice the canvas updates in place through `preview_image`. The rail sho
 
 **Why it hurts.** The owner sees a typo on their live site from their phone and cannot even roll back or open the history.
 
-**Redesigned interaction.** Under 900 px the editor route becomes **Manage**. It shows the site state pill, "View website", the address with Copy, and Publish with review. It also shows the History list with "Show visitors this version", and a note "To change text and pictures, open Pagehaven on a computer". On the dashboard, under 900 px, "Edit" is relabelled "Manage", and every target is 44 px.
+**Redesigned interaction.** Under 900 px the editor route becomes **Manage**. It shows the site state pill, "View website", the address with Copy, and Publish with review. It also shows the History list with "Show visitors this version", and a note "To change text and pictures, open Rótulo on a computer". On the dashboard, under 900 px, "Edit" is relabelled "Manage", and every target is 44 px.
 
 **Touches.** `assets/views/projects/editor.html`, `frontend/editor/main.ts` (a reduced boot that skips the canvas), `frontend/editor/publish.ts`, `assets/views/projects/index.html`.
 
@@ -360,7 +360,7 @@ After a choice the canvas updates in place through `preview_image`. The rail sho
 
 - The toolbar's first chip ("Text", "Link", "Header") looks like a button but is a label. For links, the label "Link" and the button "Link" sit side by side.
 - Double-click to edit is the fast path but is never taught. Spec S3 adds a hover hint.
-- Style swatches are a fixed Pagehaven palette. Lead with "Colours on this page", sampled by the agent from computed colours of the selected element's siblings and section. Keep the fixed palette under "More colours".
+- Style swatches are a fixed Rótulo palette. Lead with "Colours on this page", sampled by the agent from computed colours of the selected element's siblings and section. Keep the fixed palette under "More colours".
 - Phone view is a preview, but edits made there apply everywhere. Show a one-time note: "Changes made here also apply on computers."
 - After an inline edit commits, a stale hover outline stays on the previous element (`shots/30`).
 
@@ -372,7 +372,7 @@ After a choice the canvas updates in place through `preview_image`. The rail sho
 |---|---|---|
 | **Always visible: top bar** | Back to websites. Site name. Page switcher ("Home ▾"). Undo and Redo. Computer/Phone toggle. Edit/Preview toggle. Site state pill (holds save state). Publish button. | One filled primary button, and only when there is something to publish. |
 | **Always visible: left rail, Pages mode** | Page list with current page highlighted. "Not linked" tags. Add page. Each row's "More" menu (Rename, Duplicate, Page settings, Delete). | The rail is navigation only. Publishing never appears here. |
-| **Always visible: canvas** | The site at true width. | Nothing Pagehaven draws covers the selection. |
+| **Always visible: canvas** | The site at true width. | Nothing Rótulo draws covers the selection. |
 | **On hover** | Outline plus a name tab ("Heading", "Picture", "Section"). After 600 ms of hover on a text element, a hint "Double-click to edit". It is shown at most three times per user, tracked in `localStorage`. | |
 | **On selection: contextual toolbar** | At most 5 labelled verbs for the element type, then "More". Text: Edit text, Style, Link (if applicable), More. Picture: Replace, Description, More. Link or button: Edit text, Link, Style, More. Section: Move up, Move down, Duplicate, Hide, More (Remove, Background, Select inside). | Verbs only. Anything with fields opens in the rail. |
 | **On panel open: left rail, Inspector mode** | Style (colour, size, weight, alignment, spacing). Link (page on this site, web address, email, phone, new tab). Picture (replace, from your website, description). Section (background colour or photo). | Back arrow and Escape return to Pages mode. Focus moves into the inspector, and returns to the toolbar verb on close. |
@@ -616,7 +616,7 @@ Owners press Ctrl+S by habit, so it is intercepted and shown as reassurance, nev
 
 ### S15. Manage mode under 900 px
 
-- **Layout:** one column. It shows the site state pill, the address with Copy and View, the Publish review (S2) inline, and History (S9) inline with full-width rows. A note at the bottom reads "To change text and pictures, open Pagehaven on a computer."
+- **Layout:** one column. It shows the site state pill, the address with Copy and View, the Publish review (S2) inline, and History (S9) inline with full-width rows. A note at the bottom reads "To change text and pictures, open Rótulo on a computer."
 - **Behaviour:** it boots without the canvas or agent (`main.ts` checks `matchMedia('(max-width: 899px)')`). If the viewport grows past 900 px it offers "Open the editor" rather than hot-swapping.
 - **Touches:** `editor.html`, `main.ts`, `publish.ts`, `app.css` (layout).
 

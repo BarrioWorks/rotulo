@@ -11,13 +11,13 @@
   {% block styles %}<link rel="stylesheet" href="/static/css/screens.css">{% endblock styles %}
   <script type="module" src="/static/js/app.js"></script>
   {% block head %}{% endblock head %}
-  <title>{% if seo is defined %}{{ seo.title }}{% else %}{% block title %}Pagehaven{% endblock title %}{% endif %}</title>
+  <title>{% if seo is defined %}{{ seo.title }}{% else %}{% block title %}Rótulo{% endblock title %}{% endif %}</title>
   <meta name="robots" content="{% if seo is defined %}{{ seo.robots }}{% else %}noindex, nofollow{% endif %}">
   {% if seo is defined %}
   <meta name="description" content="{{ seo.description }}">
   <link rel="canonical" href="{{ seo.canonical }}">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Pagehaven">
+  <meta property="og:site_name" content="Rótulo">
   <meta property="og:title" content="{{ seo.title }}">
   <meta property="og:description" content="{{ seo.description }}">
   <meta property="og:url" content="{{ seo.canonical }}">
@@ -25,12 +25,12 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Pagehaven. Edit your HTML website without code.">
+  <meta property="og:image:alt" content="Rótulo. Edit your HTML website without code.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ seo.title }}">
   <meta name="twitter:description" content="{{ seo.description }}">
   <meta name="twitter:image" content="{{ seo_pages.image }}">
-  <meta name="twitter:image:alt" content="Pagehaven. Edit your HTML website without code.">
+  <meta name="twitter:image:alt" content="Rótulo. Edit your HTML website without code.">
   {% endif %}
 </head>
 <body class="{% block body_class %}{% endblock body_class %}">

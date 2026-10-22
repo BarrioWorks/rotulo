@@ -1,4 +1,4 @@
-"""Build a Pagehaven sprite from Lucide glyphs.
+"""Build a Rótulo sprite from Lucide glyphs.
 
 Usage: python3 -I build_sprite.py <lucide-static/icons dir> <out.svg>
 Get the icons dir with `npm pack lucide-static` in an empty temp dir and untar it. Nothing is installed.

@@ -72,7 +72,7 @@ From the landing page to a live site with one heading edit took **14 actions** (
 
 **Trust** (`signup-1280`, `signin-390`, `landing-1280`)
 
-- Observed. The sign up form says "Pagehaven can't reset it yet." The sign in page says "Pagehaven can't reset passwords yet. If you can't sign in, create a new account with another email address."
+- Observed. The sign up form says "Rótulo can't reset it yet." The sign in page says "Rótulo can't reset passwords yet. If you can't sign in, create a new account with another email address."
 - Observed. The footer has no privacy policy, terms, contact, company name or abuse address.
 - Observed. There are no testimonials, counts or logos. That is correct, because none exist (`PRODUCT.md`). The page has nothing in their place, such as a named maker or a plain statement of limits.
 - Observed, positive. "Only what you touch changes" and "Every version is kept" are true and well chosen (read: `src/publish.rs:71`, `src/publish.rs:297`).
@@ -93,11 +93,11 @@ From the landing page to a live site with one heading edit took **14 actions** (
 **Import completion** (`import-idle-1280`, `import-progress-1280`, `import-success-1280`, `import-refused-1280`, `import-success-landwind-834`)
 
 - Observed. The drop zone states "A ZIP of your finished website · up to 25 MB · up to 2,000 files". The static-only rule sits in a closed disclosure, "How do I get a ZIP of my website?", below the drop zone.
-- Observed. That disclosure says, under "Lovable, Bolt or v0": "These tools often download the project's code, which Pagehaven can't use on its own. Ask the tool, or whoever built your site, for the built website folder, then ZIP that folder."
-- Observed. The refusal for `vite-source-only.zip` reads "This ZIP isn't a website Pagehaven can use. This ZIP contains source code rather than a finished website. Export the built static website files and try again." It opens the help automatically and focuses "Try another file". The text is clear. It leaves a nontechnical owner with no path they can follow.
-- Read. Even a correctly built React or Vite export imports with a warning and cannot be edited: "This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files." (`src/import/mod.rs:186`).
+- Observed. That disclosure says, under "Lovable, Bolt or v0": "These tools often download the project's code, which Rótulo can't use on its own. Ask the tool, or whoever built your site, for the built website folder, then ZIP that folder."
+- Observed. The refusal for `vite-source-only.zip` reads "This ZIP isn't a website Rótulo can use. This ZIP contains source code rather than a finished website. Export the built static website files and try again." It opens the help automatically and focuses "Try another file". The text is clear. It leaves a nontechnical owner with no path they can follow.
+- Read. Even a correctly built React or Vite export imports with a warning and cannot be edited: "This website builds its pages in the browser with JavaScript. It will publish and work, but Rótulo can only edit text and images that are written in its HTML files." (`src/import/mod.rs:186`).
 - Observed. Success says "Furnace Hill Coffee. 7 pages imported and ready to edit." with a thumbnail and Open editor. Landwind adds "We left out 4 files your website doesn't need." with a details list (`.gitignore`, `LICENSE`, `package-lock.json`, `package.json`). It does not say what to edit first.
-- Observed. The progress state says "Checking your files… Pagehaven is checking every file. Server code and private files are left out." The bar shows almost no fill while checking.
+- Observed. The progress state says "Checking your files… Rótulo is checking every file. Server code and private files are left out." The bar shows almost no fill while checking.
 
 **First edit** (`editor-resting-1280`, `editor-heading-selected-1280`, `editor-resting-834`)
 
@@ -140,11 +140,11 @@ Cognitive load on the landing and import screens passes 7 of 8 checks. The failu
 
 Ranked by effect on reaching a published site, not on clicks.
 
-1. **The most common AI builders produce ZIPs that Pagehaven refuses or cannot edit.** Lovable, Bolt and v0 downloads are described by the app itself as "the project's code" (observed). Built React or Vite exports import but are not editable (read, `src/import/mod.rs:186`). The share of the target audience with such exports is an assumption. It is probably large for segment (a), because these are the tools named in `PRODUCT.md`. This caps import completion and first edit for the brief's headline audience.
+1. **The most common AI builders produce ZIPs that Rótulo refuses or cannot edit.** Lovable, Bolt and v0 downloads are described by the app itself as "the project's code" (observed). Built React or Vite exports import but are not editable (read, `src/import/mod.rs:186`). The share of the target audience with such exports is an assumption. It is probably large for segment (a), because these are the tools named in `PRODUCT.md`. This caps import completion and first edit for the brief's headline audience.
 2. **The requirement is discovered after sign up.** The landing page never says "HTML pages" before the CTA, never names compatible sources, never names incompatible ones (observed). An owner learns it at the drop zone help or from a refusal, after giving an email (observed). Error prevention 2 of 4.
 3. **No account recovery, and the app says so.** Sign in tells a locked-out owner to "create a new account with another email address" (observed). Their published site stays in the old account (read: no transfer exists). This hurts trust at sign up and return editing, and it blocks handing a site to a client.
 4. **The landing page does not argue the case.** One CTA, three short sections, no objection handling (price, compatibility, ownership, what happens to my site), no repeat CTA, no closing section (observed). CRO dimensions 6 and 3.
-5. **The landing page promises custom domains that production keeps off.** "Publish… at a Pagehaven address or on your own domain" (observed). `PAGEHAVEN_CUSTOM_DOMAINS` defaults to `false` in production, which blocks adding, verifying and serving custom hosts (read, `config/production.yaml:48`, `src/app.rs:135`). A claim the product cannot keep at launch.
+5. **The landing page promises custom domains that production keeps off.** "Publish… at a Rótulo address or on your own domain" (observed). `ROTULO_CUSTOM_DOMAINS` defaults to `false` in production, which blocks adding, verifying and serving custom hosts (read, `config/production.yaml:48`, `src/app.rs:135`). A claim the product cannot keep at launch.
 6. **The demo invites an action it cannot perform.** "Click the headline, choose Edit text and type" sits under a static picture (observed). The best moment to show time to value is spent on a picture.
 7. **No price and no "free" anywhere** (observed). Billing does not exist (read). Visitors cannot tell whether trying costs money. Zero-price and regret aversion both point the same way: an honest "free while in early access" (if the owner confirms it) removes a question that otherwise stops sign up (assumption).
 8. **Two avoidable hops between sign up and first edit.** Sign up lands on an empty dashboard, not the drop zone, and import success needs Open editor before the site appears (observed). The success screen does not name a first edit (observed).
@@ -166,7 +166,7 @@ This section is reasoning from the brief, `PRODUCT.md`, the code and general beh
 - **Jobs to be done.** Change a headline, price, photo or phone number today, without writing a prompt, spending credits or asking a developer. Put the site at an address they can share. Keep it working.
 - **Objections.** "Will my site work here?" "Is this another tool I have to learn?" "Will it break what the AI made?" "What does it cost?" "Can I get my site back out?"
 - **Perceived risks.** Breaking a site they cannot rebuild (loss aversion; regret aversion). Losing access (made concrete by the no-reset message). Being locked in. Publishing a mistake in public.
-- **Switching costs.** Low in money, high in effort and know-how: they must turn a builder project into a static ZIP, which the app's own help says the main tools do not give by default. The status quo is cheap: prompt the AI again and pay credits. Sunk cost and the IKEA effect make them attached to the site they generated, which works for Pagehaven only if the site arrives intact.
+- **Switching costs.** Low in money, high in effort and know-how: they must turn a builder project into a static ZIP, which the app's own help says the main tools do not give by default. The status quo is cheap: prompt the AI again and pay credits. Sunk cost and the IKEA effect make them attached to the site they generated, which works for Rótulo only if the site arrives intact.
 - **Models that apply.** Activation energy (the export step is the real barrier), status-quo bias (re-prompting is familiar), mental accounting (credits feel like a running cost, a subscription feels like a new one), zero-price effect, pratfall effect (stating the static-only limit openly can raise trust).
 
 ### (b) Freelancers and small agencies handing sites to clients
@@ -174,7 +174,7 @@ This section is reasoning from the brief, `PRODUCT.md`, the code and general beh
 - **Jobs to be done.** Hand a finished site to a client who can change words and photos without calling them, and without breaking layout. Host it without running a server. Keep a way back when the client errs.
 - **Objections.** "Can I manage several client sites?" "Can the client log in without seeing my other sites?" "Can I hand over or transfer ownership?" "Can I bill the client for it, or white-label it?" "What if the client locks themselves out?"
 - **Perceived risks.** Client breaks the site and blames them. Support calls they cannot bill. A tool that disappears and strands client sites.
-- **Switching costs.** Lower know-how cost: they can run a build, use HTML templates, or use static generators whose output is real HTML and fully editable. Higher workflow cost: today Pagehaven has no teams, no client seats, no transfer and no password reset (read, section 4), so a freelancer must create the client's account and hand over a password that cannot be recovered.
+- **Switching costs.** Lower know-how cost: they can run a build, use HTML templates, or use static generators whose output is real HTML and fully editable. Higher workflow cost: today Rótulo has no teams, no client seats, no transfer and no password reset (read, section 4), so a freelancer must create the client's account and hand over a password that cannot be recovered.
 - **Models that apply.** Authority and liking (they recommend tools to clients, so the tool reflects on them), loss aversion on reputation, the default effect (whatever they set up, the client keeps).
 
 ### Recommendation
@@ -200,7 +200,7 @@ The copywriter may make claims only from this list. Paths are relative to the re
 - Rejects absolute paths, `..`, backslashes, control characters, case-insensitive duplicates, symlinks and special files (`src/import/zip.rs:78`, `:193`, `:245`).
 - Rejects encrypted ZIPs, compression other than stored or deflate, ZIP64 and multi-disk archives. Files over 1 MiB may not expand more than 200 times. Actual sizes and CRCs are checked during extraction (`src/import/zip.rs:118`, `:169`, `:222`, `:256`, `:310`).
 - Keeps HTML, CSS, JS, JSON, source maps, manifests, text, Markdown, CSV, XML, SVG, raster images, icons, fonts, MP4 and WebM video, MP3, Ogg and WAV audio, PDF and WASM. Text must be UTF-8. Binary files get signature checks (`src/import/policy.rs:288`, `:144`).
-- Leaves out, and lists with a reason: server code and configuration, secrets and credential files, keys and databases, version control, nested archives, OS and editor junk, `node_modules`, package manifests and source or tooling files. `.well-known` and `__pagehaven` are reserved. There is no blanket dotfile rule (`src/import/policy.rs:37`, `:201`, `:318`). Secrets and server code also raise a warning (`src/controllers/api.rs:229`).
+- Leaves out, and lists with a reason: server code and configuration, secrets and credential files, keys and databases, version control, nested archives, OS and editor junk, `node_modules`, package manifests and source or tooling files. `.well-known` and `__rotulo` are reserved. There is no blanket dotfile rule (`src/import/policy.rs:37`, `:201`, `:318`). Secrets and server code also raise a warning (`src/controllers/api.rs:229`).
 - Finds the site at the top, inside one wrapper folder, or in `dist` or `build`. Offers a folder choice when several roots are valid (`src/import/detect.rs:17`, `:75`, `:132`).
 - Refuses source projects with exactly: "This ZIP contains source code rather than a finished website. Export the built static website files and try again." (`src/import/mod.rs:78`). A source ZIP with no `index.html` anywhere gets: "We couldn't find a website in this ZIP. It needs an index.html file at the top level or in a dist or build folder." (`src/import/detect.rs:146`).
 - Fails the import if a local script or stylesheet is missing. Warns about other missing files (`src/import/mod.rs:248`).
@@ -229,7 +229,7 @@ The copywriter may make claims only from this list. Paths are relative to the re
 - Up to five hostnames per website. The owner gets a TXT record to prove ownership and an A or CNAME record to point the name (`src/domains.rs:13`, `:89`).
 - Verification checks only the TXT record, by DNS over HTTPS. It does not check the A or CNAME record (`src/domains.rs:159`).
 - There is no certificate status. TLS is expected from an external proxy (`src/app.rs:164`).
-- **Off by default in production** (`PAGEHAVEN_CUSTOM_DOMAINS=false`, `config/production.yaml:48`). Do not claim custom domains until the owner switches it on.
+- **Off by default in production** (`ROTULO_CUSTOM_DOMAINS=false`, `config/production.yaml:48`). Do not claim custom domains until the owner switches it on.
 
 ### Limits
 
@@ -313,7 +313,7 @@ A visitor drops a ZIP without an account. The server runs the same import into t
 
 - **Storage.** Each anonymous import could keep up to 25 MiB of ZIP and 100 MiB of content with no account to limit it and no cleanup to remove it.
 - **CPU.** Uploads finish before the two-job limit applies. Import decompresses, parses every HTML file, checks references and hashes files. There is no time limit per job.
-- **Phishing.** Anyone could host a fake login page on a Pagehaven preview origin and send the link around for 12 hours. Forms are blocked, but scripts can still send typed data to any HTTPS server.
+- **Phishing.** Anyone could host a fake login page on a Rótulo preview origin and send the link around for 12 hours. Forms are blocked, but scripts can still send typed data to any HTTPS server.
 - **Identity churn.** Sign up has no email check, so per-account limits are already cheap to reset. An anonymous cookie would be cheaper still.
 
 ### What would need to change, with a rough cost
@@ -332,7 +332,7 @@ These are estimates in engineer-days, not measurements.
 
 ### Verdict: against, for now
 
-Do not build anonymous upload in this round. It costs two to three engineer-weeks, adds a phishing surface on Pagehaven's own domains, and adds storage with no owner. The question it answers ("will my site work?") can be answered more cheaply:
+Do not build anonymous upload in this round. It costs two to three engineer-weeks, adds a phishing surface on Rótulo's own domains, and adds storage with no owner. The question it answers ("will my site work?") can be answered more cheaply:
 
 1. **A compatibility check that runs only in the visitor's browser.** The page reads the ZIP locally, looks for `index.html`, `package.json`, `src/` components and an empty app root, and says "This will work", "This is source code" or "This will publish but only some text will be editable" before sign up. Nothing is uploaded, so there is no storage, CPU or phishing risk. It cannot repeat every server check (UTF-8, signatures, missing files), so the server stays the authority. Rough cost: 3 to 5 days if the detection rules are ported to TypeScript and kept in step with `src/import/detect.rs` by shared test fixtures (guess).
 2. **A real, editable demo on the landing page**, using a fixture site and no upload, so the "Click the headline" caption becomes true. Cost depends on the design chosen in Phase B and is not estimated here.

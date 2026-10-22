@@ -223,7 +223,7 @@ def main():
     try:
         code, _, customer_body = fetch(base + '/robots.txt', {'Host': 'furnace-hill-coffee.sites.localhost:5150'})
         check(customer_body != robots_body and (base + '/sitemap.xml').encode() not in customer_body,
-              'customer host does not receive Pagehaven robots', str(code))
+              'customer host does not receive Rótulo robots', str(code))
     except OSError as error:
         check(False, 'customer host request', str(error))
     print(f'SUMMARY {checks - failed} PASS, {failed} FAIL')

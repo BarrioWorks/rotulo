@@ -16,7 +16,7 @@ use crate::{
     error::ApiError,
     import::policy::FileKind,
     preview, projects, publish,
-    state::{self, Pagehaven},
+    state::{self, Rotulo},
 };
 
 fn user_json(user: &auth::User) -> serde_json::Value {
@@ -35,7 +35,7 @@ async fn home(
     if user.is_some() {
         return Ok(Redirect::to("/projects").into_response());
     }
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     format::render().view(
         &view,
         "home.html",
@@ -75,7 +75,7 @@ async fn register(
     headers: axum::http::HeaderMap,
     Form(form): Form<RegisterForm>,
 ) -> Result<Response> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let again = |error: String| {
         format::render().view(
             &view,
@@ -129,7 +129,7 @@ async fn login(
     headers: axum::http::HeaderMap,
     Form(form): Form<LoginForm>,
 ) -> Result<Response> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     // Echo what was typed so a typo can be fixed, unless it is too long to be an email.
     let typed = if form.email.len() <= 254 {
         form.email.as_str()
@@ -183,7 +183,7 @@ async fn logout(State(ctx): State<AppContext>, jar: CookieJar) -> Result<Respons
             .await
             .map_err(internal)?;
     }
-    let secure = Pagehaven::from(&ctx).settings.secure_cookies;
+    let secure = Rotulo::from(&ctx).settings.secure_cookies;
     Ok((jar.add(auth::removal_cookie(secure)), Redirect::to("/")).into_response())
 }
 
@@ -204,7 +204,7 @@ pub fn ago(ts: i64) -> String {
 }
 
 /// A preview URL for the image that best represents the home page, if it is an image file.
-pub async fn thumbnail(ctx: &AppContext, state: &Pagehaven, project_id: i64) -> Option<String> {
+pub async fn thumbnail(ctx: &AppContext, state: &Rotulo, project_id: i64) -> Option<String> {
     let index = drafts::file(&ctx.db, project_id, "index.html")
         .await
         .ok()??;
@@ -250,7 +250,7 @@ async fn dashboard(
     ViewEngine(view): ViewEngine<TeraView>,
     PageUser(user): PageUser,
 ) -> Result<Response> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let list = projects::list(&ctx.db, &user).await.map_err(internal)?;
     let mut cards = Vec::new();
     for project in &list {
@@ -296,7 +296,7 @@ async fn new_project(
     ViewEngine(view): ViewEngine<TeraView>,
     PageUser(user): PageUser,
 ) -> Result<Response> {
-    let limits = &Pagehaven::from(&ctx).settings.limits;
+    let limits = &Rotulo::from(&ctx).settings.limits;
     format::render().view(
         &view,
         "projects/new.html",

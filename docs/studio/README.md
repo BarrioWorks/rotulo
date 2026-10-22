@@ -1,6 +1,6 @@
 # Studio redesign
 
-Pagehaven's editor and screens, redesigned as a canvas-first creative app. The brief is `brief.md`, the plan and progress are in `PLAN.md`, and the settled decisions are in `decisions.md`.
+Rótulo's editor and screens, redesigned as a canvas-first creative app. The brief is `brief.md`, the plan and progress are in `PLAN.md`, and the settled decisions are in `decisions.md`.
 
 No participants took part in any test. Every task count and finding comes from agents walking the app in a browser, labelled measured, observed, read or inferred where it appears.
 

@@ -8,8 +8,8 @@ cargo build -q --release
 DIR=$(mktemp -d)
 PORT=5151
 A=http://127.0.0.1:$PORT
-PORT=$PORT PAGEHAVEN_APP_ORIGIN=$A PAGEHAVEN_DATA_DIR="$DIR/data" DATABASE_URL="sqlite://$DIR/db.sqlite?mode=rwc" LOG_LEVEL=warn \
-  target/release/pagehaven-cli start > "$DIR/server.log" 2>&1 &
+PORT=$PORT ROTULO_APP_ORIGIN=$A ROTULO_DATA_DIR="$DIR/data" DATABASE_URL="sqlite://$DIR/db.sqlite?mode=rwc" LOG_LEVEL=warn \
+  target/release/rotulo-cli start > "$DIR/server.log" 2>&1 &
 SERVER=$!
 trap 'kill $SERVER 2>/dev/null' EXIT
 for _ in $(seq 1 60); do curl -s -o /dev/null "$A/_ping" && break; sleep 0.5; done

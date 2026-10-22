@@ -27,11 +27,11 @@ use crate::{
     paths, preview, projects,
     projects::Project,
     publish,
-    state::{self, Pagehaven},
+    state::{self, Rotulo},
     store::Blob,
 };
 
-fn project_json(state: &Pagehaven, project: &Project, live: Option<&publish::Release>) -> Value {
+fn project_json(state: &Rotulo, project: &Project, live: Option<&publish::Release>) -> Value {
     json!({
         "pid": project.pid,
         "name": project.name,
@@ -42,11 +42,7 @@ fn project_json(state: &Pagehaven, project: &Project, live: Option<&publish::Rel
     })
 }
 
-async fn page_list(
-    ctx: &AppContext,
-    state: &Pagehaven,
-    project: &Project,
-) -> ApiResult<Vec<Value>> {
+async fn page_list(ctx: &AppContext, state: &Rotulo, project: &Project) -> ApiResult<Vec<Value>> {
     let mut pages = Vec::new();
     for file in drafts::files(&ctx.db, project.id)
         .await?
@@ -128,7 +124,7 @@ async fn create_import(
     mut multipart: Multipart,
 ) -> ApiResult<Response> {
     // A refused request records nothing, so the limiter also bounds the event writes.
-    Pagehaven::from(&ctx).limit(state::IMPORT, &user.id.to_string())?;
+    Rotulo::from(&ctx).limit(state::IMPORT, &user.id.to_string())?;
     let mut reason = None;
     let result = import_request(&ctx, &user, &mut multipart, &mut reason).await;
     if !result
@@ -159,7 +155,7 @@ async fn import_request(
     multipart: &mut Multipart,
     reason: &mut Option<&'static str>,
 ) -> ApiResult<Response> {
-    let state = Pagehaven::from(ctx);
+    let state = Rotulo::from(ctx);
     let limits = state.settings.limits.clone();
     if projects::count(&ctx.db, user).await? >= limits.projects_per_user {
         return Err(ApiError::Rejected {
@@ -334,7 +330,7 @@ async fn editor_state(
     ApiUser(user): ApiUser,
     Path(pid): Path<String>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let live = publish::live(&ctx.db, &project).await?;
     Ok(Json(json!({
@@ -387,7 +383,7 @@ where
     F: FnOnce(Project) -> Fut,
     Fut: std::future::Future<Output = ApiResult<T>>,
 {
-    let state = Pagehaven::from(ctx);
+    let state = Rotulo::from(ctx);
     state.limit(state::EDIT, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, user, pid).await?;
     let lock = state.project_lock(project.id);
@@ -404,7 +400,7 @@ where
 /// The page's HTML. Parse it only where no `.await` follows, because a parsed page is not `Send`.
 async fn read_page(
     ctx: &AppContext,
-    state: &Pagehaven,
+    state: &Rotulo,
     project: &Project,
     path: &str,
 ) -> ApiResult<String> {
@@ -417,7 +413,7 @@ async fn read_page(
     Ok(String::from_utf8_lossy(&state.store.read(&file.blob)?).into_owned())
 }
 
-fn store_page(state: &Pagehaven, path: &str, document: &Document) -> ApiResult<Change> {
+fn store_page(state: &Rotulo, path: &str, document: &Document) -> ApiResult<Change> {
     document.validate_depth()?;
     let bytes = document.serialize().into_bytes();
     let len = bytes.len() as i64;
@@ -428,7 +424,7 @@ fn store_page(state: &Pagehaven, path: &str, document: &Document) -> ApiResult<C
 }
 
 /// The site path of an uploaded image, and its blob, after checking it is a raster image.
-fn uploaded_image(state: &Pagehaven, upload: &str) -> ApiResult<(String, Blob, i64)> {
+fn uploaded_image(state: &Rotulo, upload: &str) -> ApiResult<(String, Blob, i64)> {
     let blob = Blob::parse(upload)
         .ok_or_else(|| ApiError::Invalid("Upload the image again.".to_owned()))?;
     let bytes = state
@@ -455,7 +451,7 @@ async fn create_edit(
     Path(pid): Path<String>,
     Json(body): Json<EditBody>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
     let applied = locked(ctx, &user, &pid, body.base_revision, |project| async move {
@@ -546,8 +542,7 @@ async fn history_step(
 ) -> ApiResult<Json<Value>> {
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, base, |project| async move {
-        let applied =
-            drafts::step(&ctx.db, &Pagehaven::from(ctx).store, &project, base, step).await?;
+        let applied = drafts::step(&ctx.db, &Rotulo::from(ctx).store, &project, base, step).await?;
         change_response(ctx, project.id, &applied).await
     })
     .await?;
@@ -578,7 +573,7 @@ async fn upload_image(
     Path(pid): Path<String>,
     mut multipart: Multipart,
 ) -> ApiResult<Response> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     state.limit(state::UPLOAD, &user.id.to_string())?;
     let max = state.settings.limits.image_bytes;
@@ -630,7 +625,7 @@ async fn add_page(
     Path(pid): Path<String>,
     Json(body): Json<AddPage>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, body.base_revision, |project| async move {
@@ -717,7 +712,7 @@ async fn rename_page(
     Path(pid): Path<String>,
     Json(body): Json<RenamePage>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, body.base_revision, |project| async move {
@@ -764,7 +759,7 @@ async fn delete_page(
     Path(pid): Path<String>,
     Json(body): Json<DeletePage>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let user_id = user.id;
     let ctx = &ctx;
     let value = locked(ctx, &user, &pid, body.base_revision, |project| async move {
@@ -807,7 +802,7 @@ async fn assets(
     ApiUser(user): ApiUser,
     Path(pid): Path<String>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let origin = preview::origin(&state, project.id);
     let list: Vec<Value> = drafts::files(&ctx.db, project.id)
@@ -840,7 +835,7 @@ async fn update_settings(
     Path(pid): Path<String>,
     Json(body): Json<SettingsBody>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let project = projects::update_settings(&ctx.db, &project, &body.name, &body.slug).await?;
     let live = publish::live(&ctx.db, &project).await?;
@@ -861,7 +856,7 @@ async fn delete_project(
     Path(pid): Path<String>,
     Json(body): Json<DeleteProject>,
 ) -> ApiResult<StatusCode> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let lock = state.project_lock(project.id);
@@ -892,7 +887,7 @@ async fn publish_draft(
     Path(pid): Path<String>,
     Json(body): Json<BaseBody>,
 ) -> ApiResult<Response> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     publish::ensure_publishable(&project)?;
@@ -917,7 +912,7 @@ async fn releases(
     ApiUser(user): ApiUser,
     Path(pid): Path<String>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     Ok(Json(
         json!({"releases": publish::list(&ctx.db, &project).await?, "site_url": state.settings.site_origin(&project.slug)}),
@@ -929,7 +924,7 @@ async fn activate_release(
     ApiUser(user): ApiUser,
     Path((pid, number)): Path<(String, i64)>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     state.limit(state::PUBLISH, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     publish::ensure_publishable(&project)?;
@@ -944,7 +939,7 @@ async fn restore_release(
     Path((pid, number)): Path<(String, i64)>,
     Json(body): Json<BaseBody>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let project = projects::reload(&ctx.db, project.id).await?;
     if project.revision != body.base_revision {
@@ -973,7 +968,7 @@ async fn domains_list(
     ApiUser(user): ApiUser,
     Path(pid): Path<String>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let list = domains::list(&ctx.db, &state.settings, &project).await?;
     let cname = format!("{}.{}", project.slug, state.settings.sites_domain);
@@ -993,7 +988,7 @@ async fn domains_add(
     Path(pid): Path<String>,
     Json(body): Json<DomainBody>,
 ) -> ApiResult<Response> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     let domain = domains::add(&ctx.db, &state.settings, &project, &body.hostname).await?;
     Ok((StatusCode::CREATED, Json(json!({"domain": domain}))).into_response())
@@ -1004,7 +999,7 @@ async fn domains_check(
     ApiUser(user): ApiUser,
     Path((pid, id)): Path<(String, i64)>,
 ) -> ApiResult<Json<Value>> {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     state.limit(state::DNS_CHECK, &user.id.to_string())?;
     let project = projects::owned(&ctx.db, &user, &pid).await?;
     Ok(Json(

@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 {% block head %}{% set_global seo = seo_pages.register %}{% endblock head %}
-{% block title %}Create your account · Pagehaven{% endblock title %}
+{% block title %}Create your account · Rótulo{% endblock title %}
 {% block body_class %}auth-body{% endblock body_class %}
 {% block body %}
 <div class="auth-layout">
@@ -28,7 +28,7 @@
       </div>
       <div class="field">
         <label class="label" for="password">Password</label>
-        <p class="hint" id="password-hint">Use 10–200 characters. Keep your password safe: Pagehaven cannot reset passwords yet.</p>
+        <p class="hint" id="password-hint">Use 10–200 characters. Keep your password safe: Rótulo cannot reset passwords yet.</p>
         <div class="password-field">
           <input class="input" id="password" name="password" type="password" autocomplete="new-password" required minlength="10" maxlength="200"{% if name %} autofocus{% endif %} aria-describedby="password-hint password-error" data-validate>
           <button class="btn btn-ghost btn-sm password-toggle" type="button" aria-controls="password" aria-pressed="false" data-show-password hidden><span data-show-word>Show</span><span class="visually-hidden"> password</span></button>

@@ -1,4 +1,4 @@
-//! Process-wide Pagehaven state: settings, file store, and the bounds on expensive work.
+//! Process-wide Rótulo state: settings, file store, and the bounds on expensive work.
 
 use std::{
     collections::HashMap,
@@ -49,7 +49,7 @@ impl Limiter {
     }
 }
 
-pub struct Pagehaven {
+pub struct Rotulo {
     pub settings: Settings,
     pub store: Store,
     jobs: Arc<Semaphore>,
@@ -107,7 +107,7 @@ pub const DNS_CHECK: Rate = Rate {
     per: Duration::from_secs(60 * 60),
 };
 
-impl Pagehaven {
+impl Rotulo {
     pub fn new(settings: Settings) -> std::io::Result<Self> {
         let store = Store::open(&settings.data_dir)?;
         Ok(Self {
@@ -122,7 +122,7 @@ impl Pagehaven {
     pub fn from(ctx: &AppContext) -> Arc<Self> {
         ctx.shared_store
             .get::<Arc<Self>>()
-            .expect("Pagehaven state is initialized in after_context")
+            .expect("Rótulo state is initialized in after_context")
     }
 
     /// Waits briefly for a slot for an import or publish, so a burst cannot exhaust the server.

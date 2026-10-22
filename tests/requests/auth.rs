@@ -98,7 +98,7 @@ async fn sign_in_attempts_are_limited_per_address_and_never_echo_a_huge_email() 
 #[serial_test::serial]
 async fn home_shows_the_configured_sites_domain_without_a_port() {
     request_with_create_db::<App, _, _>(|server, ctx| async move {
-        let domain = pagehaven::state::Pagehaven::from(&ctx)
+        let domain = rotulo::state::Rotulo::from(&ctx)
             .settings
             .sites_domain
             .clone();

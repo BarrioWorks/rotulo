@@ -1,6 +1,6 @@
 use loco_rs::cli;
 use migration::Migrator;
-use pagehaven::app::App;
+use rotulo::app::App;
 
 #[tokio::main]
 async fn main() -> loco_rs::Result<()> {

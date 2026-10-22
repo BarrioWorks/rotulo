@@ -50,38 +50,38 @@ type Step =
   | { kind: "done"; result: Success };
 
 const SKIP_WORDS: Record<SkipReason, string> = {
-  server_code: "Server code, which a website on Pagehaven can't run",
+  server_code: "Server code, which a website on Rótulo can't run",
   secret: "Private files such as passwords or keys, left out to keep them safe",
   archive: "ZIP files inside your ZIP",
   system_junk: "Hidden files your computer adds, like .DS_Store",
-  reserved: "Files with names Pagehaven needs for itself",
+  reserved: "Files with names Rótulo needs for itself",
   source: "Files only needed to build the website",
   unsupported: "File types a website can't use",
 };
 
 const ERROR_TITLES: Record<string, string> = {
-  invalid_archive: "This ZIP isn't a website Pagehaven can use",
+  invalid_archive: "This ZIP isn't a website Rótulo can use",
   too_large: "This website is too big",
   rate_limited: "Too many imports in a short time",
-  busy: "Pagehaven is busy right now",
+  busy: "Rótulo is busy right now",
   project_limit: "You've reached your website limit",
 };
 
 const MB = 1024 * 1024;
 
-/** A problem we can see before uploading, or null when the file looks like a ZIP Pagehaven can take. */
+/** A problem we can see before uploading, or null when the file looks like a ZIP Rótulo can take. */
 export function precheck(file: { name: string; size: number }, limitBytes: number): string | null {
   if (!/\.zip$/i.test(file.name)) return "That isn't a ZIP file. Choose the .zip file you downloaded for your website.";
   if (file.size === 0) return "This file is empty. Try downloading your website again.";
   if (file.size > limitBytes) {
-    return `This file is ${(file.size / MB).toFixed(1)} MB. The most Pagehaven can import is ${limitBytes / MB} MB.`;
+    return `This file is ${(file.size / MB).toFixed(1)} MB. The most Rótulo can import is ${limitBytes / MB} MB.`;
   }
   return null;
 }
 
 export const SOURCE_ONLY = "This ZIP contains source code rather than a finished website. Export the built static website files and try again.";
-const SCRIPT_BUILT = "This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.";
-const UNSURE = "We couldn't finish the quick check. You can upload anyway and let Pagehaven check the files.";
+const SCRIPT_BUILT = "This website builds its pages in the browser with JavaScript. It will publish and work, but Rótulo can only edit text and images that are written in its HTML files.";
+const UNSURE = "We couldn't finish the quick check. You can upload anyway and let Rótulo check the files.";
 
 type ZipEntry = { name: string; method: number; flags: number; size: number; compressedSize: number; offset: number };
 export type ZipCheck = { kind: "ready" } | { kind: "refused" | "warning" | "unsure"; message: string };
@@ -457,7 +457,7 @@ function boot(root: HTMLElement): void {
     xhr.addEventListener("error", () => {
       if (current !== xhr) return;
       current = null;
-      show({ kind: "error", title: "The upload didn't finish", message: "We couldn't reach Pagehaven. Check your internet connection and try again.", help: false });
+      show({ kind: "error", title: "The upload didn't finish", message: "We couldn't reach Rótulo. Check your internet connection and try again.", help: false });
     });
     xhr.send(form);
   }

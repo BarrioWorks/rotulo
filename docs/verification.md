@@ -1,6 +1,6 @@
 # Verification
 
-What was checked, how, and what is still open. Dates are 2026-10-19 and 2026-10-20 (UTC). Nothing here was measured on the production VPS; Pagehaven is not deployed.
+What was checked, how, and what is still open. Dates are 2026-10-19 and 2026-10-20 (UTC). Nothing here was measured on the production VPS; Rótulo is not deployed.
 
 ## Automated tests
 

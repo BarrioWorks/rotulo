@@ -28,7 +28,7 @@ pub enum ApiError {
     },
     #[error("You're doing that too often. Please wait a minute and try again.")]
     RateLimited,
-    #[error("Pagehaven is busy with other websites right now. Please try again in a moment.")]
+    #[error("Rótulo is busy with other websites right now. Please try again in a moment.")]
     Busy,
     #[error("Something went wrong on our side. Please try again.")]
     Internal(String),

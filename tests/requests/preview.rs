@@ -16,21 +16,20 @@ async fn preview_hosts_isolate_drafts_and_only_serve_read_only_content_with_secu
         r.assert_header("referrer-policy", "no-referrer");
         r.assert_header("x-content-type-options", "nosniff");
         assert!(!r.headers().contains_key("set-cookie"));
-        assert!(r.text().contains("data-pagehaven=\"agent\""));
+        assert!(r.text().contains("data-rotulo=\"agent\""));
         assert!(r.text().contains("data-ph-can="));
         if std::path::Path::new("assets/static/js/agent/agent.js").exists() {
-            let r = hosted(&server, &p.preview, "/__pagehaven/agent/agent.js").await;
+            let r = hosted(&server, &p.preview, "/__rotulo/agent/agent.js").await;
             r.assert_status_ok();
             assert!(r
                 .text()
-                .starts_with("const PAGEHAVEN_APP_ORIGIN = \"http://127.0.0.1:5150\";"));
+                .starts_with("const ROTULO_APP_ORIGIN = \"http://127.0.0.1:5150\";"));
         } else {
             eprintln!("SKIP compiled agent response: assets/static/js/agent/agent.js is absent");
         }
-        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let state = rotulo::state::Rotulo::from(&ctx);
         let id = project_id(&ctx, &p.pid).await;
-        let expired =
-            pagehaven::preview::token(&state.settings.secret, id, pagehaven::db::now() - 86400);
+        let expired = rotulo::preview::token(&state.settings.secret, id, rotulo::db::now() - 86400);
         for host in [
             format!("{expired}.preview.localhost:5150"),
             "forged.preview.localhost:5150".into(),

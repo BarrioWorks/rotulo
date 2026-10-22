@@ -105,7 +105,7 @@ async function request(method, path, body, parse) {
         return undefined;
     const parsed = parse(json);
     if (parsed === undefined)
-        throw new ApiError(response.status, "bad_response", "Pagehaven sent an unexpected answer. Please reload the page.");
+        throw new ApiError(response.status, "bad_response", "Rótulo sent an unexpected answer. Please reload the page.");
     return parsed;
 }
 const base = (pid) => `/api/projects/${encodeURIComponent(pid)}`;
@@ -149,7 +149,7 @@ export const api = {
             if (parsed)
                 resolve(parsed);
             else
-                reject(new ApiError(xhr.status, "bad_response", "Pagehaven sent an unexpected answer. Please reload the page."));
+                reject(new ApiError(xhr.status, "bad_response", "Rótulo sent an unexpected answer. Please reload the page."));
         });
         xhr.send(form);
     }),

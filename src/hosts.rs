@@ -1,4 +1,4 @@
-//! Which of Pagehaven's three kinds of host a request is for.
+//! Which of Rótulo's three kinds of host a request is for.
 
 use crate::settings::Settings;
 
@@ -78,11 +78,11 @@ mod tests {
 
     fn settings() -> Settings {
         Settings {
-            app_origin: "https://pagehaven.app".to_owned(),
+            app_origin: "https://rotulo.barrio.works".to_owned(),
             scheme: "https".to_owned(),
             public_port: None,
-            sites_domain: "pagehaven.site".to_owned(),
-            preview_domain: "preview.pagehaven.site".to_owned(),
+            sites_domain: "rotulo.site".to_owned(),
+            preview_domain: "preview.rotulo.site".to_owned(),
             data_dir: "data".into(),
             secret: "x".repeat(32),
             secure_cookies: true,
@@ -99,13 +99,13 @@ mod tests {
     #[test]
     fn hosts_route_to_the_app_previews_sites_and_custom_domains() {
         let s = settings();
-        assert_eq!(classify(Some("pagehaven.app"), &s), Host::App);
+        assert_eq!(classify(Some("rotulo.barrio.works"), &s), Host::App);
         assert_eq!(
-            classify(Some("abc-123.preview.pagehaven.site"), &s),
+            classify(Some("abc-123.preview.rotulo.site"), &s),
             Host::Preview("abc-123".to_owned())
         );
         assert_eq!(
-            classify(Some("harbor.pagehaven.site"), &s),
+            classify(Some("harbor.rotulo.site"), &s),
             Host::Site("harbor".to_owned())
         );
         assert_eq!(
@@ -113,10 +113,10 @@ mod tests {
             Host::Custom("www.harborbakery.com".to_owned())
         );
         assert_eq!(
-            classify(Some("a.b.pagehaven.site"), &s),
-            Host::Custom("a.b.pagehaven.site".to_owned())
+            classify(Some("a.b.rotulo.site"), &s),
+            Host::Custom("a.b.rotulo.site".to_owned())
         );
-        assert_eq!(classify(Some("pagehaven.site"), &s), Host::Invalid);
+        assert_eq!(classify(Some("rotulo.site"), &s), Host::Invalid);
         assert_eq!(classify(Some("10.0.0.1"), &s), Host::Invalid);
         assert_eq!(classify(Some("evil/../x"), &s), Host::Invalid);
         assert_eq!(classify(None, &s), Host::Invalid);

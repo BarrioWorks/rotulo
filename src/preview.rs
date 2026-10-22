@@ -12,10 +12,10 @@ use hmac::{Hmac, Mac};
 use loco_rs::app::AppContext;
 use sha2::Sha256;
 
-use crate::{document::Document, drafts, import::policy::FileKind, paths, state::Pagehaven};
+use crate::{document::Document, drafts, import::policy::FileKind, paths, state::Rotulo};
 
 const LIFETIME_SECONDS: i64 = 12 * 60 * 60;
-pub const AGENT_PATH: &str = "/__pagehaven/agent/agent.js";
+pub const AGENT_PATH: &str = "/__rotulo/agent/agent.js";
 
 fn base32(bytes: &[u8]) -> String {
     const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz234567";
@@ -85,13 +85,13 @@ pub fn verify(secret: &str, token: &str, now: i64) -> Option<i64> {
     (genuine && expires > now).then_some(project_id)
 }
 
-pub fn origin(state: &Pagehaven, project_id: i64) -> String {
+pub fn origin(state: &Rotulo, project_id: i64) -> String {
     state
         .settings
         .preview_origin(&token(&state.settings.secret, project_id, crate::db::now()))
 }
 
-fn headers(response: &mut Response, state: &Pagehaven) {
+fn headers(response: &mut Response, state: &Rotulo) {
     let app = state.settings.app_origin.trim_end_matches('/');
     let policy = format!(
         "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https:; \
@@ -133,9 +133,9 @@ fn agent_dir() -> PathBuf {
     Path::new("assets/static/js").to_path_buf()
 }
 
-/// Editor scripts under `/__pagehaven/`, from the compiled frontend.
-async fn editor_script(state: &Pagehaven, path: &str) -> Response {
-    let Some(rest) = path.strip_prefix("__pagehaven/") else {
+/// Editor scripts under `/__rotulo/`, from the compiled frontend.
+async fn editor_script(state: &Rotulo, path: &str) -> Response {
+    let Some(rest) = path.strip_prefix("__rotulo/") else {
         return respond(StatusCode::NOT_FOUND, "text/plain", "Not found");
     };
     if !rest.ends_with(".js") || rest.split('/').any(|s| s.is_empty() || s.starts_with('.')) {
@@ -144,10 +144,10 @@ async fn editor_script(state: &Pagehaven, path: &str) -> Response {
     let Ok(source) = tokio::fs::read_to_string(agent_dir().join(rest)).await else {
         return respond(StatusCode::NOT_FOUND, "text/plain", "Not found");
     };
-    let body = if format!("/__pagehaven/{rest}") == AGENT_PATH {
+    let body = if format!("/__rotulo/{rest}") == AGENT_PATH {
         let origin =
             serde_json::to_string(state.settings.app_origin.trim_end_matches('/')).expect("string");
-        format!("const PAGEHAVEN_APP_ORIGIN = {origin};\n{source}")
+        format!("const ROTULO_APP_ORIGIN = {origin};\n{source}")
     } else {
         source
     };
@@ -157,7 +157,7 @@ async fn editor_script(state: &Pagehaven, path: &str) -> Response {
 pub fn read_only() -> Response {
     let mut response = (
         StatusCode::METHOD_NOT_ALLOWED,
-        "Websites on Pagehaven are read-only.",
+        "Websites on Rótulo are read-only.",
     )
         .into_response();
     response.headers_mut().insert(
@@ -168,20 +168,20 @@ pub fn read_only() -> Response {
 }
 
 pub async fn serve(ctx: &AppContext, token: &str, uri_path: &str) -> Response {
-    let state = Pagehaven::from(ctx);
+    let state = Rotulo::from(ctx);
     let mut response = serve_inner(ctx, &state, token, uri_path).await;
     headers(&mut response, &state);
     response
 }
 
-async fn serve_inner(ctx: &AppContext, state: &Pagehaven, token: &str, uri_path: &str) -> Response {
+async fn serve_inner(ctx: &AppContext, state: &Rotulo, token: &str, uri_path: &str) -> Response {
     let Some(project_id) = verify(&state.settings.secret, token, crate::db::now()) else {
         return respond(StatusCode::NOT_FOUND, "text/html; charset=utf-8", EXPIRED);
     };
     let Some(path) = paths::from_request(uri_path) else {
         return respond(StatusCode::BAD_REQUEST, "text/plain", "Bad path");
     };
-    if path.starts_with("__pagehaven/") {
+    if path.starts_with("__rotulo/") {
         return editor_script(state, &path).await;
     }
     let mut found = None;
@@ -231,7 +231,7 @@ async fn serve_inner(ctx: &AppContext, state: &Pagehaven, token: &str, uri_path:
     respond(status, kind.mime(), bytes)
 }
 
-const EXPIRED: &str = "<!doctype html><meta charset=utf-8><title>Preview expired</title><p style=\"font:16px system-ui;margin:3rem\">This preview link has expired. Reopen the website in Pagehaven.</p>";
+const EXPIRED: &str = "<!doctype html><meta charset=utf-8><title>Preview expired</title><p style=\"font:16px system-ui;margin:3rem\">This preview link has expired. Reopen the website in Rótulo.</p>";
 
 #[cfg(test)]
 mod tests {

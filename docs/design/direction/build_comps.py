@@ -159,7 +159,7 @@ SIDEBAR = f"""
   <section class="sec">
     <h2 class="sec-h">Publishing</h2>
     <div class="state"><span class="dot" aria-hidden="true"></span><span>3 changes not published<small>Visitors still see version 3</small></span></div>
-    <div class="addr">{ic('globe','icon sm')}<a href="#">agency.pagehaven.site</a></div>
+    <div class="addr">{ic('globe','icon sm')}<a href="#">agency.rotulo.site</a></div>
     <ul class="versions" role="list">
       <li><span class="num">Version 3</span><span class="live">{ic('check','icon sm')}Live</span><time>Today, 10:42</time><a class="act" href="#">Edit this version</a></li>
       <li><span class="num">Version 2</span><span></span><time>Yesterday, 16:05</time><a class="act" href="#">Make live</a></li>
@@ -190,7 +190,7 @@ TOOLBAR = f"""
 def editor(d):
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agency · Pagehaven ({d['title']} comp)</title>
+<title>Agency · Rótulo ({d['title']} comp)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{d['fonts']}" rel="stylesheet">
 <style>{d['tokens']}{BASE_CSS}{d['css']}</style></head>
@@ -238,9 +238,9 @@ def editor(d):
 
 CARDS = [
     dict(name="Agency", thumb="../assets/thumb-agency.png", pill='<span class="pill pill-warn"><span class="dot"></span>3 changes not published</span>',
-         meta="Edited 4 minutes ago · 3 pages", addr="agency.pagehaven.site", domain=None),
+         meta="Edited 4 minutes ago · 3 pages", addr="agency.rotulo.site", domain=None),
     dict(name="Harbor Bakery", thumb=None, pill='<span class="pill pill-live"><span class="dot"></span>Published</span>',
-         meta="Edited yesterday · 5 pages", addr="harbor-bakery.pagehaven.site", domain="www.harborbakery.com"),
+         meta="Edited yesterday · 5 pages", addr="harbor-bakery.rotulo.site", domain="www.harborbakery.com"),
     dict(name="Landwind", thumb="../assets/thumb-landwind.png", pill='<span class="pill pill-draft"><span class="dot"></span>Not published yet</span>',
          meta="Imported 12 Oct · 1 page", addr=None, domain=None),
 ]
@@ -268,13 +268,13 @@ def dashboard(d):
     cards = "\n".join(card_html(c, d) for c in CARDS)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Your websites · Pagehaven ({d['title']} comp)</title>
+<title>Your websites · Rótulo ({d['title']} comp)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="{d['fonts']}" rel="stylesheet">
 <style>{d['tokens']}{BASE_CSS}{d['dash_css']}</style></head>
 <body class="dash">{sprite()}
 <header class="app-head">
-  <a class="brand" href="#">{MARK}Pagehaven</a>
+  <a class="brand" href="#">{MARK}Rótulo</a>
   <nav class="nav" aria-label="Main"><a href="#" aria-current="page">Websites</a><a href="#">Help</a></nav>
   <div class="account"><span class="avatar">MO</span><span class="acct-name">Maya Ortiz</span>{ic('chevron-down','icon sm')}</div>
 </header>

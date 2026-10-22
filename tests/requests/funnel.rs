@@ -1,5 +1,5 @@
 use super::support::*;
-use pagehaven::db;
+use rotulo::db;
 
 async fn count(ctx: &loco_rs::app::AppContext, kind: &str) -> i64 {
     db::one(
@@ -62,7 +62,7 @@ async fn requests_record_each_milestone_once_and_daily_returns_are_unique() {
         assert_eq!(count(&ctx, "returned").await, 1);
         // A fresh process cache must still respect the database uniqueness constraint.
         ctx.shared_store
-            .insert(std::sync::Arc::new(pagehaven::events::Returned::default()));
+            .insert(std::sync::Arc::new(rotulo::events::Returned::default()));
         get(&server, "/projects", &cookie).await.assert_status_ok();
         assert_eq!(count(&ctx, "returned").await, 1);
         db::exec(
@@ -73,7 +73,7 @@ async fn requests_record_each_milestone_once_and_daily_returns_are_unique() {
         .await
         .unwrap();
         ctx.shared_store
-            .insert(std::sync::Arc::new(pagehaven::events::Returned::default()));
+            .insert(std::sync::Arc::new(rotulo::events::Returned::default()));
         get(&server, &project.api("editor"), &cookie)
             .await
             .assert_status_ok();
@@ -86,7 +86,7 @@ async fn requests_record_each_milestone_once_and_daily_returns_are_unique() {
         // Analytics storage failures cannot break an otherwise valid page request.
         db::exec(&ctx.db, "DROP TABLE events", []).await.unwrap();
         ctx.shared_store
-            .insert(std::sync::Arc::new(pagehaven::events::Returned::default()));
+            .insert(std::sync::Arc::new(rotulo::events::Returned::default()));
         get(&server, "/projects", &cookie).await.assert_status_ok();
     })
     .await;

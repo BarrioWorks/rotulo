@@ -1,8 +1,8 @@
-# Pagehaven — Complete UI/UX Redesign Using Impeccable
+# Rótulo — Complete UI/UX Redesign Using Impeccable
 
 Act as a world-class product designer, creative director, and senior frontend engineer.
 
-**Objective:** Completely redesign Pagehaven's visual identity, interface, typography, iconography, and interactions to create a distinctive, premium visual website editor.
+**Objective:** Completely redesign Rótulo's visual identity, interface, typography, iconography, and interactions to create a distinctive, premium visual website editor.
 
 The result should feel like a thoughtfully designed commercial product, not a generic SaaS dashboard or an AI-generated interface.
 
@@ -20,7 +20,7 @@ Assign these responsibilities:
 
 **Subagent A — Creative Direction**
 - Research distinctive contemporary software interfaces.
-- Establish Pagehaven's visual identity.
+- Establish Rótulo's visual identity.
 - Define the typography, colors, surfaces, proportions, and visual personality.
 - Challenge conventional SaaS design patterns.
 
@@ -78,7 +78,7 @@ Do not merely mention Impeccable in the final report. Apply its methodology to a
 
 ### Product context
 
-Pagehaven lets nontechnical users import static websites, edit them visually, and publish them.
+Rótulo lets nontechnical users import static websites, edit them visually, and publish them.
 
 There is no AI prompting in v1.
 
@@ -100,7 +100,7 @@ Do not reproduce their layouts, branding, or proprietary assets.
 
 ### Desired character
 
-Pagehaven should feel:
+Rótulo should feel:
 
 - Bold but not loud.
 - Minimal but not empty.
@@ -366,7 +366,7 @@ Keep interactions keyboard-accessible.
 
 ## 9. Make the interface distinctly recognizable
 
-A user should recognize Pagehaven from its interface, not only its logo.
+A user should recognize Rótulo from its interface, not only its logo.
 
 Consider developing a recognizable combination of:
 
@@ -421,7 +421,7 @@ Do not change data models without a functional requirement.
 
 Do not weaken the isolation of imported website previews.
 
-Imported website CSS must never leak into Pagehaven's interface, and Pagehaven's styling must not unintentionally modify imported websites.
+Imported website CSS must never leak into Rótulo's interface, and Rótulo's styling must not unintentionally modify imported websites.
 
 ## 11. Accessibility and usability
 
@@ -533,7 +533,7 @@ Provide:
 6. **Accessibility results:** Issues identified and corrected.
 7. **Implementation summary:** Files changed, dependencies, and remaining limitations.
 
-Document why the selected typography and icon system fit Pagehaven.
+Document why the selected typography and icon system fit Rótulo.
 
 Do not provide generic explanations such as "modern and clean."
 
@@ -541,7 +541,7 @@ Do not provide generic explanations such as "modern and clean."
 
 The redesign is complete when:
 
-- Pagehaven has a coherent, recognizable visual identity.
+- Rótulo has a coherent, recognizable visual identity.
 - Typography is consistent and expressive.
 - Icons use one visual language.
 - Every major screen follows the same design system.
@@ -554,7 +554,7 @@ The redesign is complete when:
 - The final result has been reviewed in a real browser.
 - Independent design critique has identified and resolved major weaknesses.
 
-**Success criterion:** Pagehaven should look and feel like a premium creative productivity application that could compete visually with established products such as Craft, Framer, and Linear, while remaining approachable for people who do not know how to code.
+**Success criterion:** Rótulo should look and feel like a premium creative productivity application that could compete visually with established products such as Craft, Framer, and Linear, while remaining approachable for people who do not know how to code.
 
 Start by auditing the complete current interface using Impeccable. Delegate independent design reviews, establish one distinctive visual direction, and implement the redesign end to end.
 

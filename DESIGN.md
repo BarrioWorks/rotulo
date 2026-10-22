@@ -1,5 +1,5 @@
 ---
-name: Pagehaven
+name: Rótulo
 description: Studio. Cool neutral surfaces, Onest and Haven Ultramarine around the owner’s website.
 colors:
   ws-ground: "#E8E8EC"
@@ -337,7 +337,7 @@ components:
     height: "36px"
 ---
 
-# Design System: Pagehaven
+# Design System: Rótulo
 
 ## Overview
 

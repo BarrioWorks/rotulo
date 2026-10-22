@@ -11,7 +11,7 @@ use crate::{
 };
 
 const PER_PROJECT: usize = 5;
-pub const TXT_PREFIX: &str = "_pagehaven";
+pub const TXT_PREFIX: &str = "_rotulo";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Domain {
@@ -31,7 +31,7 @@ fn from_row(row: &QueryResult, settings: &Settings) -> Result<Domain, ApiError> 
     Ok(Domain {
         id: row.try_get("", "id")?,
         txt_name: format!("{TXT_PREFIX}.{hostname}"),
-        txt_value: format!("pagehaven-verify={token}"),
+        txt_value: format!("rotulo-verify={token}"),
         status: if verified.is_some() {
             "verified"
         } else {
@@ -72,7 +72,10 @@ pub fn normalize(settings: &Settings, input: &str) -> Result<String, ApiError> {
         .iter()
         .any(|d| host == *d || host.ends_with(&format!(".{d}")))
     {
-        return Err(ApiError::Invalid("That address belongs to Pagehaven. Your website already has its own Pagehaven address.".to_owned()));
+        return Err(ApiError::Invalid(
+            "That address belongs to Rótulo. Your website already has its own Rótulo address."
+                .to_owned(),
+        ));
     }
     Ok(host)
 }
@@ -203,14 +206,14 @@ pub async fn check(
     .ok_or(ApiError::NotFound)?;
     let hostname: String = row.try_get("", "hostname")?;
     let token: String = row.try_get("", "token")?;
-    let expected = format!("pagehaven-verify={token}");
+    let expected = format!("rotulo-verify={token}");
     let outcome = txt_records(settings, &format!("{TXT_PREFIX}.{hostname}")).await;
     let tx = db.begin().await?;
     match outcome {
         Ok(records) if records.iter().any(|r| r.trim() == expected) => {
             db::exec(
                 &tx,
-                "UPDATE domains SET verified_at = NULL, last_error = 'Another Pagehaven website proved ownership of this domain.' WHERE hostname = ? AND id != ? AND verified_at IS NOT NULL",
+                "UPDATE domains SET verified_at = NULL, last_error = 'Another Rótulo website proved ownership of this domain.' WHERE hostname = ? AND id != ? AND verified_at IS NOT NULL",
                 [hostname.as_str().into(), id.into()],
             )
             .await?;

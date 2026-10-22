@@ -1,6 +1,6 @@
-# Pagehaven visual direction
+# Rótulo visual direction
 
-Creative direction for the Pagehaven redesign (brief: `docs/design/brief.md`). Three candidate worlds, each with an editor comp and a dashboard comp, and one recommendation with a full token proposal.
+Creative direction for the Rótulo redesign (brief: `docs/design/brief.md`). Three candidate worlds, each with an editor comp and a dashboard comp, and one recommendation with a full token proposal.
 
 Everything in this folder is a throwaway instrument for a decision. The comps load fonts from Google Fonts for evaluation only. The app must not, and no font is added to the app without the owner's dependency approval.
 
@@ -18,26 +18,26 @@ The canvas image is the Start Bootstrap Agency fixture as it renders in the edit
 
 ## 1. What the reference products get right
 
-Principles, not layouts. Nothing below asks Pagehaven to copy a screen, a logo or an asset.
+Principles, not layouts. Nothing below asks Rótulo to copy a screen, a logo or an asset.
 
 **Linear: hue is rationed, alignment is felt.** Linear's 2024 redesign cut how much of its brand blue fed into the neutral palette to get a "more neutral and timeless appearance", moved theme generation to LCH so different hues at one lightness look equally light, and reduced each theme to three inputs (base, accent, contrast), with contrast exposed for accessibility. Designers spent their time aligning labels, icons and buttons in the sidebar, work users "feel after a few minutes". ([Linear, How we redesigned the Linear UI](https://linear.app/now/how-we-redesigned-the-linear-ui))
-For Pagehaven: neutrals carry almost no brand hue, the palette is generated from a few role inputs, and the icon-to-label grid is part of the system rather than a polish step.
+For Rótulo: neutrals carry almost no brand hue, the palette is generated from a few role inputs, and the icon-to-label grid is part of the system rather than a polish step.
 
 **Figma UI3: the work is the hero, and muscle memory is a feature.** Figma explored a UI that "only revealed itself on hover", then settled on collapsible panels and a slim toolbar so "your work takes center stage". It made labels optional next to icons, and reverted a condensed auto-layout control "to preserve muscle memory". ([Figma, Inside the redesigned Figma](https://www.figma.com/blog/behind-our-redesign-ui3/))
-For Pagehaven: chrome should frame the site, not compete with it. Hiding everything until hover was tried and rejected by Figma. Pagehaven's owners are occasional users, so labels stay on by default.
+For Rótulo: chrome should frame the site, not compete with it. Hiding everything until hover was tried and rejected by Figma. Rótulo's owners are occasional users, so labels stay on by default.
 
 **Craft: a stationery page, not a dashboard.** Craft's surfaces read as paper with one confident type voice, and formatting lives in a contextual toolbar next to the block being edited. ([Craft app styles](https://support.craft.do/en/write-and-edit/styling/app-styles))
-For Pagehaven: the toolbar appears next to the thing clicked, and editing feels like marking up a page rather than operating a control panel.
+For Rótulo: the toolbar appears next to the thing clicked, and editing feels like marking up a page rather than operating a control panel.
 
 **Raycast: fast, simple, delightful, and shortcuts are taught in place.** Raycast's refresh enlarged the primary input, redrew icons as one outline family with a bolder stroke and consistent corner radii, and put a bottom action bar that shows each action with its shortcut. ([Raycast, A fresh look and feel](https://www.raycast.com/blog/a-fresh-look-and-feel))
-For Pagehaven: one icon family with one stroke and one corner rule, and keyboard shortcuts shown next to the action (in tooltips and menus) so owners discover them without a help page.
+For Rótulo: one icon family with one stroke and one corner rule, and keyboard shortcuts shown next to the action (in tooltips and menus) so owners discover them without a help page.
 
 **Framer: the canvas is the real page.** Framer edits the page that publishes, not a model of it. ([Framer design pages](https://www.framer.com/solutions/design-tool/))
-For Pagehaven, which edits the HTML the site actually ships, selection must be drawn in a way that reads on any site (dark photo hero, white Tailwind landing, saturated brand color) without tinting it.
+For Rótulo, which edits the HTML the site actually ships, selection must be drawn in a way that reads on any site (dark photo hero, white Tailwind landing, saturated brand color) without tinting it.
 
 Five rules follow for every direction:
 
-1. The owner's site is the only colorful thing on screen. Pagehaven's chrome gets hue only for state (saved, unpublished, error), the primary action and selection.
+1. The owner's site is the only colorful thing on screen. Rótulo's chrome gets hue only for state (saved, unpublished, error), the primary action and selection.
 2. Selection must stay visible on any site. One mark has to read on white and on a dark photograph, so it either clears 3:1 on both by itself or carries a keyline.
 3. Labels beat icons for occasional users. Icon-only is reserved for universally known actions (undo, redo, back, more, device size) and always has a tooltip and an accessible name.
 4. One stroke, one corner rule, one type family for the interface. A second family only when it does a job the first cannot (addresses and DNS records in mono).
@@ -47,7 +47,7 @@ Five rules follow for every direction:
 
 Impeccable's `new-work` flow for a replacement world, Operate mode. The world may lend only type, palette, density and one signature move. Layout, navigation and controls stay standard.
 
-- Mechanism. Pagehaven edits the real HTML a small business already ships, by clicking it, and keeps every publish as a version you can go back to.
+- Mechanism. Rótulo edits the real HTML a small business already ships, by clicking it, and keeps every publish as a version you can go back to.
 - Scene. A bakery or studio owner at a laptop in a back office, in daylight, for a short session every few weeks, nervous about breaking something that already works.
 - Rut. The category always ships a white SaaS shell with rounded white cards and one bright blue (the incumbent). Its predictable opposite is a dark pro tool like Figma or Framer.
 - Seven worlds from the owner's life, ordered by resonance: (1) the printer's proof an owner signs before a print run, (2) the picture-framing shop's mat board, (3) letterpress business stationery printed in one spot ink, (4) a painted shopfront with gold-leaf signwriting, (5) the post office (publishing as posting, versions as postmarks), (6) the harbour, the literal reading of the name, (7) the hardware store's paint-chip fan deck.
@@ -55,7 +55,7 @@ Impeccable's `new-work` flow for a replacement world, Operate mode. The world ma
 
 The decision page (`serve-question`) was not started. This agent is a delegate, and the user decision belongs to the main agent, which can present this README and the screenshots.
 
-Challenger verdicts from the roll. Each challenger was fused with Pagehaven's facts and judged on audience identification and product clarity.
+Challenger verdicts from the roll. Each challenger was fused with Rótulo's facts and judged on audience identification and product clarity.
 
 | Challenger | Verdict | Discipline kept |
 |---|---|---|
@@ -70,7 +70,7 @@ Challenger verdicts from the roll. Each challenger was fused with Pagehaven's fa
 
 ### A. Proof (recommended)
 
-**Point of view.** A printer's proof is the last thing a business owner checks before their words go out into the world: black ink on plain stock, hairline rules, crop marks at the corners, and nothing else. Pagehaven's chrome becomes that proof sheet. It is flat, ruled, ink on near-white, with no hue of its own, so the owner's site is the only color on screen. The one bright thing is Proof Cyan, the color of a press check, and it means exactly one thing: what you are touching right now. Selection is drawn as a cyan rule with crop marks outside the corners and an ink slug that names the part ("Heading"). The primary action is a solid ink button. Bold through contrast and precision, never through color or size.
+**Point of view.** A printer's proof is the last thing a business owner checks before their words go out into the world: black ink on plain stock, hairline rules, crop marks at the corners, and nothing else. Rótulo's chrome becomes that proof sheet. It is flat, ruled, ink on near-white, with no hue of its own, so the owner's site is the only color on screen. The one bright thing is Proof Cyan, the color of a press check, and it means exactly one thing: what you are touching right now. Selection is drawn as a cyan rule with crop marks outside the corners and an ink slug that names the part ("Heading"). The primary action is a solid ink button. Bold through contrast and precision, never through color or size.
 
 - **Palette.**
 
@@ -102,7 +102,7 @@ Challenger verdicts from the roll. Each challenger was fused with Pagehaven's fa
 
 ### B. Spot Ink
 
-**Point of view.** Small businesses print their identity on letterpress stationery in one spot ink. Spot Ink prints Pagehaven's shell in deep pine and keeps everything else on pale cotton stock, with one fluorescent second ink, a lime, reserved for what is live or being touched. The top band is solid pine, the wordmark and page titles are set in Literata, and the interface text is Atkinson Hyperlegible Next, a face designed by the Braille Institute for low-vision readers. Pressed states are debossed (a 1 px inset shadow) rather than filled. It is the warmest and most readable of the three.
+**Point of view.** Small businesses print their identity on letterpress stationery in one spot ink. Spot Ink prints Rótulo's shell in deep pine and keeps everything else on pale cotton stock, with one fluorescent second ink, a lime, reserved for what is live or being touched. The top band is solid pine, the wordmark and page titles are set in Literata, and the interface text is Atkinson Hyperlegible Next, a face designed by the Braille Institute for low-vision readers. Pressed states are debossed (a 1 px inset shadow) rather than filled. It is the warmest and most readable of the three.
 
 - **Palette.**
 
@@ -331,7 +331,7 @@ Sizes are the Latin subset woff2 files from Fontsource's CDN (`cdn.jsdelivr.net/
 
 For Proof the cheapest correct delivery is the Schibsted Grotesk variable file (46.8 KB, every weight) plus Geist Mono 400 (9.9 KB): about 57 KB, preloaded once and cached. Use `font-display: swap` with a size-adjusted local fallback (`size-adjust` and `ascent-override` tuned against the system sans) so text never disappears and the layout does not jump.
 
-Why not the brief's listed candidates. Inter is the category default and would make Pagehaven look like every other tool. Geist is well made but signals developer tooling (Vercel), which is the wrong register for bakery owners. Manrope, Plus Jakarta Sans and DM Sans were read as the generic startup voice the brief asks to avoid.
+Why not the brief's listed candidates. Inter is the category default and would make Rótulo look like every other tool. Geist is well made but signals developer tooling (Vercel), which is the wrong register for bakery owners. Manrope, Plus Jakarta Sans and DM Sans were read as the generic startup voice the brief asks to avoid.
 
 ## 8. Verification
 

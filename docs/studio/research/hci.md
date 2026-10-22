@@ -1,10 +1,10 @@
 # HCI research for the Studio redesign
 
-Agent A, phase B. This file turns published HCI research into interaction changes for the Pagehaven editor. Each change comes with a test to run on the live app.
+Agent A, phase B. This file turns published HCI research into interaction changes for the Rótulo editor. Each change comes with a test to run on the live app.
 
 ## How to read this
 
-Each finding gives the principle, the source, why it matters for Pagehaven, one change, and a test. Each finding also carries a label:
+Each finding gives the principle, the source, why it matters for Rótulo, one change, and a test. Each finding also carries a label:
 
 - **Established research.** A peer-reviewed paper or book.
 - **Practitioner guidance.** Standards, platform guidelines and expert-review writing (WCAG, Apple HIG, Nielsen Norman Group).
@@ -22,7 +22,7 @@ This summary comes from `docs/design/screens/final/fix-04-status-saved-1280.png`
 
 - **Principle.** Direct manipulation has three properties: a continuous representation of the objects of interest, physical actions or labelled presses instead of syntax, and rapid, incremental, reversible operations with an immediately visible effect.
 - **Source.** Shneiderman, "Direct Manipulation: A Step Beyond Programming Languages", IEEE Computer 16(8), 1983, [doi:10.1109/MC.1983.1654471](https://doi.org/10.1109/MC.1983.1654471). The IEEE page did not render, so this paper is cited from its DOI record. The three properties are taken from Shneiderman, IUI 1997, [author PDF](https://www.cs.umd.edu/users/ben/papers/Shneiderman1997Direct2.pdf), which was read.
-- **Relevance.** Pagehaven already edits on the canvas. The remaining gap is the "Edit text" step between selecting a heading and changing its words.
+- **Relevance.** Rótulo already edits on the canvas. The remaining gap is the "Edit text" step between selecting a heading and changing its words.
 - **Change.** A click on text that is already selected places the caret where the owner clicked. Typing while text is selected starts editing with that character. "Edit text" stays in the dock as the labelled route.
 - **Evaluate.** Script task 1 in Playwright and count actions. The baseline is click, then "Edit text", then type. The target is click, click, type, with no trip to the toolbar. Also log pointer travel in px.
 - **Label.** Established research.
@@ -49,7 +49,7 @@ This summary comes from `docs/design/screens/final/fix-04-status-saved-1280.png`
 
 - **Principle.** Show the few most important options first and put the rest one level down. More than two levels disorients people. The trigger's label must say what it opens. In Carroll's training wheels study, blocking common error states for new users gave faster learning and better comprehension.
 - **Source.** Nielsen, ["Progressive Disclosure"](https://www.nngroup.com/articles/progressive-disclosure/). Carroll and Carrithers, "Training Wheels in a User Interface", Communications of the ACM 27(8), 1984, pp. 800 to 806. Only a search summary was available, because the [IBM record](https://researcher.watson.ibm.com/publications/training-wheels-in-a-user-interface) now redirects to a 404.
-- **Relevance.** The brief asks for less permanent chrome without hiding essentials. Training wheels backs Pagehaven's existing choice to block unsafe actions rather than offer them and fail.
+- **Relevance.** The brief asks for less permanent chrome without hiding essentials. Training wheels backs Rótulo's existing choice to block unsafe actions rather than offer them and fail.
 - **Change.** Each selection type gets three to five primary actions plus one labelled overflow ("More for this image"), with no third level. An action the HTML cannot support safely is left out, with one line saying why, rather than shown disabled.
 - **Evaluate.** Select one element of each type on the three fixtures. Record the visible actions and the overflow depth. Pass is three to five actions and a depth of at most two. Then run an expert walkthrough of the eight tasks without instructions. Record whether each needed action was visible at the first decision point, and report the results as hypotheses.
 - **Label.** Practitioner guidance (Nielsen). Established research (Carroll). The three-to-five range is a subjective preference.
@@ -175,7 +175,7 @@ This summary comes from `docs/design/screens/final/fix-04-status-saved-1280.png`
 
 - **Principle.** Anything laid over other content is harder to see. NN/g's review of iOS 26 reports low-contrast translucent controls over busy backgrounds, motion without benefit, crowded targets, and controls that appear and collapse in ways that defeat habit.
 - **Source.** Budiu, ["Liquid Glass Is Cracked, and Usability Suffers in iOS 26"](https://www.nngroup.com/articles/liquid-glass/). It is an expert review, not a user study.
-- **Relevance.** Pagehaven's glass will sit over white pages, black pages and full-bleed photos.
+- **Relevance.** Rótulo's glass will sit over white pages, black pages and full-bleed photos.
 - **Change.** Tint glass densely enough that text contrast holds against the tint alone. Text never sits over unblurred content. Opaque fallbacks apply under reduced transparency, increased contrast and forced colors.
 - **Evaluate.** Render each surface over white, over black and over the Agency hero photo. Measure the worst-case contrast with the `scripts/design/contrast.py` method. Pass is 4.5:1 for text and 3:1 for icons and edges (PLAN.md done-line 5).
 - **Label.** Practitioner guidance.

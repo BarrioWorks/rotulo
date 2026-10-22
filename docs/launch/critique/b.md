@@ -14,7 +14,7 @@ The T3 browser was available after opening a fresh incognito tab. I inspected su
 
 From the hero alone:
 
-- **What:** Pagehaven imports an existing website ZIP, lets you change its visible content, and publishes it.
+- **What:** Rótulo imports an existing website ZIP, lets you change its visible content, and publishes it.
 - **Who:** Someone with an AI-made website delivered as HTML files who wants to stop asking the AI for small changes.
 - **Next:** Press **Import your website**. The destination is account creation, followed by import.
 
@@ -81,11 +81,11 @@ Scale: 1 = obstructive, 2 = weak, 3 = adequate, 4 = strong, 5 = exceptional. Eac
 
 ### 4. Private-file reassurance does not disclose that the original upload is retained
 
-**Observed · P1.** Read the homepage private-files FAQ, then import requirements. Both say private files are left out. Only the compatibility document explains that Pagehaven keeps the original ZIP.
+**Observed · P1.** Read the homepage private-files FAQ, then import requirements. Both say private files are left out. Only the compatibility document explains that Rótulo keeps the original ZIP.
 
 **Rule broken:** trust through precise disclosure. “Left out” can sound like deletion. The owner should know this before handing over an archive.
 
-**Smallest fix:** say “Excluded from the hosted site. Pagehaven keeps the original ZIP, so remove secrets before uploading.” Link the fuller explanation. Make no malware-scanning claim.
+**Smallest fix:** say “Excluded from the hosted site. Rótulo keeps the original ZIP, so remove secrets before uploading.” Link the fuller explanation. Make no malware-scanning claim.
 
 **Location:** `assets/views/home.html:189`; `assets/views/partials/import_area.html:4`. Existing accurate disclosure: `assets/views/marketing/compatible.html:98`. Retention is documented in audit section 4.
 
@@ -171,7 +171,7 @@ The copy has a real voice: prices, opening times, photos, ZIPs, drafts and versi
 - “How it works” is generic but useful navigation. Keep it. Generic labels are not automatically bad copy.
 - “Every small change” and “hundreds of lines” perform certainty without evidence. Concrete examples already carry the argument.
 - “Building sites for clients?” first promises a client workflow, then says there are no client logins. Clarify that the client uses their own ordinary account. The current sequence briefly sounds contradictory.
-- The selection ring is specific to Pagehaven. It earns its place around the hero words. Keep it as a recognisable editing cue, rather than repeating it on unrelated elements.
+- The selection ring is specific to Rótulo. It earns its place around the hero words. Keep it as a recognisable editing cue, rather than repeating it on unrelated elements.
 - Blue alone is not a differentiator. The imported coffee site and selection behavior supply the distinctive evidence. Move that evidence closer to the opening claim.
 - Repeated screenshot panels extend the page. The comparison and editing crop explain the strongest benefit. The obsolete import crop supplies less value.
 - The live sheet is purposeful, not celebratory decoration. It names the result and offers the two useful next actions. Keep it.

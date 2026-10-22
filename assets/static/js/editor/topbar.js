@@ -170,7 +170,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
         pageButton.setAttribute("aria-label", `Switch page: ${fullName}`);
         pageButton.title = fullName;
         pageButton.dataset["tip"] = fullName;
-        document.title = `${s.project.name} · Pagehaven`;
+        document.title = `${s.project.name} · Rótulo`;
         for (const b of modeButtons)
             b.setAttribute("aria-pressed", String(b.dataset["mode"] === s.mode));
         for (const b of deviceButtons)

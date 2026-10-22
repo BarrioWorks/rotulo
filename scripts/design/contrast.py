@@ -1,4 +1,4 @@
-"""Print WCAG contrast ratios for the color token pairs Pagehaven relies on.
+"""Print WCAG contrast ratios for the color token pairs Rótulo relies on.
 
 Usage: python3 -I scripts/design/contrast.py [assets/static/css/app.css]
 Reads colour tokens from the :root block, so the table always reflects the shipped values. Exits 1 if a pair is below its minimum.

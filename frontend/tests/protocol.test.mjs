@@ -32,7 +32,7 @@ test("the editor accepts a well-formed selection from the agent", () => {
   assert.deepEqual(parsed.rect, rect);
 });
 
-test("messages without the Pagehaven channel or with an unknown type are dropped", () => {
+test("messages without the Rótulo channel or with an unknown type are dropped", () => {
   const { channel: _channel, ...bare } = select;
   assert.equal(parseAgentMessage(bare), undefined);
   assert.equal(parseAgentMessage({ ...select, channel: "other" }), undefined);

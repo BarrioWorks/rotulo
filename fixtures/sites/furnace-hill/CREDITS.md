@@ -1,6 +1,6 @@
 # Credits
 
-Furnace Hill Coffee is a made-up roastery written for Pagehaven's tests and demos. Its people, prices and address are fiction. The photographs are real, and each one is public domain or CC0 on Wikimedia Commons. They were cropped or resized, stripped of metadata and saved at JPEG quality 80.
+Furnace Hill Coffee is a made-up roastery written for Rótulo's tests and demos. Its people, prices and address are fiction. The photographs are real, and each one is public domain or CC0 on Wikimedia Commons. They were cropped or resized, stripped of metadata and saved at JPEG quality 80.
 
 | File | Source | Author | Licence |
 | --- | --- | --- | --- |

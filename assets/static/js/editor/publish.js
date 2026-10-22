@@ -508,7 +508,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         const apex = domain.hostname.split(".").length === 2;
         const rows = [["TXT", domain.txt_name, domain.txt_value, "Proves that you own this domain."]];
         if (dns)
-            rows.push(apex ? ["A", domain.hostname, dns.a_record, "Points your domain to Pagehaven."] : ["CNAME", domain.hostname, dns.cname_target, "Points your domain to Pagehaven. Some providers want only the first part of the name, like www."]);
+            rows.push(apex ? ["A", domain.hostname, dns.a_record, "Points your domain to Rótulo."] : ["CNAME", domain.hostname, dns.cname_target, "Points your domain to Rótulo. Some providers want only the first part of the name, like www."]);
         return h("table", { class: "table dns-table" }, h("thead", {}, h("tr", {}, h("th", { text: "Type", attrs: { scope: "col" } }), h("th", { text: "Name", attrs: { scope: "col" } }), h("th", { text: "Value", attrs: { scope: "col" } }))), h("tbody", {}, ...rows.map(([type, name, value, why]) => h("tr", {}, h("td", { class: "dns-type", attrs: { "data-label": "Type" } }, h("span", { text: type }), h("span", { class: "hint dns-why", text: why })), h("td", { attrs: { "data-label": "Name" } }, h("code", { class: "dns-value", text: name }), copyButton(name, `${type} name`)), h("td", { attrs: { "data-label": "Value" } }, h("code", { class: "dns-value", text: value }), copyButton(value, `${type} value`))))));
     }
     function domainCard(domain, dns) {

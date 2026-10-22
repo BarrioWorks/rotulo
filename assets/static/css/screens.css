@@ -1,8 +1,8 @@
-/* Pagehaven screens: landing, auth, dashboard, import and error pages. Loads after app.css and uses its tokens and components.
+/* Rótulo screens: landing, auth, dashboard, import and error pages. Loads after app.css and uses its tokens and components.
    Onest sets every interface role. */
 
 :root {
-  /* The Harbor Bakery demo site drawn on the landing page. These are the site's colours, not Pagehaven's. */
+  /* The Harbor Bakery demo site drawn on the landing page. These are the site's colours, not Rótulo's. */
   --demo-cream: #FAF8F4;
   --demo-line: #E4DED4;
   --demo-ink: #221D19;

@@ -32,7 +32,7 @@ pub fn same_origin(request: &Request, settings: &Settings) -> bool {
 pub fn forbidden() -> Response {
     (
         StatusCode::FORBIDDEN,
-        "This request did not come from Pagehaven.",
+        "This request did not come from Rótulo.",
     )
         .into_response()
 }

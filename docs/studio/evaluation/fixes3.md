@@ -2,7 +2,7 @@
 
 2026-10-20. Baseline: `8599b9d`; implementation: branch `studio/fixes3`.
 One agent used the T3 Chromium preview against this worktree on port 5178,
-with a separate SQLite database and uploads under `/tmp/pagehaven-fixes3`.
+with a separate SQLite database and uploads under `/tmp/rotulo-fixes3`.
 There were no participants. Numbers below are measured; causes come from code inspection.
 
 ## Before and after

@@ -48,7 +48,7 @@ What limits these numbers:
 - canvasShare at 1280 is bounded by the 248 px rail, the 56 px top bar, the 12 px gutters around the canvas, and the 32 px footer strip that holds the zoom chip. The desktop site lays out at 1280 px and is scaled to 79 % to fit 1008 px.
 - At 1024 the canvas shrinks to 59 % scale ("Fit 59 %" turns into a warning dot), because the rail still takes 248 px.
 - At 834 the share looks high because the rail is hidden behind a toggle. The page switcher capsule also disappears at this width (section 4, task 4).
-- At 390 the editor does not load the canvas at all. It shows the Manage view: publish, version history and settings, with "To change text and pictures, open Pagehaven on a computer."
+- At 390 the editor does not load the canvas at all. It shows the Manage view: publish, version history and settings, with "To change text and pictures, open Rótulo on a computer."
 - Layout shift is high on every size (0.26 to 0.40, where 0.1 is the usual "good" line). The observer names the source: one shift of 0.283 at about 230 ms, with `DIV.canvas-frame`, `DIV.canvas-loading`, `UL.rail-rows` and `BUTTON.ed-status` as sources. That is the moment the bootstrap response lands and `canvas.ts` `applyLayout()` sizes the frame, while the rail fills in its rows. The rail also shifts again when "Start here" collapses on first selection (observed, not scored).
 - Heap (9.5 MB) and DOM node counts (about 400) cover the app document only. The cross-origin preview iframe is not counted by `performance.memory` or `getElementsByTagName`.
 

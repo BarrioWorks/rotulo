@@ -1,7 +1,7 @@
 use axum_test::multipart::{MultipartForm, Part};
 pub use axum_test::{TestRequest, TestResponse, TestServer};
 pub use loco_rs::testing::request::request_with_create_db;
-pub use pagehaven::app::App;
+pub use rotulo::app::App;
 pub use serde_json::{json, Value};
 pub const HOST: &str = "127.0.0.1:5150";
 pub const ORIGIN: &str = "http://127.0.0.1:5150";
@@ -132,7 +132,7 @@ pub fn element(html: &str, selector: &str) -> String {
     attr(html, selector, "data-ph-id")
 }
 pub async fn project_id(ctx: &loco_rs::app::AppContext, pid: &str) -> i64 {
-    pagehaven::db::one(
+    rotulo::db::one(
         &ctx.db,
         "SELECT id FROM projects WHERE pid = ?",
         [pid.into()],

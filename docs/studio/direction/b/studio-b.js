@@ -167,7 +167,7 @@ function drawChrome() {
   document.body.classList.toggle("phone-view", S.device === "phone" && S.mode === "preview");
   $("[data-page-name]").textContent = S.page;
   frame.title = `Agency website, ${S.page} page`;
-  document.title = `Agency / ${S.page} - Pagehaven Studio`;
+  document.title = `Agency / ${S.page} - Rótulo Studio`;
   const status = $("[data-pub-status]");
   const btn = $("[data-pub-btn]");
   status.classList.toggle("live", !S.unpublished);
@@ -355,7 +355,7 @@ function publishPop() {
   const cta = S.unpublished && !S.justPublished ? `<button class="btn btn-primary" data-act="do-publish" ${S.publishing ? 'aria-busy="true" disabled' : ""} autofocus>${S.publishing ? "Publishing…" : `Publish ${S.unpublished} change${S.unpublished > 1 ? "s" : ""}`}</button>` : "";
   return `<div class="pop pub-pop glass-3" role="dialog" aria-label="Publish">
     ${head}${changes}${cta}
-    <div class="addr"><span class="mono">agency-15.pagehaven.site</span><a href="${SITE}" target="_blank" rel="noopener">View website ${icon("i-view-live", "s16")}</a></div>
+    <div class="addr"><span class="mono">agency-15.rotulo.site</span><a href="${SITE}" target="_blank" rel="noopener">View website ${icon("i-view-live", "s16")}</a></div>
     <div class="group-label" style="padding-left:4px">${icon("i-history", "s16")} Version history</div>
     <div class="versions">${v.slice(0, 5).map((r) => `<div class="row"><span class="grow"><span>Version ${r.n} ${r.n === S.live ? '<span class="badge">live</span>' : ""}</span><span class="meta">${r.date}</span></span>${r.n === S.live ? "" : `<button class="btn btn-quiet" data-act="rollback" data-v="${r.n}">Make this version live</button>`}</div>`).join("")}</div>
     <hr><button class="row" data-act="settings" data-section="versions">${icon("i-settings", "s16")}<span>All versions and publishing settings</span></button>
@@ -368,7 +368,7 @@ function settingsBody(sec) {
   switch (sec) {
     case "general": return `<div class="sheet-head"><h3>General</h3></div>
       <div class="field"><label for="sn">Website name</label><input class="input" id="sn" value="Agency"></div>
-      <div class="field"><label for="slug">Web address</label><div class="affix"><input class="input" id="slug" value="agency-15" pattern="[a-z0-9\\-]{3,32}"><span>.pagehaven.site</span></div><span class="hint">Takes effect at once. Not part of Undo.</span></div>
+      <div class="field"><label for="slug">Web address</label><div class="affix"><input class="input" id="slug" value="agency-15" pattern="[a-z0-9\\-]{3,32}"><span>.rotulo.site</span></div><span class="hint">Takes effect at once. Not part of Undo.</span></div>
       <div class="actions" style="justify-content:space-between"><a class="btn btn-quiet" href="${SITE}" target="_blank" rel="noopener">View website ${icon("i-view-live", "s16")}</a><button class="btn btn-primary" data-act="save-settings">Save</button></div>
       <hr style="margin:20px 0">
       <div class="sheet-head"><h3>Keyboard shortcuts</h3></div>
@@ -376,12 +376,12 @@ function settingsBody(sec) {
     case "pages": return `<div class="sheet-head"><h3>Pages</h3><button class="btn btn-quiet" data-act="add-page">${icon("i-add-page", "s16")}Add a page</button></div><p>Pages visitors can open. Home cannot be renamed or deleted.</p><div class="list">${pageRows()}</div>`;
     case "assets": return `<div class="sheet-head"><h3>Assets</h3><button class="btn btn-quiet" data-act="upload-asset">${icon("i-upload", "s16")}Upload</button></div><p>Images used on this website. 6 images, 4 style sheets, 3 scripts.</p>
       <div class="asset-grid">${assetsOnPage.map((a) => `<figure><img src="${IMG(a.src)}" alt=""><figcaption class="mono">${a.src}</figcaption></figure>`).join("")}</div>`;
-    case "domains": return `<div class="sheet-head"><h3>Domains</h3></div><p>Your website is at <span class="mono">agency-15.pagehaven.site</span>. You can also use a domain you own.</p>
+    case "domains": return `<div class="sheet-head"><h3>Domains</h3></div><p>Your website is at <span class="mono">agency-15.rotulo.site</span>. You can also use a domain you own.</p>
       <div class="field"><label for="dom">Your own domain</label><input class="input mono" id="dom" placeholder="www.example.com"></div><div class="actions"><button class="btn btn-primary">Add domain</button></div>`;
     case "publishing": return `<div class="sheet-head"><h3>Publishing</h3></div>
-      <dl class="kv"><dt>Address</dt><dd class="mono">agency-15.pagehaven.site</dd><dt>Visitors see</dt><dd>Version ${S.live} · ${S.versions.find((v) => v.n === S.live).date}</dd><dt>Changes</dt><dd>${S.unpublished ? `<span class="badge warn">${S.unpublished} not published</span>` : '<span class="badge">Up to date</span>'}</dd></dl>
+      <dl class="kv"><dt>Address</dt><dd class="mono">agency-15.rotulo.site</dd><dt>Visitors see</dt><dd>Version ${S.live} · ${S.versions.find((v) => v.n === S.live).date}</dd><dt>Changes</dt><dd>${S.unpublished ? `<span class="badge warn">${S.unpublished} not published</span>` : '<span class="badge">Up to date</span>'}</dd></dl>
       ${S.unpublished ? `<button class="btn btn-primary" data-act="publish">Review and publish</button>` : ""}`;
-    case "versions": return `<div class="sheet-head"><h3>Versions</h3></div><p>Every time you publish, Pagehaven keeps a version. Making an older version live does not delete your current changes.</p>
+    case "versions": return `<div class="sheet-head"><h3>Versions</h3></div><p>Every time you publish, Rótulo keeps a version. Making an older version live does not delete your current changes.</p>
       <div class="list versions">${S.versions.map((r) => `<div class="row"><span class="grow"><span>Version ${r.n} ${r.n === S.live ? '<span class="badge">live</span>' : ""}</span><span class="meta">${r.date}</span></span><button class="btn" data-act="open-version">Open in editor</button>${r.n === S.live ? "" : `<button class="btn btn-quiet" data-act="rollback" data-v="${r.n}">Make this version live</button>`}</div>`).join("")}</div>`;
   }
 }

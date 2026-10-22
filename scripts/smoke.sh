@@ -33,7 +33,7 @@ cp "$W/out" "$W/editor.json"
 PO=$(json "$W/editor.json" "d['preview_origin']")
 REV=$(json "$W/editor.json" "d['project']['revision']")
 s=$(host_get "$PO/"); expect "$s" 200 "preview home page"
-grep -q 'data-pagehaven="agent"' "$W/page" && echo "ok   preview has the editor agent"
+grep -q 'data-rotulo="agent"' "$W/page" && echo "ok   preview has the editor agent"
 grep -qi '^set-cookie' "$W/headers" && { echo "FAIL preview set a cookie"; exit 1; }
 # The first main heading, or the first section heading when a page has no <h1>.
 H1=$(python3 -I -c "import re,sys; h=open(sys.argv[1]).read(); m=re.search(r'<h1[^>]*data-ph-id=\"([0-9a-z]+)\"', h) or re.search(r'<h2[^>]*data-ph-id=\"([0-9a-z]+)\"', h); print(m.group(1))" "$W/page")

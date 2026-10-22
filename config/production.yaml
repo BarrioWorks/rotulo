@@ -7,7 +7,7 @@ logger:
 server:
   port: <%= get_env(name="PORT", default="5150") %>
   binding: <%= get_env(name="BINDING", default="127.0.0.1") %>
-  host: <%= get_env(name="PAGEHAVEN_APP_ORIGIN") %>
+  host: <%= get_env(name="ROTULO_APP_ORIGIN") %>
   middlewares:
     static:
       enable: true
@@ -35,18 +35,18 @@ database:
   dangerously_recreate: false
 
 settings:
-  app_origin: <%= get_env(name="PAGEHAVEN_APP_ORIGIN") %>
+  app_origin: <%= get_env(name="ROTULO_APP_ORIGIN") %>
   scheme: https
-  sites_domain: <%= get_env(name="PAGEHAVEN_SITES_DOMAIN") %>
-  preview_domain: <%= get_env(name="PAGEHAVEN_PREVIEW_DOMAIN") %>
-  data_dir: <%= get_env(name="PAGEHAVEN_DATA_DIR") %>
-  secret: <%= get_env(name="PAGEHAVEN_SECRET") %>
+  sites_domain: <%= get_env(name="ROTULO_SITES_DOMAIN") %>
+  preview_domain: <%= get_env(name="ROTULO_PREVIEW_DOMAIN") %>
+  data_dir: <%= get_env(name="ROTULO_DATA_DIR") %>
+  secret: <%= get_env(name="ROTULO_SECRET") %>
   secure_cookies: true
   dns_over_https: https://cloudflare-dns.com/dns-query
-  server_ipv4: <%= get_env(name="PAGEHAVEN_SERVER_IPV4", default="") %>
-  client_ip_header: <%= get_env(name="PAGEHAVEN_CLIENT_IP_HEADER", default="cf-connecting-ip") %>
-  custom_domains: <%= get_env(name="PAGEHAVEN_CUSTOM_DOMAINS", default="false") %>
-  abuse_email: <%= get_env(name="PAGEHAVEN_ABUSE_EMAIL", default="") %>
+  server_ipv4: <%= get_env(name="ROTULO_SERVER_IPV4", default="") %>
+  client_ip_header: <%= get_env(name="ROTULO_CLIENT_IP_HEADER", default="cf-connecting-ip") %>
+  custom_domains: <%= get_env(name="ROTULO_CUSTOM_DOMAINS", default="false") %>
+  abuse_email: <%= get_env(name="ROTULO_ABUSE_EMAIL", default="") %>
   limits:
     upload_bytes: 26214400
     content_bytes: 104857600

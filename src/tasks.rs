@@ -1,4 +1,4 @@
-//! Operator commands, run with `pagehaven-cli task <name> key:value`.
+//! Operator commands, run with `rotulo-cli task <name> key:value`.
 
 use async_trait::async_trait;
 use loco_rs::{

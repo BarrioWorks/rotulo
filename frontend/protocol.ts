@@ -5,7 +5,7 @@
  */
 import { arr, bool, bytes, lit, num, obj, opt, str, type Parsed, type Parser } from "./schema.js";
 
-export const CHANNEL = "pagehaven";
+export const CHANNEL = "rotulo";
 
 export const ELEMENT_ID = /^[0-9a-z]{1,10}$/;
 export const CAPABILITIES = /^[tilsbxudc]{0,9}$/;

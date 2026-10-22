@@ -48,14 +48,14 @@ pub struct Settings {
     pub user_content_on_public_suffix: bool,
     pub dns_over_https: String,
     pub server_ipv4: String,
-    /// Header that carries the visitor's address, set by the trusted proxy in front of Pagehaven:
+    /// Header that carries the visitor's address, set by the trusted proxy in front of Rótulo:
     /// `cf-connecting-ip` behind Cloudflare, `x-forwarded-for` (last entry) behind a plain proxy.
     #[serde(default)]
     pub client_ip_header: Option<String>,
     /// Whether owners may connect their own domains. Needs TLS for arbitrary hostnames.
     #[serde(default = "enabled")]
     pub custom_domains: bool,
-    /// Where visitors report a harmful published website. Shown on Pagehaven's own error pages.
+    /// Where visitors report a harmful published website. Shown on Rótulo's own error pages.
     #[serde(default)]
     pub abuse_email: Option<String>,
     #[serde(default)]
@@ -260,18 +260,18 @@ mod tests {
     #[test]
     fn app_and_user_content_must_not_share_a_registrable_domain() {
         for (app, sites, preview) in [
-            ("pagehaven.com", "sites.pagehaven.com", "preview.other.net"),
+            ("barrio.works", "sites.barrio.works", "preview.other.net"),
             (
-                "app.pagehaven.com",
+                "rotulo.barrio.works",
                 "sites.other.net",
-                "preview.pagehaven.com",
+                "preview.barrio.works",
             ),
             (
-                "app.pagehaven.com",
-                "sites.pagehaven.com",
-                "preview.pagehaven.com",
+                "rotulo.barrio.works",
+                "sites.barrio.works",
+                "preview.barrio.works",
             ),
-            ("pagehaven.com", "SITES.PAGEHAVEN.COM.", "preview.other.net"),
+            ("barrio.works", "SITES.BARRIO.WORKS.", "preview.other.net"),
         ] {
             assert!(
                 settings(app, sites, preview, false).validate().is_err(),
@@ -279,9 +279,9 @@ mod tests {
             );
         }
         assert!(settings(
-            "pagehaven.app",
-            "pagehaven.site",
-            "preview.pagehaven.site",
+            "rotulo.barrio.works",
+            "rotulo.site",
+            "preview.rotulo.site",
             false
         )
         .validate()
@@ -307,25 +307,25 @@ mod tests {
     #[test]
     fn public_suffix_acknowledgement_allows_siblings_but_not_the_app_inside_content() {
         assert!(settings(
-            "app.pagehaven.com",
-            "sites.pagehaven.com",
-            "preview.pagehaven.com",
+            "rotulo.barrio.works",
+            "sites.barrio.works",
+            "preview.barrio.works",
             true
         )
         .validate()
         .is_ok());
         for flag in [false, true] {
             assert!(settings(
-                "app.sites.pagehaven.com",
-                "sites.pagehaven.com",
+                "app.sites.barrio.works",
+                "sites.barrio.works",
                 "preview.other.net",
                 flag
             )
             .validate()
             .is_err());
             assert!(settings(
-                "sites.pagehaven.com",
-                "sites.pagehaven.com",
+                "sites.barrio.works",
+                "sites.barrio.works",
                 "preview.other.net",
                 flag
             )

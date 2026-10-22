@@ -1,6 +1,6 @@
 # Design review, October 2026
 
-A review of Pagehaven's own interface with the `impeccable` design skill, ahead of the investor demo. It is a refinement of the existing warm, Craft-like look, not a redesign. Behaviour, API calls, the preview protocol, security headers and the sandbox are unchanged.
+A review of Rótulo's own interface with the `impeccable` design skill, ahead of the investor demo. It is a refinement of the existing warm, Craft-like look, not a redesign. Behaviour, API calls, the preview protocol, security headers and the sandbox are unchanged.
 
 Surfaces covered: the landing page, sign in and register, Your websites, Import a website (with both error states), and the editor (top bar, sidebar panels, floating toolbar and its panels, publishing, version history, own domain, dialogs, toasts, loading, preview mode and phone view). Test data: `fixtures/zips/startbootstrap-agency.zip` (the demo site) and `fixtures/zips/landwind.zip`, at 1280×800, about 920 px and 390 px wide.
 

@@ -686,7 +686,7 @@ impl Document {
                     &[
                         ("type", "module"),
                         ("src", agent_src),
-                        ("data-pagehaven", "agent"),
+                        ("data-rotulo", "agent"),
                     ],
                 ))
                 .id();
@@ -1481,7 +1481,7 @@ fn plan_children(
                                 .attr("href")
                                 .and_then(safe_href)
                                 .ok_or(EditError::Invalid(
-                                    "A link in that text uses an address Pagehaven doesn't allow.",
+                                    "A link in that text uses an address Rótulo doesn't allow.",
                                 ))?;
                         attrs.push(("href".to_owned(), href));
                         if element.attr("target") == Some("_blank") {
@@ -2066,11 +2066,11 @@ mod tests {
     #[test]
     fn the_preview_marks_what_can_be_edited_and_loads_the_agent_first() {
         let mut doc = doc();
-        doc.annotate_for_editor("/__pagehaven/agent.js");
+        doc.annotate_for_editor("/__rotulo/agent.js");
         let html = doc.serialize();
         assert!(
             html.contains(
-                r#"<head><script type="module" src="/__pagehaven/agent.js" data-pagehaven="agent"></script>"#
+                r#"<head><script type="module" src="/__rotulo/agent.js" data-rotulo="agent"></script>"#
             ),
             "{html}"
         );

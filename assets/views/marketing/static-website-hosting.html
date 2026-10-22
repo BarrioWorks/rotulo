@@ -10,7 +10,7 @@
   <div class="mk-field">
     <div class="mk-wrap mk-doc-head">
       <h1 class="mk-doc-title">Publish a static website from a ZIP</h1>
-      <p class="mk-doc-lead">Put your finished HTML pages and their assets in one ZIP. Pagehaven checks the files, opens a draft for editing and publishes a version at your website’s Pagehaven address when you confirm.</p>
+      <p class="mk-doc-lead">Put your finished HTML pages and their assets in one ZIP. Rótulo checks the files, opens a draft for editing and publishes a version at your website’s Rótulo address when you confirm.</p>
     </div>
   </div>
   <div class="mk-page">
@@ -27,18 +27,18 @@
       <div class="mk-doc-body">
         <section id="prepare" aria-labelledby="prepare-title">
           <h2 id="prepare-title">Prepare a finished website ZIP</h2>
-          <p>Your ZIP needs an <code>index.html</code> file and the local files your pages load. Pagehaven finds the website at the top of the archive, inside one wrapper folder, or in a <code>dist</code> or <code>build</code> folder. If it finds several possible website folders, you choose which one to import.</p>
+          <p>Your ZIP needs an <code>index.html</code> file and the local files your pages load. Rótulo finds the website at the top of the archive, inside one wrapper folder, or in a <code>dist</code> or <code>build</code> folder. If it finds several possible website folders, you choose which one to import.</p>
           <p>Keep the ZIP within 25 MB, with at most 2,000 files and folders and 100 MB unpacked. A single file can be up to 20 MB. Check the <a href="/compatible-exports">compatible exports guide</a> for the full limits, an example folder tree and import refusal messages.</p>
-          <p>A project’s source code is not its finished website. Build it in the original tool first, then ZIP the static output. Pagehaven never runs a build step or server code.</p>
+          <p>A project’s source code is not its finished website. Build it in the original tool first, then ZIP the static output. Rótulo never runs a build step or server code.</p>
         </section>
         <section id="import" aria-labelledby="import-title">
           <h2 id="import-title">Import and read the file report</h2>
-          <p>Upload the ZIP after signing in. Pagehaven checks the archive and the files inside it. A missing local stylesheet or script stops the import and names the missing file. Other missing assets, such as a picture, produce a warning.</p>
+          <p>Upload the ZIP after signing in. Rótulo checks the archive and the files inside it. A missing local stylesheet or script stops the import and names the missing file. Other missing assets, such as a picture, produce a warning.</p>
           <figure>
-            <img class="mk-step-shot" src="/static/img/marketing/step-import.webp" width="760" height="250" loading="lazy" decoding="async" alt="Real Pagehaven import screen showing the Furnace Hill Coffee sample website with seven pages imported and an Open editor button.">
-            <figcaption>The real Pagehaven import screen with the Furnace Hill Coffee sample site.</figcaption>
+            <img class="mk-step-shot" src="/static/img/marketing/step-import.webp" width="760" height="250" loading="lazy" decoding="async" alt="Real Rótulo import screen showing the Furnace Hill Coffee sample website with seven pages imported and an Open editor button.">
+            <figcaption>The real Rótulo import screen with the Furnace Hill Coffee sample site.</figcaption>
           </figure>
-          <p>The import report lists files left out, including server code, private keys, environment files and databases. Secrets and server code also raise a warning. Pagehaven keeps the original uploaded ZIP on the server, so review your archive for private files before uploading it.</p>
+          <p>The import report lists files left out, including server code, private keys, environment files and databases. Secrets and server code also raise a warning. Rótulo keeps the original uploaded ZIP on the server, so review your archive for private files before uploading it.</p>
         </section>
         <section id="preview" aria-labelledby="preview-title">
           <h2 id="preview-title">Preview the draft before it goes live</h2>
@@ -47,24 +47,24 @@
         </section>
         <section id="publish" aria-labelledby="publish-title">
           <h2 id="publish-title">Review and publish to your hosted address</h2>
-          <p>Choose Publish in the editor. Pagehaven shows the changes and the address visitors will use. Confirm to create a numbered version of the website.</p>
+          <p>Choose Publish in the editor. Rótulo shows the changes and the address visitors will use. Confirm to create a numbered version of the website.</p>
           <figure>
-            <img class="mk-step-shot" src="/static/img/marketing/step-publish.webp" width="386" height="430" loading="lazy" decoding="async" alt="Real Pagehaven publish review for Furnace Hill Coffee, showing one Home page text change, the visitor address and a Publish button.">
-            <figcaption>The real Pagehaven publish review. Publishing requires confirmation.</figcaption>
+            <img class="mk-step-shot" src="/static/img/marketing/step-publish.webp" width="386" height="430" loading="lazy" decoding="async" alt="Real Rótulo publish review for Furnace Hill Coffee, showing one Home page text change, the visitor address and a Publish button.">
+            <figcaption>The real Rótulo publish review. Publishing requires confirmation.</figcaption>
           </figure>
-          <p>Your live address has the form <code>&lt;name&gt;.&lt;sites domain&gt;</code>, using the sites domain configured by your Pagehaven host. The website’s name and address can be changed in its settings.</p>
+          <p>Your live address has the form <code>&lt;name&gt;.&lt;sites domain&gt;</code>, using the sites domain configured by your Rótulo host. The website’s name and address can be changed in its settings.</p>
           <p>Published files have editor markup and hidden sections removed. Each version’s files remain unchanged afterwards. A later edit stays in the draft until you publish again.</p>
         </section>
         <section id="versions" aria-labelledby="versions-title">
           <h2 id="versions-title">Put an earlier version back online</h2>
           <p>Choose “Make this version live” to point visitors at an earlier published version. Your current draft stays in place, and this action does not create another version.</p>
-          <p>To continue editing an older version, choose “Edit from this version”. Pagehaven copies it into your draft as one undoable change. Visitors keep seeing the live version until you publish the draft.</p>
+          <p>To continue editing an older version, choose “Edit from this version”. Rótulo copies it into your draft as one undoable change. Visitors keep seeing the live version until you publish the draft.</p>
         </section>
         <section id="limits" aria-labelledby="limits-title">
           <h2 id="limits-title">Static hosting does not run your server</h2>
-          <p>Pagehaven serves the finished website files. A site that needs server code or a database will need those services elsewhere. Including them in the ZIP does not make them run.</p>
-          <p>A built website that draws its pages with JavaScript can import and publish, but Pagehaven can edit only content written in the HTML. For editable pages, export HTML that already contains the words and images you want to change.</p>
-          <p>See the <a href="/">Pagehaven homepage</a> for the full editing workflow, or compare your archive with the <a href="/compatible-exports">supported HTML website exports</a>.</p>
+          <p>Rótulo serves the finished website files. A site that needs server code or a database will need those services elsewhere. Including them in the ZIP does not make them run.</p>
+          <p>A built website that draws its pages with JavaScript can import and publish, but Rótulo can edit only content written in the HTML. For editable pages, export HTML that already contains the words and images you want to change.</p>
+          <p>See the <a href="/">Rótulo homepage</a> for the full editing workflow, or compare your archive with the <a href="/compatible-exports">supported HTML website exports</a>.</p>
         </section>
       </div>
     </div>

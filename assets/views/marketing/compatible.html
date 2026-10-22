@@ -9,8 +9,8 @@
 <main id="main">
   <div class="mk-field">
     <div class="mk-wrap mk-doc-head">
-      <h1 class="mk-doc-title">Which website exports work with Pagehaven</h1>
-      <p class="mk-doc-lead">Pagehaven imports a finished website, meaning the HTML pages and the pictures, styles and fonts they use, in one ZIP. This page shows what it accepts, what it refuses and the limits.</p>
+      <h1 class="mk-doc-title">Which website exports work with Rótulo</h1>
+      <p class="mk-doc-lead">Rótulo imports a finished website, meaning the HTML pages and the pictures, styles and fonts they use, in one ZIP. This page shows what it accepts, what it refuses and the limits.</p>
     </div>
   </div>
 
@@ -19,7 +19,7 @@
       <nav class="mk-doc-nav" aria-label="On this page">
         <p>On this page</p>
         <a href="#accepted">HTML website exports that import</a>
-        <a href="#refused">What Pagehaven refuses</a>
+        <a href="#refused">What Rótulo refuses</a>
         <a href="#javascript">HTML content and pages built by JavaScript</a>
         <a href="#left-out">What stays out of your site</a>
         <a href="#limits">Limits</a>
@@ -42,14 +42,14 @@
 └── images/
     ├── coffee-tree.jpg
     └── roaster.jpg</pre>
-          <h3>What Pagehaven checks</h3>
+          <h3>What Rótulo checks</h3>
           <ul>
-            <li><code>index.html</code> sits at the top of the ZIP, inside one folder, or in a <code>dist</code> or <code>build</code> folder. If several folders could be the website, Pagehaven asks which one to import.</li>
+            <li><code>index.html</code> sits at the top of the ZIP, inside one folder, or in a <code>dist</code> or <code>build</code> folder. If several folders could be the website, Rótulo asks which one to import.</li>
             <li>The stylesheets and scripts each page links to are in the ZIP. If one is missing, the import stops and names it. Other missing files, such as a picture, get a warning.</li>
             <li>Text files are UTF-8.</li>
-            <li>Pagehaven keeps HTML, CSS, JavaScript, JSON, text, SVG, pictures, icons, fonts, MP4 and WebM video, MP3, Ogg and WAV audio, PDF and WASM files.</li>
+            <li>Rótulo keeps HTML, CSS, JavaScript, JSON, text, SVG, pictures, icons, fonts, MP4 and WebM video, MP3, Ogg and WAV audio, PDF and WASM files.</li>
           </ul>
-          <p>After import, use the <a href="/visual-html-editor">visual HTML editor</a> to change supported content, then <a href="/static-website-hosting">publish your static website from the ZIP</a>. The <a href="/">Pagehaven homepage</a> shows the real editor with a sample website.</p>
+          <p>After import, use the <a href="/visual-html-editor">visual HTML editor</a> to change supported content, then <a href="/static-website-hosting">publish your static website from the ZIP</a>. The <a href="/">Rótulo homepage</a> shows the real editor with a sample website.</p>
           <h3>Where to get one</h3>
           <ul>
             <li>A page from an AI chat. Save it as an <code>.html</code> file named <code>index.html</code>, put it in a folder with any pictures it uses, and ZIP the folder.</li>
@@ -59,9 +59,9 @@
         </section>
 
         <section id="refused" aria-labelledby="refused-title">
-          <h2 id="refused-title">What Pagehaven refuses, and why</h2>
+          <h2 id="refused-title">What Rótulo refuses, and why</h2>
           <h3>Project code that still needs a build step</h3>
-          <p>Some tools download a project’s code, with files such as <code>package.json</code> and a <code>src</code> folder, instead of its finished pages. A build step turns that code into pages, and Pagehaven never runs one. It refuses the ZIP with this message:</p>
+          <p>Some tools download a project’s code, with files such as <code>package.json</code> and a <code>src</code> folder, instead of its finished pages. A build step turns that code into pages, and Rótulo never runs one. It refuses the ZIP with this message:</p>
           <blockquote class="mk-quote">
             <p>This ZIP contains source code rather than a finished website. Export the built static website files and try again.</p>
             <cite>Shown when the ZIP holds source code</cite>
@@ -72,31 +72,31 @@
             <p>We couldn’t find a website in this ZIP. It needs an index.html file at the top level or in a dist or build folder.</p>
             <cite>Shown when there is no index.html</cite>
           </blockquote>
-          <h3>Archives Pagehaven can’t open safely</h3>
-          <p>Pagehaven also refuses ZIPs that are encrypted, that use compression other than a standard ZIP, or that are split across several files. It refuses file paths that point outside the ZIP’s folder, links to other files, and two names that differ only in capital letters.</p>
+          <h3>Archives Rótulo can’t open safely</h3>
+          <p>Rótulo also refuses ZIPs that are encrypted, that use compression other than a standard ZIP, or that are split across several files. It refuses file paths that point outside the ZIP’s folder, links to other files, and two names that differ only in capital letters.</p>
         </section>
 
         <section id="javascript" aria-labelledby="javascript-title">
           <h2 id="javascript-title">HTML content and pages built by JavaScript</h2>
-          <p>Some sites, such as a built React or Vite app, ship an almost empty HTML file and draw the page in the browser. Pagehaven can import and publish a built version. If its home page has scripts but no text of its own, Pagehaven shows this warning:</p>
+          <p>Some sites, such as a built React or Vite app, ship an almost empty HTML file and draw the page in the browser. Rótulo can import and publish a built version. If its home page has scripts but no text of its own, Rótulo shows this warning:</p>
           <blockquote class="mk-quote mk-quote-warn">
-            <p>This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.</p>
+            <p>This website builds its pages in the browser with JavaScript. It will publish and work, but Rótulo can only edit text and images that are written in its HTML files.</p>
             <cite>Shown after the import</cite>
           </blockquote>
-          <p>In any site, Pagehaven can’t edit content that the site’s own JavaScript creates, the contents of scripts and styles, form fields, embedded frames, canvas drawings or maths.</p>
+          <p>In any site, Rótulo can’t edit content that the site’s own JavaScript creates, the contents of scripts and styles, form fields, embedded frames, canvas drawings or maths.</p>
         </section>
 
         <section id="left-out" aria-labelledby="left-out-title">
           <h2 id="left-out-title">What stays out of your hosted site</h2>
-          <p>Pagehaven leaves these files out of your website and lists each one in the import report, with the reason:</p>
+          <p>Rótulo leaves these files out of your website and lists each one in the import report, with the reason:</p>
           <ul>
-            <li>Server code and server settings, which Pagehaven never runs.</li>
+            <li>Server code and server settings, which Rótulo never runs.</li>
             <li>Private keys, password and environment files, databases and version-control folders.</li>
             <li>Archives inside the ZIP, which are never unpacked.</li>
             <li>Files your computer or editor created, such as <code>.DS_Store</code>.</li>
             <li><code>node_modules</code>, package manifests and other project tooling a browser never loads.</li>
           </ul>
-          <p>Secrets and server code also raise a warning, so you can check that nothing private was meant to be there. Pagehaven keeps a copy of the ZIP you uploaded. Publishing copies your pages as they are, without editor markup or sections you hid, and runs no build.</p>
+          <p>Secrets and server code also raise a warning, so you can check that nothing private was meant to be there. Rótulo keeps a copy of the ZIP you uploaded. Publishing copies your pages as they are, without editor markup or sections you hid, and runs no build.</p>
         </section>
 
         <section id="limits" aria-labelledby="limits-title">
@@ -111,7 +111,7 @@
             <div><dt>Websites per account</dt><dd>25</dd></div>
             <div><dt>Imports</dt><dd>20 an hour</dd></div>
             <div><dt>Publishes</dt><dd>60 an hour</dd></div>
-            <div><dt>Custom domains, when your Pagehaven host enables them</dt><dd>Up to 5 per website</dd></div>
+            <div><dt>Custom domains, when your Rótulo host enables them</dt><dd>Up to 5 per website</dd></div>
           </dl>
         </section>
       </div>
@@ -123,7 +123,7 @@
       <h2 id="close-title" class="mk-close-title">Have a ZIP like this? Import it and make the first change.</h2>
       <div class="mk-close-side">
         <a class="mk-btn mk-btn-on-field" href="/register">Import your website</a>
-        <p>Free to try. There is no billing in Pagehaven yet.</p>
+        <p>Free to try. There is no billing in Rótulo yet.</p>
       </div>
     </div>
   </section>

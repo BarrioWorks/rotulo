@@ -32,7 +32,7 @@ Source: `screens-a/home-hero-1280.png` alone.
 
 **Verdict at 390. Pass** (observed, `screens-a/home-hero-390.png`). The headline stacks cleanly. The full-width CTA spans y 456 to 508 of an 844 px viewport.
 
-**The pass hides a targeting risk** (inferred). "AI-made website" will draw people whose site came from Lovable, Bolt or v0. The app's own import help says these tools "often download the project's code, which Pagehaven can't use on its own". Nothing on the homepage tells these visitors that. See problem 1.
+**The pass hides a targeting risk** (inferred). "AI-made website" will draw people whose site came from Lovable, Bolt or v0. The app's own import help says these tools "often download the project's code, which Rótulo can't use on its own". Nothing on the homepage tells these visitors that. See problem 1.
 
 ---
 
@@ -73,7 +73,7 @@ Scale: 1 is poor, 3 is acceptable, 5 is excellent. Each score has a one-line rea
 | Colour and material | 2 | The ultramarine field and white button of the marketing pages give way to a grey page and a black button. The visitor clicked a blue promise and lands somewhere that looks different. |
 | Copy | 4 | Honest password note. "Use 10 to 200 characters" sits before the field, where it helps. |
 | Conversion clarity | 4 | Three fields, and sign up goes straight to import (observed). |
-| Trust and honesty | 3 | "Pagehaven cannot reset passwords yet" is honest. Nothing on the card says who runs the service or how to reach them. |
+| Trust and honesty | 3 | "Rótulo cannot reset passwords yet" is honest. Nothing on the card says who runs the service or how to reach them. |
 | Accessibility and responsiveness | 4 | Labelled fields, a Show toggle, autofocus on name and a visible focus ring. |
 
 ### Import (`/projects/new`)
@@ -133,10 +133,10 @@ Ranked by effect on reaching a first published site.
 ### 1. The headline invites the AI-builder audience that the product most often refuses, and no page names those builders before sign up
 
 - **Label.** Observed (copy), read (code) and inferred (share of visitors).
-- **Reproduction.** Read the hero: "Change your AI-made website without asking the AI again." Scroll the homepage and `/compatible-exports`. Neither page names Lovable, Bolt or v0. Sign up and import `fixtures/zips/vite-source-only.zip`. Only now does the opened help say "Lovable, Bolt or v0. These tools often download the project's code, which Pagehaven can't use on its own." The advice that follows, "Ask the tool, or whoever built your site, for the built website folder", gives a nontechnical owner no step they can take.
+- **Reproduction.** Read the hero: "Change your AI-made website without asking the AI again." Scroll the homepage and `/compatible-exports`. Neither page names Lovable, Bolt or v0. Sign up and import `fixtures/zips/vite-source-only.zip`. Only now does the opened help say "Lovable, Bolt or v0. These tools often download the project's code, which Rótulo can't use on its own." The advice that follows, "Ask the tool, or whoever built your site, for the built website folder", gives a nontechnical owner no step they can take.
 - **Screenshots.** `screens-a/home-hero-1280.png`, `screens-a/home-fit-834.png`, `screens-a/import-refused-vite-1280.png`.
 - **Rule broken.** Nielsen 5, error prevention. CRO message match and "Will this work for my situation?" objection handling. Brief section 6, "Do not claim universal compatibility". Decision 3 forbids naming these tools as compatible. It does not forbid naming them as usually refused.
-- **Smallest fix.** Add one sentence to the "Refused" card in the fit section of `assets/views/home.html`, and to "Project code that still needs a build step" in `assets/views/marketing/compatible.html`. For example: "Downloads from Lovable, Bolt and v0 are usually this kind of project." Then end the import help in `assets/views/projects/new.html` with an honest stop, such as "If you can't get the built folder, Pagehaven can't edit this site yet." That costs some signups and saves failed imports. The owner should decide. The pratfall effect says stating the limit can raise trust (inferred).
+- **Smallest fix.** Add one sentence to the "Refused" card in the fit section of `assets/views/home.html`, and to "Project code that still needs a build step" in `assets/views/marketing/compatible.html`. For example: "Downloads from Lovable, Bolt and v0 are usually this kind of project." Then end the import help in `assets/views/projects/new.html` with an honest stop, such as "If you can't get the built folder, Rótulo can't edit this site yet." That costs some signups and saves failed imports. The owner should decide. The pratfall effect says stating the limit can raise trust (inferred).
 
 ### 2. At 834 the hero headline reads in the wrong order
 
@@ -228,14 +228,14 @@ Each claim is checked against `docs/launch/audit/README.md` section 4 and the co
 | Page | Claim | Why it does not trace |
 |---|---|---|
 | Home | "One heading, a minute apart" | No timing was measured, and the screenshots carry no timestamps. It reads as a speed claim, which decision 4 bans. |
-| Home | "If it is a folder of HTML pages, yes." (FAQ, "Will my website work in Pagehaven?") | Too broad. Audit section 4 lists failures for a folder of HTML pages: a missing linked stylesheet or script stops the import, text must be UTF-8, size and count limits apply, and JavaScript-built pages import with only part of them editable. The brief bans claiming universal compatibility. |
-| Home | "publish to your Pagehaven address, such as furnace-hill.{sites_domain}" | Real addresses come from the site name with a counter. This import got `furnace-hill-coffee-13`. The example is not an address the product makes. |
+| Home | "If it is a folder of HTML pages, yes." (FAQ, "Will my website work in Rótulo?") | Too broad. Audit section 4 lists failures for a folder of HTML pages: a missing linked stylesheet or script stops the import, text must be UTF-8, size and count limits apply, and JavaScript-built pages import with only part of them editable. The brief bans claiming universal compatibility. |
+| Home | "publish to your Rótulo address, such as furnace-hill.{sites_domain}" | Real addresses come from the site name with a counter. This import got `furnace-hill-coffee-13`. The example is not an address the product makes. |
 | Home | "The rest of each page is published as you imported it." | Partly traced. `src/publish.rs` serializes each published document again (`document.serialize()`), so the bytes may differ from the import even where content does not (read). The audit's "Only what you touch changes" covers content, not bytes. |
 | Home, compatibility | "Free to try" | Traces to decisions.md item 5, an owner default. It does not trace to code or audit section 4. "Try" suggests a later charge that does not exist. Owner call. |
 | Compatibility | "An HTML template. Download the template's ZIP. It already holds finished pages." | Not guaranteed. Many template downloads ship source files. The Landwind fixture contains `package.json` and imports only because it also has `index.html`. |
 | Home | "Check your site before you sign up" | No check runs before sign up. See problem 8. |
 
-Every other claim on both pages traced to audit section 4 or to the code. That includes the limits table, the refusal texts, the left-out file list, the editable kinds, "Undo still works when you come back tomorrow", "Pagehaven keeps a copy of the ZIP you uploaded", the custom domains wording, the 25-website limit and the 20 imports and 60 publishes an hour.
+Every other claim on both pages traced to audit section 4 or to the code. That includes the limits table, the refusal texts, the left-out file list, the editable kinds, "Undo still works when you come back tomorrow", "Rótulo keeps a copy of the ZIP you uploaded", the custom domains wording, the 25-website limit and the 20 imports and 60 publishes an hour.
 
 ---
 
@@ -256,7 +256,7 @@ Most of the copy reads as written by a person who knows the product. It is speci
 - "And the finished site still needs somewhere to live, at an address you can send to people." opens with "And" and trails into a comma clause, a trailing pile-on.
 - "How it works", "What it costs" and "Questions before you import" are label headings (capped). The other section headings make claims, which is better.
 - "Publish when it looks right" appears in the hero lead and again as step 3's title. The repetition reads as a template.
-- "Pagehaven" is the subject of most sentences in the fit, FAQ and compatibility sections ("Pagehaven finds", "Pagehaven refuses", "Pagehaven leaves out", "Pagehaven warns"). These are abstract subjects. Making the owner the subject reads warmer: "You'll see a warning when you import it."
+- "Rótulo" is the subject of most sentences in the fit, FAQ and compatibility sections ("Rótulo finds", "Rótulo refuses", "Rótulo leaves out", "Rótulo warns"). These are abstract subjects. Making the owner the subject reads warmer: "You'll see a warning when you import it."
 - No banned patterns were found. There are no contrast reveals, negation lists, colon reveals, em dashes in short copy, or hype words.
 
 **Distinctive and worth keeping**
@@ -264,4 +264,4 @@ Most of the copy reads as written by a person who knows the product. It is speci
 - The hero ring and "Heading · Saved" caption around the headline.
 - The ultramarine "is live" sheet.
 - The compatibility page quoting the refusal text word for word.
-- The FAQ answer that says plainly "Pagehaven can't reset passwords yet."
+- The FAQ answer that says plainly "Rótulo can't reset passwords yet."

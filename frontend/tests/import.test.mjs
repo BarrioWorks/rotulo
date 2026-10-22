@@ -122,12 +122,12 @@ test("parsed index classification preserves source refusal and JavaScript warnin
 
 test("parser failure keeps the uncertain upload fallback", async () => {
   const result = await inspectArchive(zip([["index.html", shell]]), () => { throw new Error("parser unavailable"); });
-  assert.deepEqual(result, { kind: "unsure", message: "We couldn't finish the quick check. You can upload anyway and let Pagehaven check the files." });
+  assert.deepEqual(result, { kind: "unsure", message: "We couldn't finish the quick check. You can upload anyway and let Rótulo check the files." });
 });
 
 test("import success accepts only the same-origin editor page route", (t) => {
   const previous = Object.getOwnPropertyDescriptor(globalThis, "location");
-  Object.defineProperty(globalThis, "location", { configurable: true, value: { origin: "https://pagehaven.example" } });
+  Object.defineProperty(globalThis, "location", { configurable: true, value: { origin: "https://rotulo.example" } });
   t.after(() => {
     if (previous) Object.defineProperty(globalThis, "location", previous);
     else delete globalThis.location;

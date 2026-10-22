@@ -1,4 +1,4 @@
-"""Pagehaven action -> glyph map shared by build_sprite.py and icon_compare.py.
+"""Rótulo action -> glyph map shared by build_sprite.py and icon_compare.py.
 
 Columns: sprite id (without i-), current sprite symbol or None, Lucide, Tabler outline, Phosphor regular, action.
 """

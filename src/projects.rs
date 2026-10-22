@@ -172,7 +172,7 @@ const RESERVED: &[&str] = &[
     "postmaster",
     "hostmaster",
     "webmaster",
-    "pagehaven",
+    "rotulo",
     "internal",
     "dashboard",
     "test",

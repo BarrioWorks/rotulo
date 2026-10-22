@@ -227,20 +227,20 @@ async fn page_writes_reject_excessive_depth() {
     request_with_create_db::<App, _, _>(|server, ctx| async move {
         let cookie = register(&server, "alice@example.com").await;
         let p = Project::new(&server, &cookie).await;
-        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let state = rotulo::state::Rotulo::from(&ctx);
         let id = project_id(&ctx, &p.pid).await;
         let source = format!("{}<p>text</p>{}", "<div>".repeat(500), "</div>".repeat(500));
-        let mut document = pagehaven::document::Document::parse(&source);
+        let mut document = rotulo::document::Document::parse(&source);
         document.assign_ids();
         let source = document.serialize();
         let target = element(&source, "p");
         let blob = state.store.put_bytes(source.as_bytes()).unwrap();
-        pagehaven::db::exec(&ctx.db, "UPDATE draft_files SET blob = ?, bytes = ? WHERE project_id = ? AND path = 'index.html'", [blob.to_string().into(), (source.len() as i64).into(), id.into()]).await.unwrap();
+        rotulo::db::exec(&ctx.db, "UPDATE draft_files SET blob = ?, bytes = ? WHERE project_id = ? AND path = 'index.html'", [blob.to_string().into(), (source.len() as i64).into(), id.into()]).await.unwrap();
         post(&server, &p.api("edits"), &cookie).json(&json!({"base_revision":p.revision,"page":"index.html","edit":{"op":"set_text","element":target,"html":format!("{}text{}", "<b>".repeat(20), "</b>".repeat(20))}})).await.assert_status_unprocessable_entity();
 
         let deep = format!("{}text{}", "<div>".repeat(513), "</div>".repeat(513));
         let blob = state.store.put_bytes(deep.as_bytes()).unwrap();
-        pagehaven::db::exec(&ctx.db, "UPDATE draft_files SET blob = ?, bytes = ? WHERE project_id = ? AND path = 'about.html'", [blob.to_string().into(), (deep.len() as i64).into(), id.into()]).await.unwrap();
+        rotulo::db::exec(&ctx.db, "UPDATE draft_files SET blob = ?, bytes = ? WHERE project_id = ? AND path = 'about.html'", [blob.to_string().into(), (deep.len() as i64).into(), id.into()]).await.unwrap();
         post(&server, &p.api("pages"), &cookie).json(&json!({"base_revision":p.revision,"from":"about.html","path":"copy.html","title":"Copy"})).await.assert_status_unprocessable_entity();
         post(&server, &p.api("pages/rename"), &cookie).json(&json!({"base_revision":p.revision,"from":"about.html","to":"renamed.html"})).await.assert_status_unprocessable_entity();
     }).await;
@@ -261,10 +261,10 @@ async fn history_and_release_restore_reject_legacy_deep_pages() {
             json!({"op":"set_text","element":element(&html,"h1"),"html":"Changed"}),
         )
         .await;
-        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let state = rotulo::state::Rotulo::from(&ctx);
         let deep = format!("{}text{}", "<div>".repeat(513), "</div>".repeat(513));
         let blob = state.store.put_bytes(deep.as_bytes()).unwrap();
-        pagehaven::db::exec(
+        rotulo::db::exec(
             &ctx.db,
             "UPDATE release_files SET draft_blob = ?, draft_bytes = ? WHERE path = 'index.html'",
             [blob.to_string().into(), (deep.len() as i64).into()],
@@ -275,7 +275,7 @@ async fn history_and_release_restore_reject_legacy_deep_pages() {
             .json(&json!({"base_revision":p.revision}))
             .await
             .assert_status_unprocessable_entity();
-        pagehaven::db::exec(
+        rotulo::db::exec(
             &ctx.db,
             "UPDATE edit_files SET before_blob = ?, before_bytes = ? WHERE path = 'index.html'",
             [blob.to_string().into(), (deep.len() as i64).into()],
@@ -298,16 +298,16 @@ async fn page_names_cannot_collide_under_unicode_lowercase() {
         let cookie = register(&server, "alice@example.com").await;
         let p = Project::new(&server, &cookie).await;
         let id = project_id(&ctx, &p.pid).await;
-        let file = pagehaven::drafts::file(&ctx.db, id, "index.html").await.unwrap().unwrap();
+        let file = rotulo::drafts::file(&ctx.db, id, "index.html").await.unwrap().unwrap();
         for existing in ["K.html", "K.html"] {
-            pagehaven::db::exec(&ctx.db, "INSERT INTO draft_files (project_id, path, blob, bytes) VALUES (?, ?, ?, ?)", [id.into(), existing.into(), file.blob.to_string().into(), file.bytes.into()]).await.unwrap();
+            rotulo::db::exec(&ctx.db, "INSERT INTO draft_files (project_id, path, blob, bytes) VALUES (?, ?, ?, ?)", [id.into(), existing.into(), file.blob.to_string().into(), file.bytes.into()]).await.unwrap();
             for (route, body) in [
                 ("pages", json!({"base_revision":p.revision,"from":"index.html","path":"k.html","title":"Copy"})),
                 ("pages/rename", json!({"base_revision":p.revision,"from":"about.html","to":"k.html"})),
             ] {
                 post(&server, &p.api(route), &cookie).json(&body).await.assert_status_unprocessable_entity();
             }
-            pagehaven::db::exec(&ctx.db, "DELETE FROM draft_files WHERE project_id = ? AND path = ?", [id.into(), existing.into()]).await.unwrap();
+            rotulo::db::exec(&ctx.db, "DELETE FROM draft_files WHERE project_id = ? AND path = ?", [id.into(), existing.into()]).await.unwrap();
         }
     }).await;
 }

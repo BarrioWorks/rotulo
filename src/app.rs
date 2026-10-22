@@ -22,7 +22,7 @@ use migration::Migrator;
 
 use crate::{
     controllers, domains, hosts, hosts::Host, preview, security, settings::Settings, sites,
-    state::Pagehaven,
+    state::Rotulo,
 };
 
 pub struct App;
@@ -47,7 +47,7 @@ impl Hooks for App {
 
     async fn after_context(ctx: AppContext) -> Result<AppContext> {
         let settings = Settings::from_context(&ctx)?;
-        let state = Pagehaven::new(settings)
+        let state = Rotulo::new(settings)
             .map_err(|e| loco_rs::Error::string(&format!("data directory: {e}")))?;
         ctx.shared_store.insert(Arc::new(state));
         ctx.shared_store
@@ -112,7 +112,7 @@ impl Initializer for ViewEngineInitializer {
     }
 
     async fn after_routes(&self, router: Router, ctx: &AppContext) -> Result<Router> {
-        let metadata = controllers::seo::metadata(&Pagehaven::from(ctx).settings.app_origin);
+        let metadata = controllers::seo::metadata(&Rotulo::from(ctx).settings.app_origin);
         let view = engines::TeraView::build_with_post_process(move |tera| {
             tera.global_context().insert("seo_pages", &metadata);
             Ok(())
@@ -125,7 +125,7 @@ impl Initializer for ViewEngineInitializer {
 /// Sends each request to the app, a draft preview or a published site, by its Host header.
 /// Nothing but the app host ever reaches the app's routes or sees its cookies.
 async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Next) -> Response {
-    let state = Pagehaven::from(&ctx);
+    let state = Rotulo::from(&ctx);
     let path = request.uri().path().to_owned();
     if path == "/internal/tls/allowed" {
         let mut response = tls_allowed(&ctx, &state, request.uri().query().unwrap_or("")).await;
@@ -167,7 +167,7 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
         Host::Preview(_) if !read_only => preview::read_only(),
         _ if !read_only => (
             StatusCode::METHOD_NOT_ALLOWED,
-            "Websites on Pagehaven are read-only.",
+            "Websites on Rótulo are read-only.",
         )
             .into_response(),
         Host::Preview(token) => preview::serve(&ctx, &token, &path).await,
@@ -179,7 +179,7 @@ async fn route_by_host(State(ctx): State<AppContext>, request: Request, next: Ne
 }
 
 /// Asked by the reverse proxy before it obtains a certificate (Caddy `on_demand_tls ask`).
-async fn tls_allowed(ctx: &AppContext, state: &Pagehaven, query: &str) -> Response {
+async fn tls_allowed(ctx: &AppContext, state: &Rotulo, query: &str) -> Response {
     let domain = query
         .split('&')
         .find_map(|pair| pair.strip_prefix("domain="))

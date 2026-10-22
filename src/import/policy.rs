@@ -38,7 +38,7 @@ pub enum FileKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Skip {
-    /// Code or configuration for a web server, which Pagehaven never runs.
+    /// Code or configuration for a web server, which Rótulo never runs.
     ServerCode,
     /// Keys, environment files, version control: probably included by accident.
     Secret,
@@ -46,7 +46,7 @@ pub enum Skip {
     Archive,
     /// Files created by operating systems and editors.
     SystemJunk,
-    /// Paths Pagehaven keeps for itself or that could be abused for certificates.
+    /// Paths Rótulo keeps for itself or that could be abused for certificates.
     Reserved,
     /// Project source and tooling files that a browser never loads.
     Source,
@@ -57,7 +57,7 @@ pub enum Skip {
 impl Skip {
     pub fn describe(self) -> &'static str {
         match self {
-            Self::ServerCode => "server code or server settings, which Pagehaven never runs",
+            Self::ServerCode => "server code or server settings, which Rótulo never runs",
             Self::Secret => "looks like a private key, password file or version-control data",
             Self::Archive => "an archive inside the ZIP",
             Self::SystemJunk => "a file created by the computer, not part of the website",
@@ -239,7 +239,7 @@ pub fn classify(path: &str) -> Result<FileKind, Skip> {
     {
         return Err(Skip::Secret);
     }
-    if segments.first() == Some(&".well-known") || segments.first() == Some(&"__pagehaven") {
+    if segments.first() == Some(&".well-known") || segments.first() == Some(&"__rotulo") {
         return Err(Skip::Reserved);
     }
     if matches!(
@@ -346,7 +346,7 @@ mod tests {
             classify(".well-known/acme-challenge/abc"),
             Err(Skip::Reserved)
         );
-        assert_eq!(classify("__pagehaven/agent.js"), Err(Skip::Reserved));
+        assert_eq!(classify("__rotulo/agent.js"), Err(Skip::Reserved));
     }
 
     #[test]

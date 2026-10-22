@@ -6,7 +6,7 @@ The brief is `brief.md`. This round builds on the Studio redesign in `../studio/
 
 Each line is checked on the running app.
 
-1. **The homepage says what Pagehaven is.** It names who it is for, what it does and the next step above the fold at 1280, 834 and 390. A fresh reader, who is an independent agent with no prior context, states all three after a 5-second look at the screenshot.
+1. **The homepage says what Rótulo is.** It names who it is for, what it does and the next step above the fold at 1280, 834 and 390. A fresh reader, who is an independent agent with no prior context, states all three after a 5-second look at the screenshot.
 2. **One primary action on every marketing page.** It leads to sign up and then straight to import. No invented testimonials, counts, prices or capabilities. A claims checklist ties each claim on the page to a feature in the code.
 3. **Import is the first thing a new account sees.** It states what to upload and what is not supported before upload, shows progress during it and says what to edit next after it. The source-only ZIP refusal keeps its exact text.
 4. **The first edit needs no instructions.** One dismissible hint, then the 12 journeys in brief section 16 complete in the browser on Furnace Hill and one AI-tool-style export. Action counts are recorded against `../studio/evaluation/blog.md`.

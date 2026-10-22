@@ -1,12 +1,12 @@
 /**
  * The editor agent. Runs inside the draft preview (a different site from the app), draws
  * hover and selection marks, runs inline text editing and reports what the user selected.
- * The server prepends `const PAGEHAVEN_APP_ORIGIN = "...";` to this file.
+ * The server prepends `const ROTULO_APP_ORIGIN = "...";` to this file.
  */
 import { OVERLAY } from "../overlay-theme.js";
 import { ANCHOR_ID, MAX_OBSTACLES, MAX_OUTLINE_IMAGES, STYLE_KEYS, envelope, isSafeHref, parseEditorMessage, } from "../protocol.js";
 import { startSelection } from "./text-start.js";
-const appOrigin = typeof PAGEHAVEN_APP_ORIGIN === "string" ? PAGEHAVEN_APP_ORIGIN : "";
+const appOrigin = typeof ROTULO_APP_ORIGIN === "string" ? ROTULO_APP_ORIGIN : "";
 const parentWindow = window.parent;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 let mode = "edit";
@@ -22,13 +22,13 @@ function post(message) {
 }
 /* Overlay. A closed shadow root on <html>. The host resets every property inline with
    !important, so no site rule reaches it, and sits in the top layer when the browser has one. */
-const host = document.createElement("pagehaven-overlay");
+const host = document.createElement("rotulo-overlay");
 const shadow = host.attachShadow({ mode: "closed" });
 const sheet = new CSSStyleSheet();
 const O = OVERLAY;
 /* Every size goes through --k (1 / canvas scale), so marks keep their size on screen. */
 const px = (value) => `calc(var(--k, 1) * ${value})`;
-const UI_FONT = `"Pagehaven UI", system-ui, sans-serif`;
+const UI_FONT = `"Rotulo UI", system-ui, sans-serif`;
 sheet.replaceSync(`
   :host { all: initial; }
   * { box-sizing: border-box; }
@@ -935,7 +935,7 @@ function setScale(scale) {
 }
 async function loadFont(data) {
     try {
-        const face = new FontFace("Pagehaven UI", data, { weight: "400 700", style: "normal" });
+        const face = new FontFace("Rotulo UI", data, { weight: "400 700", style: "normal" });
         await face.load();
         document.fonts.add(face);
     }
@@ -1175,7 +1175,7 @@ function palette() {
     };
     const vw = document.documentElement.clientWidth || innerWidth;
     for (const el of document.querySelectorAll("body, h1, h2, h3, h4, p, a, button, li, [data-ph-can*='x'], .btn")) {
-        if (el.closest("pagehaven-overlay"))
+        if (el.closest("rotulo-overlay"))
             continue;
         const s = getComputedStyle(el);
         const r = el.getBoundingClientRect();

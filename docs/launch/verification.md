@@ -1,6 +1,6 @@
 # Launch redesign: final verification
 
-This record checks the redesigned Pagehaven against brief section 16, `PLAN.md` and `decisions.md`. The baseline is `audit/README.md` (commit `9f1c48d`). The build under test is `main` at `66e03d1`, served by `pagehaven-dev` at `http://127.0.0.1:5150` on 2026-10-20.
+This record checks the redesigned Rótulo against brief section 16, `PLAN.md` and `decisions.md`. The baseline is `audit/README.md` (commit `9f1c48d`). The build under test is `main` at `66e03d1`, served by `rotulo-dev` at `http://127.0.0.1:5150` on 2026-10-20.
 
 No participants took part. One agent walked every journey once per width in Chromium (the T3 preview, incognito profile). Repeated measurements ran in `chrome-headless-shell` 154 over CDP. Every claim carries a label:
 
@@ -49,7 +49,7 @@ One caveat on the edit. The second click puts the caret where the pointer lands,
 | 11 | Opens the live site | 1 | 1 | Measured. "View website" is `target=_blank rel=noopener noreferrer` to the live host | The new "is live" sheet replaces the toast and takes focus (measured) |
 | 12 | Returns and edits again | 4 (scope not stated) | 11 from the homepage: Sign in, email, password, Sign in, Edit, 4 to edit, 2 to publish. 7 from the dashboard | Measured. Live excerpt ends "exactly what it cost. Updated on return." | Sign out lands on `/`. A signed-in visitor who opens `/` is sent to `/projects` (observed). The dashboard Edit button sits at y 777 to 821 on an 800 px screen, half below the fold (measured). The dashboard thumbnail still shows the old cherries photo (observed, see problem 1) |
 
-Version history now shows the whole list with a part selected (observed, `editor-version-history-1280`). The audit's 331 px inner scroll is gone. The settings sheet explains that the website name is only for the owner ("Only you see this name, in Pagehaven", observed), which answers Studio problem 6. The "Keyboard shortcuts" button no longer collides with the domain field (observed, `editor-settings-domains-1280`).
+Version history now shows the whole list with a part selected (observed, `editor-version-history-1280`). The audit's 331 px inner scroll is gone. The settings sheet explains that the website name is only for the owner ("Only you see this name, in Rótulo", observed), which answers Studio problem 6. The "Keyboard shortcuts" button no longer collides with the domain field (observed, `editor-settings-domains-1280`).
 
 ### At 834 x 1112 and 390 x 844, journeys 3 to 10
 

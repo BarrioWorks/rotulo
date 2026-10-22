@@ -9,7 +9,7 @@ Read PLAN.md definition-of-done items 1 and 5, seo/README.md section 3, and deci
 
 ## Findings by impact
 
-1. **High: five image references return HTML instead of images.** The two examples on the visual editor page are broken. References: `assets/views/marketing/visual-html-editor.html:36` and `:40`. The hosting examples are broken too. References: `assets/views/marketing/static-website-hosting.html:38` and `:52`. The sign-in illustration is broken. Reference: `assets/views/partials/auth_story.html:7`. All five return status 200, Content-Type `text/html`, and 820 bytes. The body is Pagehaven's “Page not found” HTML. The referenced files are absent from `assets/static/img/marketing/`. This weakens the product evidence required by decision 22. Repair the references or restore real assets, then rerun the inventory. No app fix was made.
+1. **High: five image references return HTML instead of images.** The two examples on the visual editor page are broken. References: `assets/views/marketing/visual-html-editor.html:36` and `:40`. The hosting examples are broken too. References: `assets/views/marketing/static-website-hosting.html:38` and `:52`. The sign-in illustration is broken. Reference: `assets/views/partials/auth_story.html:7`. All five return status 200, Content-Type `text/html`, and 820 bytes. The body is Rótulo's “Page not found” HTML. The referenced files are absent from `assets/static/img/marketing/`. This weakens the product evidence required by decision 22. Repair the references or restore real assets, then rerun the inventory. No app fix was made.
 2. **Medium: missing static files have misleading success status.** `config/development.yaml:19` configures `assets/static/404.html` as the static fallback. The same setting appears at `config/production.yaml:19`. Live requests to the five missing images return that HTML with 200. This masks asset failures from status-only checks and makes their measured weights artificially small. The new weight script checks image response types too. The normal missing page still correctly returns 404.
 3. **Low: two stylesheets block rendering on each page.** `assets/views/layouts/base.html:10` loads app.css. Line 11 loads screens.css on login. Marketing overrides load marketing.css at `assets/views/home.html:6`, `assets/views/marketing/compatible.html:5`, `assets/views/marketing/visual-html-editor.html:5`, and `assets/views/marketing/static-website-hosting.html:5`. The marketing CSS pair totals 63,195 bytes. The login pair totals 75,994 bytes. This is an observation, not proof of a performance failure. Measure before changing it.
 
@@ -27,7 +27,7 @@ Prompt: “From this image alone, in three short sentences: what is this product
 
 Verbatim answer:
 
-> Pagehaven lets you visually edit and publish an AI-made website.
+> Rótulo lets you visually edit and publish an AI-made website.
 > It’s for people with a finished site exported as HTML files in a ZIP.
 > Import your website to start editing.
 
@@ -43,7 +43,7 @@ Exit code: `0`.
 
 ```text
 PASS / status | 200
-PASS / unique title, one, 30..65 chars | 45 chars: Edit an HTML website without code | Pagehaven
+PASS / unique title, one, 30..65 chars | 45 chars: Edit an HTML website without code | Rótulo
 PASS / unique description, one, 70..160 chars | 156 chars
 PASS / absolute self-canonical | ['http://127.0.0.1:5150/']
 PASS / index, follow
@@ -73,7 +73,7 @@ PASS / internal link http://127.0.0.1:5150/register | 200
 PASS / internal link http://127.0.0.1:5150/static-website-hosting | 200
 PASS / internal link http://127.0.0.1:5150/visual-html-editor | 200
 PASS /compatible-exports status | 200
-PASS /compatible-exports unique title, one, 30..65 chars | 42 chars: Which website exports work with Pagehaven?
+PASS /compatible-exports unique title, one, 30..65 chars | 42 chars: Which website exports work with Rótulo?
 PASS /compatible-exports unique description, one, 70..160 chars | 160 chars
 PASS /compatible-exports absolute self-canonical | ['http://127.0.0.1:5150/compatible-exports']
 PASS /compatible-exports index, follow
@@ -92,7 +92,7 @@ PASS /compatible-exports internal link http://127.0.0.1:5150/register | 200
 PASS /compatible-exports internal link http://127.0.0.1:5150/static-website-hosting | 200
 PASS /compatible-exports internal link http://127.0.0.1:5150/visual-html-editor | 200
 PASS /visual-html-editor status | 200
-PASS /visual-html-editor unique title, one, 30..65 chars | 52 chars: Visual HTML editor for exported websites | Pagehaven
+PASS /visual-html-editor unique title, one, 30..65 chars | 52 chars: Visual HTML editor for exported websites | Rótulo
 PASS /visual-html-editor unique description, one, 70..160 chars | 153 chars
 PASS /visual-html-editor absolute self-canonical | ['http://127.0.0.1:5150/visual-html-editor']
 PASS /visual-html-editor index, follow
@@ -113,7 +113,7 @@ PASS /visual-html-editor internal link http://127.0.0.1:5150/register | 200
 PASS /visual-html-editor internal link http://127.0.0.1:5150/static-website-hosting | 200
 PASS /visual-html-editor internal link http://127.0.0.1:5150/visual-html-editor | 200
 PASS /static-website-hosting status | 200
-PASS /static-website-hosting unique title, one, 30..65 chars | 47 chars: Publish a static website from a ZIP | Pagehaven
+PASS /static-website-hosting unique title, one, 30..65 chars | 47 chars: Publish a static website from a ZIP | Rótulo
 PASS /static-website-hosting unique description, one, 70..160 chars | 157 chars
 PASS /static-website-hosting absolute self-canonical | ['http://127.0.0.1:5150/static-website-hosting']
 PASS /static-website-hosting index, follow
@@ -146,7 +146,7 @@ PASS robots.txt names absolute sitemap
 PASS sitemap status and XML type
 PASS sitemap valid XML urlset
 PASS sitemap exactly four absolute marketing URLs, no private paths | ['http://127.0.0.1:5150/', 'http://127.0.0.1:5150/compatible-exports', 'http://127.0.0.1:5150/visual-html-editor', 'http://127.0.0.1:5150/static-website-hosting']
-PASS customer host does not receive Pagehaven robots | 404
+PASS customer host does not receive Rótulo robots | 404
 SUMMARY 105 PASS, 0 FAIL
 ```
 

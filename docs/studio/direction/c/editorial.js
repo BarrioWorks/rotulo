@@ -251,14 +251,14 @@ function renderPublishBody() {
   const n = state.history.length;
   const body = $("[data-pub-body]");
   if (state.published && n === 0) {
-    body.innerHTML = `<div class="pub-done"><h3 id="pub-t" class="doc-h">Published</h3><p class="doc-lede">Visitors now see version ${state.version}.</p><p class="addr">agency-15.pagehaven.site</p><div class="pub-actions"><a class="w link" href="${SITE}" target="_blank" rel="noopener">View website <svg class="ic ic-sm"><use href="#i-ext"/></svg></a></div></div>`;
+    body.innerHTML = `<div class="pub-done"><h3 id="pub-t" class="doc-h">Published</h3><p class="doc-lede">Visitors now see version ${state.version}.</p><p class="addr">agency-15.rotulo.site</p><div class="pub-actions"><a class="w link" href="${SITE}" target="_blank" rel="noopener">View website <svg class="ic ic-sm"><use href="#i-ext"/></svg></a></div></div>`;
   } else if (n === 0) {
     body.innerHTML = `<h3 id="pub-t" class="doc-h">Publish</h3><p class="doc-lede">Everything is published. Visitors see version ${state.version}.</p>`;
   } else {
     body.innerHTML = `<h3 id="pub-t" class="doc-h">Publish</h3>
       <p class="doc-lede">Visitors see version ${state.version}, from 12 October. You have <b>${n} change${n > 1 ? "s" : ""}</b> they haven't seen.</p>
       <ul class="changes">${state.history.map((c) => `<li><span class="ch-page">Home</span>${c}</li>`).join("")}</ul>
-      <p class="addr">agency-15.pagehaven.site</p>
+      <p class="addr">agency-15.rotulo.site</p>
       <div class="pub-actions"><button class="publish lg" data-act="do-publish">Publish ${n} change${n > 1 ? "s" : ""}</button>
       <a class="w link" href="${SITE}" target="_blank" rel="noopener">View website <svg class="ic ic-sm"><use href="#i-ext"/></svg></a></div>`;
   }

@@ -7,7 +7,7 @@ No participants took part. Every result comes from one agent walking the tasks i
 ## Setup
 
 - **Site.** Furnace Hill Coffee, `fixtures/zips/furnace-hill.zip`. Both apps imported it as 7 pages (measured). The home page has a featured post with a photo, a heading, an excerpt and a "Read the post" link. Article pages have a heading, an intro, a byline and large photos.
-- **BEFORE.** Commit `243c543` in `/home/agent/code/OVH/pagehaven-before`, run on port 5177 with its own data in `/tmp/pagehaven-before`. Account `furnace-before@example.com`.
+- **BEFORE.** Commit `243c543` in `/home/agent/code/OVH/rotulo-before`, run on port 5177 with its own data in `/tmp/rotulo-before`. Account `furnace-before@example.com`.
 - **AFTER.** `main` on port 5150. The task walk used account `furnace-after2@example.com`. The 1280 heading edit, the 390 drift run and the dashboard and import screenshots came from an earlier session on `furnace-after@example.com`. The headless benchmark used `furnace-bench@example.com`.
 - **Photo.** `fixtures/images/replacement-coffee-cherry.jpg`.
 - **Browsers.** The T3 preview (Chromium) for the walks and screenshots. `chrome-headless-shell` 154 over CDP for the repeated cold loads and selection latency (`/tmp/eval/blog/bench.mjs`).

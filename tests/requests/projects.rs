@@ -1,5 +1,5 @@
 use super::support::*;
-use pagehaven::{db, projects};
+use rotulo::{db, projects};
 
 const TAKEN: &str = "That web address is taken. Please choose another.";
 
@@ -143,8 +143,8 @@ async fn deleting_a_website_requires_its_owner_and_name_and_preserves_its_addres
         p.publish(&server, &alice).await;
         let id = project_id(&ctx, &p.pid).await;
         let project = projects::reload(&ctx.db, id).await.unwrap();
-        let state = pagehaven::state::Pagehaven::from(&ctx);
-        let blob = pagehaven::drafts::files(&ctx.db, id).await.unwrap()[0].blob.clone();
+        let state = rotulo::state::Rotulo::from(&ctx);
+        let blob = rotulo::drafts::files(&ctx.db, id).await.unwrap()[0].blob.clone();
         let outside = state.store.staging().unwrap();
         std::fs::write(outside.path().join("sentinel"), b"keep").unwrap();
         std::os::unix::fs::symlink(outside.path(), state.store.release_dir(id, 1).join("outside")).unwrap();
@@ -190,7 +190,7 @@ async fn dashboard_distinguishes_draft_published_changes_and_offline() {
         let project = projects::reload(&ctx.db, project_id(&ctx, &p.pid).await)
             .await
             .unwrap();
-        let release = pagehaven::publish::live(&ctx.db, &project)
+        let release = rotulo::publish::live(&ctx.db, &project)
             .await
             .unwrap()
             .unwrap();

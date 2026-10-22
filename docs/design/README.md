@@ -1,10 +1,10 @@
-# Pagehaven redesign
+# Rótulo redesign
 
 The brief is `brief.md`. Decisions and who made them are in `decisions.md`. The design system itself is `../../DESIGN.md`, with the reasoning in `foundation.md`.
 
 ## 1. Design direction: Proof
 
-Pagehaven's interface is drawn like a printer's proof sheet: ink on a warm near-white ground, hairline rules instead of boxes and shadows, and no colour of its own. The imported website is the only colourful thing on screen, so it stays the subject. The one accent is a cyan reserved for selection, focus, links and the current page.
+Rótulo's interface is drawn like a printer's proof sheet: ink on a warm near-white ground, hairline rules instead of boxes and shadows, and no colour of its own. The imported website is the only colourful thing on screen, so it stays the subject. The one accent is a cyan reserved for selection, focus, links and the current page.
 
 Three directions were built as working HTML comps before any app code changed (`direction/`). Proof won on a measurement, not taste. Its cyan selection is the only one of the three that keeps 3:1 contrast on its own on both a white page (3.89) and a dark photo (3.64). The lime of Spot Ink measured 1.32 on white, and the gold of Shopfront 1.19 against the Agency template's own yellow button.
 

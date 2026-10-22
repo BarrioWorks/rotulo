@@ -1,12 +1,12 @@
 [workspace]
 
 [package]
-name = "pagehaven"
+name = "rotulo"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.99"
 publish = false
-default-run = "pagehaven-cli"
+default-run = "rotulo-cli"
 
 [workspace.dependencies]
 loco-rs = { version = "1.2" }
@@ -41,7 +41,7 @@ uuid = { version = "1.6", features = ["v4"] }
 unsafe_code = "forbid"
 
 [[bin]]
-name = "pagehaven-cli"
+name = "rotulo-cli"
 path = "src/bin/main.rs"
 required-features = []
 

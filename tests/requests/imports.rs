@@ -1,5 +1,5 @@
 use super::support::*;
-use pagehaven::{db, state::Pagehaven};
+use rotulo::{db, state::Rotulo};
 
 const SOURCE_MESSAGE: &str = "This ZIP contains source code rather than a finished website. Export the built static website files and try again.";
 
@@ -82,7 +82,7 @@ async fn hostile_archives_leave_no_projects_or_staging_files() {
                 .await
                 .unwrap();
             assert!(rows.is_empty());
-            let tmp = Pagehaven::from(&ctx).settings.data_dir.join("tmp");
+            let tmp = Rotulo::from(&ctx).settings.data_dir.join("tmp");
             assert_eq!(std::fs::read_dir(tmp).unwrap().count(), 0);
         }
     })
@@ -94,7 +94,7 @@ async fn hostile_archives_leave_no_projects_or_staging_files() {
 async fn upload_and_project_count_limits_are_enforced() {
     request_with_create_db::<App, _, _>(|server, ctx| async move {
         let cookie = register(&server, "alice@example.com").await;
-        let limit = Pagehaven::from(&ctx).settings.limits.upload_bytes as usize;
+        let limit = Rotulo::from(&ctx).settings.limits.upload_bytes as usize;
         let r = upload(
             &server,
             &cookie,

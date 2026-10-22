@@ -24,7 +24,7 @@ workers:
   mode: BackgroundAsync
 
 database:
-  uri: <%= get_env(name="DATABASE_URL", default="sqlite://pagehaven_development.sqlite?mode=rwc") %>
+  uri: <%= get_env(name="DATABASE_URL", default="sqlite://rotulo_development.sqlite?mode=rwc") %>
   enable_logging: false
   connect_timeout: 500
   idle_timeout: 60000
@@ -35,17 +35,17 @@ database:
   dangerously_recreate: false
 
 settings:
-  app_origin: <%= get_env(name="PAGEHAVEN_APP_ORIGIN", default="http://127.0.0.1:5150") %>
+  app_origin: <%= get_env(name="ROTULO_APP_ORIGIN", default="http://127.0.0.1:5150") %>
   scheme: http
   public_port: <%= get_env(name="PORT", default="5150") %>
   sites_domain: sites.localhost
   preview_domain: preview.localhost
-  data_dir: <%= get_env(name="PAGEHAVEN_DATA_DIR", default="data") %>
-  secret: <%= get_env(name="PAGEHAVEN_SECRET", default="development-only-secret-not-for-production-use") %>
+  data_dir: <%= get_env(name="ROTULO_DATA_DIR", default="data") %>
+  secret: <%= get_env(name="ROTULO_SECRET", default="development-only-secret-not-for-production-use") %>
   secure_cookies: false
   dns_over_https: https://cloudflare-dns.com/dns-query
   server_ipv4: 127.0.0.1
-  abuse_email: abuse@pagehaven.example
+  abuse_email: abuse@rotulo.example
   limits:
     upload_bytes: 26214400
     content_bytes: 104857600

@@ -1,5 +1,5 @@
 {% extends "layouts/base.html" %}
-{% block title %}Your websites · Pagehaven{% endblock title %}
+{% block title %}Your websites · Rótulo{% endblock title %}
 {% block body_class %}screens-body{% endblock body_class %}
 {% block body %}
 {% include "partials/app_header.html" %}
@@ -96,7 +96,7 @@
     <form data-rename-form>
       <div class="modal-body">
         <h2 id="rename-title">Rename website</h2>
-        <p id="rename-hint">This changes the name in Pagehaven. Your web address stays the same.</p>
+        <p id="rename-hint">This changes the name in Rótulo. Your web address stays the same.</p>
         <div class="field">
           <label class="label" for="rename-name">Website name</label>
           <input class="input" id="rename-name" required maxlength="80" autocomplete="off" aria-describedby="rename-error" data-rename-input>
@@ -135,7 +135,7 @@
   </dialog>
   {% else %}
   <section class="empty-import import" id="import" aria-label="Import your first website">
-    <h2>Bring your website into Pagehaven</h2>
+    <h2>Bring your website into Rótulo</h2>
     <p class="empty-import-lead">Change its words and pictures right on the page. Nothing goes live until you publish.</p>
     {% include "partials/import_area.html" %}
   </section>

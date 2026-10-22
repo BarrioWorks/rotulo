@@ -52,7 +52,7 @@ Read with a `getComputedStyle` walk over every visible text node on `/projects` 
 
 | Role | Where | Size / line-height | Weight declared, rendered on Linux | Tracking | Colour, contrast |
 |---|---|---|---|---|---|
-| Brand | header wordmark "Pagehaven" | 16.5 / 24.75 | 650, Bold | -0.015em | ink 16.1:1 |
+| Brand | header wordmark "Rótulo" | 16.5 / 24.75 | 650, Bold | -0.015em | ink 16.1:1 |
 | Display | landing h1 | clamp 38 to 68 / 1.04 | 750, Bold | -0.035em | ink |
 | Page title | "Your websites", "Import a website" | 30 / 34.5 (26 under 760 px) | 700, Bold | -0.02em | ink 16.1:1 |
 | Auth title | sign in, register | 24 | 700, Bold | -0.02em | ink |
@@ -146,7 +146,7 @@ The candidates are within 5 percent of each other. All of them are about 18 perc
 
 Judgments from the specimens rendered in Chrome on Linux (grayscale antialiasing, no system hinting for web fonts). Look at `specimens/compare-editor-ui.png`, `specimens/compare-small-sizes.png` and `specimens/compare-display.png`.
 
-**Inter.** The most legible at 11 to 13 px of the set. Its large x-height (0.546) keeps "Edited 10 minutes ago · 2 pages" readable at 12 px. The upstream build carries `cv05` (l with a tail) and `cv08` (serifed capital I), which fix the Il1 ambiguity in addresses such as `harbor-bakery.pagehaven.site` and in DNS values. The Google build strips those. Display at 52 px is competent and plain. Its risk is familiarity. Inter is the default face of a decade of SaaS, so it cannot carry identity alone.
+**Inter.** The most legible at 11 to 13 px of the set. Its large x-height (0.546) keeps "Edited 10 minutes ago · 2 pages" readable at 12 px. The upstream build carries `cv05` (l with a tail) and `cv08` (serifed capital I), which fix the Il1 ambiguity in addresses such as `harbor-bakery.rotulo.site` and in DNS values. The Google build strips those. Display at 52 px is competent and plain. Its risk is familiarity. Inter is the default face of a decade of SaaS, so it cannot carry identity alone.
 
 **Geist.** Crisp and compact, and the smallest file (21 KB subset). Holds up at 11 to 12 px. Its squared terminals and tight apertures read as developer tooling, and the face is strongly tied to Vercel. The brief asks for "precise without feeling technical". Geist is the most technical-feeling candidate.
 
@@ -162,7 +162,7 @@ Judgments from the specimens rendered in Chrome on Linux (grayscale antialiasing
 
 ### 2.3 Rendered specimens
 
-Each page sets the same Pagehaven strings: the editor top bar ("Harbor Bakery", undo, redo, Edit, Preview, Computer and Phone, "Saved", "View website", "Publish"), the floating toolbar with its Style panel, a tooltip, the image toolbar, the pages list with "Add page", the Publishing section with "Publish changes" and four version-history rows, dashboard cards, the import drop zone, the landing headline, an empty state, an 11 to 15 px waterfall and a tabular-versus-proportional numeral table. Icons in the specimens come from the proposed Lucide sprite.
+Each page sets the same Rótulo strings: the editor top bar ("Harbor Bakery", undo, redo, Edit, Preview, Computer and Phone, "Saved", "View website", "Publish"), the floating toolbar with its Style panel, a tooltip, the image toolbar, the pages list with "Add page", the Publishing section with "Publish changes" and four version-history rows, dashboard cards, the import drop zone, the landing headline, an empty state, an 11 to 15 px waterfall and a tabular-versus-proportional numeral table. Icons in the specimens come from the proposed Lucide sprite.
 
 | Specimen | HTML | Screenshot |
 |---|---|---|
@@ -187,12 +187,12 @@ The specimen HTML loads fonts from the Fontsource CDN on jsDelivr for evaluation
 
 **Inter for every interface role, plus Newsreader for a small set of display roles outside the editor.** Two families, three Inter weights (400, 500, 600) and one Newsreader weight (450).
 
-Why this pairing fits Pagehaven specifically.
+Why this pairing fits Rótulo specifically.
 
-- The owner's site is the loudest thing on screen (product principle 3). Inside the editor Pagehaven's type has to disappear behind someone else's fonts. Inter is the most legible and least opinionated face at the 12 to 15 px sizes the editor uses, and the only candidate that combines tabular figures with disambiguated Il1 for addresses.
-- Outside the editor (dashboard, import, sign in, landing, empty states) Pagehaven is the host, not the frame. That is where identity is allowed. A restrained serif in page titles is the editorial signal the brief asks for (Craft as reference, "editorial typography" in section 9). It costs nothing in the editor, because the browser downloads a face only when text uses it and no editor text will.
+- The owner's site is the loudest thing on screen (product principle 3). Inside the editor Rótulo's type has to disappear behind someone else's fonts. Inter is the most legible and least opinionated face at the 12 to 15 px sizes the editor uses, and the only candidate that combines tabular figures with disambiguated Il1 for addresses.
+- Outside the editor (dashboard, import, sign in, landing, empty states) Rótulo is the host, not the frame. That is where identity is allowed. A restrained serif in page titles is the editorial signal the brief asks for (Craft as reference, "editorial typography" in section 9). It costs nothing in the editor, because the browser downloads a face only when text uses it and no editor text will.
 - Inter alone is the generic choice. Newsreader is what makes the system recognisable. Instrument Sans was the alternative route to identity, but its tight small-size spacing fails the older-owner readability bar in PRODUCT.md.
-- The serif never appears in editor chrome. Many owner sites use serif headings, and a Pagehaven serif next to the canvas would blur whose type is whose.
+- The serif never appears in editor chrome. Many owner sites use serif headings, and a Rótulo serif next to the canvas would blur whose type is whose.
 
 If the owner rejects a second family, use Inter alone with its opsz axis kept for display sizes (50,024 B subset). Hierarchy then comes from size and the 600 weight, and identity has to come from colour and layout.
 
@@ -207,7 +207,7 @@ Sizes in px at a 16 px root. Ship them as rem so browser zoom and user font sett
 | `display` | Newsreader | clamp(40, 5.5vw, 64) / 1.04 | 450 | -0.015em | ink | Landing headline only. `text-wrap: balance` |
 | `title-1` | Newsreader | 30 / 1.15 (26 under 760 px) | 450 | -0.01em | ink | Page titles: Your websites, Import a website, sign in and register (26), editor small-screen message |
 | `title-2` | Newsreader | 22 / 1.25 | 450 | -0.005em | ink | Drop zone heading, empty state, import result name, import error card, "Which folder is your website?" |
-| `brand` | Newsreader | 20 / 1 | 450 | -0.01em | ink | The "Pagehaven" wordmark beside the logo mark |
+| `brand` | Newsreader | 20 / 1 | 450 | -0.01em | ink | The "Rótulo" wordmark beside the logo mark |
 | `heading` | Inter | 17 / 1.3 | 600 | -0.013em | ink | Dialog titles (editor included), landing step titles |
 | `title-3` | Inter | 15 / 1.35 | 600 | -0.009em | ink | Dashboard card titles, editor site name (h1), sidebar section summaries |
 | `body-lg` | Inter | 16 / 1.55 | 400 | -0.011em | ink-2 | Lead lines under page titles, empty-state text, auth lead. Measure 34 to 40 rem |
@@ -280,11 +280,11 @@ CSS.
 }
 ```
 
-The fallback overrides come from measurement. Inter at 400 is 105.6 percent the width of Arial metrics over a set of Pagehaven strings, and Newsreader at 450 is 106.2 percent of Times New Roman. Ascent and descent are the fonts' own hhea values divided by that factor. With these, the swap from fallback to web font should shift layout by about a pixel per line (inference, not measured on a slow connection).
+The fallback overrides come from measurement. Inter at 400 is 105.6 percent the width of Arial metrics over a set of Rótulo strings, and Newsreader at 450 is 106.2 percent of Times New Roman. Ascent and descent are the fonts' own hhea values divided by that factor. With these, the swap from fallback to web font should shift layout by about a pixel per line (inference, not measured on a slow connection).
 
 Loading. Preload only Inter, in `layouts/base.html`, with `<link rel="preload" href="/static/fonts/inter-text-400-600.woff2" as="font" type="font/woff2" crossorigin>`. Do not preload Newsreader. It is used only off the editor and is small. Both use `font-display: swap`. The app's CSP already says `font-src 'self'`, so self-hosting needs no header change. A CDN would be blocked by that CSP, and should stay that way.
 
-Isolation. Imported sites render in a sandboxed iframe on a separate preview origin, so neither face can leak into an owner's page, and the owner's fonts cannot reach Pagehaven.
+Isolation. Imported sites render in a sandboxed iframe on a separate preview origin, so neither face can leak into an owner's page, and the owner's fonts cannot reach Rótulo.
 
 ---
 
@@ -364,16 +364,16 @@ What works. One sprite, one viewBox, `currentColor` throughout, `aria-hidden` on
 
 ### 5.1 Options compared
 
-Packages were inspected with `npm pack` into `/tmp/type-eval/icons/` (nothing installed). The full side-by-side for all 48 Pagehaven actions is `specimens/icons-compare.html`, with a screenshot in `specimens/icons-compare.png`.
+Packages were inspected with `npm pack` into `/tmp/type-eval/icons/` (nothing installed). The full side-by-side for all 48 Rótulo actions is `specimens/icons-compare.html`, with a screenshot in `specimens/icons-compare.png`.
 
 | Option | Licence | Version checked | Construction | Fit |
 |---|---|---|---|---|
 | **Lucide** | ISC, plus MIT (Cole Bemis) for glyphs derived from Feather | `lucide-static` 1.59.0, 2,159 glyphs, github.com/lucide-icons/lucide | Stroked paths, 24 grid, round caps and joins | Same construction as the current sprite, so `.icon` CSS keeps working. Every needed action has a clear glyph, including `text-cursor`, `image-up`, `baseline`, `paint-bucket`, `corner-left-up`, `file-plus`, `history`, `rotate-ccw` |
 | Tabler | MIT | `@tabler/icons` 3.49.0, 5,184 outline glyphs, github.com/tabler/tabler-icons | Stroked, 24 grid, round caps | Compatible, but busier at 16 px. `typography` has serifs and `text-color` shrinks the A. `bucket` (Background) is an empty bucket with no pour, which loses the meaning |
 | Phosphor | MIT | `@phosphor-icons/core` 2.1.1, github.com/phosphor-icons/phosphor-core | Filled outline paths on a 256 grid, one drawing per weight | Weight cannot follow a CSS stroke token. `.icon` would switch to `fill`, and the stroke-based logo and chevrons would no longer match |
-| Hand-maintained sprite | Pagehaven's own | today | Stroked, 24 grid | Coherent enough, but each new glyph has to be drawn, and the current drawings carry the defects in section 4.2. Nobody maintains its geometry |
+| Hand-maintained sprite | Rótulo's own | today | Stroked, 24 grid | Coherent enough, but each new glyph has to be drawn, and the current drawings carry the defects in section 4.2. Nobody maintains its geometry |
 
-**Recommendation: Lucide, vendored into the existing sprite.** It keeps the property the codebase cares about (one static SVG, no runtime dependency, no framework), replaces hand drawing with a maintained source, and is the closest in construction to the incumbent sprite, so the visual change is a refinement rather than a new language. Phosphor's duotone and weight range are better for illustration, which Pagehaven should not be doing. Tabler is a credible second choice if Lucide's licence split is a concern.
+**Recommendation: Lucide, vendored into the existing sprite.** It keeps the property the codebase cares about (one static SVG, no runtime dependency, no framework), replaces hand drawing with a maintained source, and is the closest in construction to the incumbent sprite, so the visual change is a refinement rather than a new language. Phosphor's duotone and weight range are better for illustration, which Rótulo should not be doing. Tabler is a credible second choice if Lucide's licence split is a concern.
 
 Licence obligations. ISC and MIT both require the copyright and permission notice to ship with copies. `tools/build_sprite.py` writes a header comment naming both. Ship the full text of `lucide-static/LICENSE` as `assets/static/img/icons.LICENSE.txt` beside the sprite.
 
@@ -389,7 +389,7 @@ To add a glyph later, add one row to `glyphs.py` and rerun step 2. Never hand-ed
 
 ### 5.3 Glyph map
 
-| Pagehaven action | Sprite id | Lucide glyph | Icon shown? |
+| Rótulo action | Sprite id | Lucide glyph | Icon shown? |
 |---|---|---|---|
 | Edit text | `i-edit-text` | `text-cursor` | With label "Edit text" |
 | Replace image | `i-replace-image` | `image-up` | With label "Replace image" |

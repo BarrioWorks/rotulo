@@ -1,8 +1,8 @@
-# Pagehaven
+# Rótulo
 
 Your AI-built website. Yours to edit.
 
-Pagehaven imports a finished static website as a ZIP (from Lovable, Bolt, v0, Claude or anything that exports HTML), lets its owner change text, images, links, styles and sections by clicking on the page, and publishes it to a Pagehaven address or the owner's own domain. It never runs uploaded code on the server.
+Rótulo imports a finished static website as a ZIP (from Lovable, Bolt, v0, Claude or anything that exports HTML), lets its owner change text, images, links, styles and sections by clicking on the page, and publishes it to a Rótulo address or the owner's own domain. It never runs uploaded code on the server.
 
 ## Run it locally
 
@@ -10,7 +10,7 @@ Requires Rust 1.99, Node 24 (only to rebuild the editor's TypeScript) and SQLite
 
 ```sh
 npm ci                       # TypeScript compiler, the only npm dependency
-scripts/dev-server.sh        # builds and starts http://127.0.0.1:5150, data in /tmp/pagehaven-dev
+scripts/dev-server.sh        # builds and starts http://127.0.0.1:5150, data in /tmp/rotulo-dev
 ```
 
 Open http://127.0.0.1:5150, sign up, and import `fixtures/zips/startbootstrap-agency.zip` (a real Bootstrap template) or `fixtures/zips/landwind.zip` (Tailwind). Draft previews run on `*.preview.localhost:5150` and published websites on `<address>.sites.localhost:5150`. Chrome and Firefox resolve `*.localhost` to this machine without any setup.
@@ -27,7 +27,7 @@ scripts/perf.sh 7 fixtures/zips/harbor-bakery.zip   # import and publish timings
 
 ## Operate it
 
-- `pagehaven-cli task unpublish slug:<address>` suspends a website after an abuse report. `pagehaven-cli task reinstate slug:<address>` lets its owner publish again without putting it back online.
+- `rotulo-cli task unpublish slug:<address>` suspends a website after an abuse report. `rotulo-cli task reinstate slug:<address>` lets its owner publish again without putting it back online.
 - `docs/deployment.md` lists what the VPS needs and what still needs the owner's approval.
 
 ## Documents
@@ -40,11 +40,11 @@ scripts/perf.sh 7 fixtures/zips/harbor-bakery.zip   # import and publish timings
 - `docs/demo-script.md`: the investor demonstration, step by step.
 - `docs/deployment.md`: deployment requirements and checklist.
 
-## What Pagehaven can and cannot edit
+## What Rótulo can and cannot edit
 
 - It edits the HTML the website ships. Text, images, links, inline styles and top-level sections are editable.
 - Content that the website's own JavaScript creates in the browser is shown but not editable. A single-page app whose `index.html` is an empty `<div id="root">` imports and publishes, but has almost nothing to edit. The editor explains this when such content is clicked.
-- Pagehaven does not build source code. A ZIP of a React, Vue, Svelte or Vite project without its `dist`/`build` output is refused with an explanation.
+- Rótulo does not build source code. A ZIP of a React, Vue, Svelte or Vite project without its `dist`/`build` output is refused with an explanation.
 - HTML is re-serialized on import. The page looks the same, but attribute quoting and void tags may be written differently from the original. The original ZIP is kept unchanged.
 - Server code, `.htaccess`, environment files, keys, version-control folders and nested archives are left out and named in the import report.
 - Custom domains need TLS for arbitrary hostnames. In development the full flow works up to DNS verification. In production it stays off until the TLS approach in `docs/deployment.md` is approved.

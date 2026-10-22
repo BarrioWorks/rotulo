@@ -1,6 +1,6 @@
-# Pagehaven threat model
+# Rótulo threat model
 
-Assets: user accounts and sessions, private drafts, published sites, the shared VPS and its other applications, and Pagehaven's reputation as a host.
+Assets: user accounts and sessions, private drafts, published sites, the shared VPS and its other applications, and Rótulo's reputation as a host.
 
 Actors: an anonymous visitor, a signed-in user attacking another user, a user uploading a hostile archive, third-party JavaScript inside an imported site (an AI tool may have added it), and a visitor of a published site.
 
@@ -14,7 +14,7 @@ Actors: an anonymous visitor, a signed-in user attacking another user, a user up
 | Nested archives | Never extracted. Skipped with a warning | `src/import/tests.rs` |
 | Server-side code or config (`.php`, `.htaccess`, `web.config`, `.env`) | Policy table. Skipped with a warning. Nothing on the user-content hosts runs on the server | `src/import/tests.rs` |
 | Secrets in the ZIP (`.env`, keys, `.git/`) | Skipped and named in the import report | `src/import/tests.rs` |
-| Wrong content behind an extension | Magic bytes for images and fonts, UTF-8 for text. Pagehaven sets the MIME type and `nosniff` | `src/import/tests.rs` |
+| Wrong content behind an extension | Magic bytes for images and fonts, UTF-8 for text. Rótulo sets the MIME type and `nosniff` | `src/import/tests.rs` |
 | Disk exhaustion | Upload, content and file-count limits, per-user project limit, upload and import rate limits, staging removed on failure | `tests/requests/imports.rs` |
 | CPU or memory exhaustion | Global semaphore on imports and publishes, blocking work off the async runtime, streamed inflate | `scripts/perf.sh`, `docs/verification.md` |
 | Imported JavaScript reading app cookies or storage | Draft previews and published sites live on a different site from the app. No cookies are ever set on those hosts | `tests/requests/preview.rs` |
@@ -36,7 +36,7 @@ Actors: an anonymous visitor, a signed-in user attacking another user, a user up
 | Custom domain takeover | Only verified hostnames route. A hostname is verified by one project at a time. Verification requires the project's own random token in DNS | `tests/requests/domains.rs` |
 | Certificates for unowned domains | TLS ask endpoint returns 200 only for verified hostnames and managed subdomains with a live release | `tests/requests/domains.rs` |
 | ACME challenge abuse | `.well-known/` is never imported or published | `src/import/tests.rs`, `tests/requests/imports.rs` |
-| Phishing or malware on published sites | Separate user-content domain, a report address on every 404, operator `unpublish` task. Pagehaven cannot prove arbitrary JavaScript is harmless | `tests/requests/publishing.rs`; limitation |
+| Phishing or malware on published sites | Separate user-content domain, a report address on every 404, operator `unpublish` task. Rótulo cannot prove arbitrary JavaScript is harmless | `tests/requests/publishing.rs`; limitation |
 | Other applications on the VPS | Unprivileged user, one port on loopback, memory and CPU limits from the container runtime, no Docker socket, no changes to the shared proxy beyond adding routes | `docs/deployment.md` |
 
 Not covered in this prototype: email verification and password reset, malware scanning of uploads, abuse reporting workflow beyond operator unpublish, storage quotas per user beyond the project count.

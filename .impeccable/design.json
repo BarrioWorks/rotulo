@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-20T00:19:54Z",
-  "title": "Design System: Pagehaven",
+  "title": "Design System: Rótulo",
   "extensions": {
     "colorMeta": {
       "ground": {
@@ -667,7 +667,7 @@
       },
       "brand": {
         "displayName": "Brand",
-        "purpose": "The Pagehaven wordmark beside the flat ink logo."
+        "purpose": "The Rótulo wordmark beside the flat ink logo."
       },
       "mono": {
         "displayName": "Mono",
@@ -996,7 +996,7 @@
   ],
   "narrative": {
     "northStar": "The Proof Sheet",
-    "overview": "Pagehaven's chrome is the printer's proof an owner checks before their words go out. It is black ink on plain near-white stock, cut with hairline rules, and nothing else. The interface has no hue of its own, so the owner's website is the only color on screen. Confidence comes from contrast and precision, not from color, size or decoration.\n\nOne bright thing exists: Proof Cyan, the color of a press check. It means what you are touching right now, where keyboard focus is, and where a link goes. Selection on the canvas is a cyan rule with crop marks outside the corners and a filled slug that names the part (\"Heading\", \"Image\"). The overlay tokens for that are defined now; the overlay itself lands in a later phase.\n\nDensity is calm and legible. Text starts at 15 px for sentences, controls are 36 px tall and grow to 44 px under touch. Motion is mechanical and short and never bounces. Surfaces are flat. Only things that float above the page lift, and they carry a 1 px ink edge so they read as a sheet laid on top.",
+    "overview": "Rótulo's chrome is the printer's proof an owner checks before their words go out. It is black ink on plain near-white stock, cut with hairline rules, and nothing else. The interface has no hue of its own, so the owner's website is the only color on screen. Confidence comes from contrast and precision, not from color, size or decoration.\n\nOne bright thing exists: Proof Cyan, the color of a press check. It means what you are touching right now, where keyboard focus is, and where a link goes. Selection on the canvas is a cyan rule with crop marks outside the corners and a filled slug that names the part (\"Heading\", \"Image\"). The overlay tokens for that are defined now; the overlay itself lands in a later phase.\n\nDensity is calm and legible. Text starts at 15 px for sentences, controls are 36 px tall and grow to 44 px under touch. Motion is mechanical and short and never bounces. Surfaces are flat. Only things that float above the page lift, and they carry a 1 px ink edge so they read as a sheet laid on top.",
     "keyCharacteristics": [
       "Ink on warm near-white, no brand hue in the chrome.",
       "Proof Cyan only for selection, focus and links.",

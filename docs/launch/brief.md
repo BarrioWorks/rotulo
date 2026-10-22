@@ -1,10 +1,10 @@
-# Pagehaven — Bold Product Design, CRO & UX Overhaul
+# Rótulo — Bold Product Design, CRO & UX Overhaul
 
 Act as a founding product designer, creative director, conversion rate optimization specialist, and senior frontend engineer.
 
-**Objective:** Transform Pagehaven into a distinctive, premium product with exceptional visual design, intuitive interactions, and a conversion-focused website.
+**Objective:** Transform Rótulo into a distinctive, premium product with exceptional visual design, intuitive interactions, and a conversion-focused website.
 
-Pagehaven must look and feel like a serious competitor to Framer, Webflow, and modern creative productivity tools, while remaining substantially simpler for nontechnical users.
+Rótulo must look and feel like a serious competitor to Framer, Webflow, and modern creative productivity tools, while remaining substantially simpler for nontechnical users.
 
 This is an end-to-end implementation task. Research, audit, redesign, implement, and verify the result.
 
@@ -73,13 +73,13 @@ Design and CRO must reinforce each other.
 
 Do not allow marketing requirements to make the product interface cluttered or aggressive.
 
-## 2. Understand Pagehaven
+## 2. Understand Rótulo
 
-Pagehaven allows someone to:
+Rótulo allows someone to:
 
 1. Generate a website using an external AI coding tool.
 2. Export a compatible static website as a ZIP.
-3. Import the ZIP into Pagehaven.
+3. Import the ZIP into Rótulo.
 4. Edit text, images, links, and supported styles visually.
 5. Preview the website.
 6. Publish it to a hosted URL or custom domain.
@@ -162,7 +162,7 @@ Use these products as references:
 
 Do not copy their interfaces or branding.
 
-Develop an original Pagehaven identity.
+Develop an original Rótulo identity.
 
 ### Visual principles
 
@@ -199,7 +199,7 @@ Use `cro`, `copywriting`, and `marketing-psychology`.
 
 The homepage must quickly communicate:
 
-- What Pagehaven is.
+- What Rótulo is.
 - Who it is for.
 - Which problem it solves.
 - How it works.
@@ -311,7 +311,7 @@ Prefer concrete demonstrations over broad promises.
 
 ## 6. Make import the primary activation experience
 
-For Pagehaven, a successful ZIP import is more important than account creation alone.
+For Rótulo, a successful ZIP import is more important than account creation alone.
 
 Optimize the flow from arrival to first editable website.
 
@@ -355,7 +355,7 @@ Avoid lengthy onboarding tours, forced tutorials, and modal sequences.
 
 ## 7. Radically improve the editor experience
 
-The editor is Pagehaven's primary product differentiator.
+The editor is Rótulo's primary product differentiator.
 
 Use the Impeccable methodology to make it exceptional.
 
@@ -484,7 +484,7 @@ Do not use animation to conceal slow operations.
 
 ### Original ideas
 
-Ask the design subagents to propose at least five interaction ideas specifically suited to Pagehaven.
+Ask the design subagents to propose at least five interaction ideas specifically suited to Rótulo.
 
 Evaluate them by:
 
@@ -517,7 +517,7 @@ Evaluate options such as:
 
 These are candidates, not mandatory choices.
 
-Choose based on Pagehaven's identity.
+Choose based on Rótulo's identity.
 
 Create consistent rules for:
 
@@ -568,7 +568,7 @@ Treat these as keyword hypotheses until search demand is verified.
 
 Do not publish generic SEO articles merely to increase page count.
 
-Focus on high-intent pages that help potential customers understand Pagehaven.
+Focus on high-intent pages that help potential customers understand Rótulo.
 
 ## 12. Define a conversion funnel
 
@@ -601,7 +601,7 @@ Delegate research to the subagents.
 Require a concise report covering:
 
 1. Current UX and CRO problems.
-2. Published UX principles that apply to Pagehaven.
+2. Published UX principles that apply to Rótulo.
 3. Competitor interaction patterns.
 4. Three possible visual directions.
 5. Recommended direction and expected trade-offs.
@@ -678,7 +678,7 @@ Correct visual defects and broken interactions.
 
 ## 15. Preserve the existing security model
 
-Pagehaven runs on Loco.rs and supports static-only imports.
+Rótulo runs on Loco.rs and supports static-only imports.
 
 This redesign must not weaken:
 
@@ -707,7 +707,7 @@ Do not modify production infrastructure without approval.
 
 Test real user journeys:
 
-1. A visitor understands Pagehaven's purpose.
+1. A visitor understands Rótulo's purpose.
 2. A user registers.
 3. The user imports a compatible static ZIP.
 4. The website appears correctly.
@@ -773,7 +773,7 @@ Provide:
 
 ## Definition of done
 
-Pagehaven should:
+Rótulo should:
 
 - Immediately communicate its purpose.
 - Look like a distinctive premium product.
@@ -788,7 +788,7 @@ Pagehaven should:
 - Avoid unnecessary infrastructure and dependencies.
 - Demonstrate a meaningful improvement over the previous design.
 
-**Success criterion:** A first-time visitor should understand Pagehaven in seconds, want to try importing a website, and be able to complete their first edit without instructions.
+**Success criterion:** A first-time visitor should understand Rótulo in seconds, want to try importing a website, and be able to complete their first edit without instructions.
 
 The result must combine the aesthetic ambition of a premium creative application with the clarity and efficiency of a genuinely useful tool.
 

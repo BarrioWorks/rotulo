@@ -26,7 +26,7 @@ Recommended UI face: **Onest**, SIL Open Font License 1.1 ([licence](https://git
 
 Changing from Schibsted Grotesk needs the owner's approval. Text to send:
 
-> Pagehaven's new editor floats small glass controls over your website, so its own type has to read clearly at 11 to 15 px over any background and feel calm next to any site. We set the same toolbar, page list and settings panel in seven free typefaces and recommend switching the interface font from Schibsted Grotesk to Onest. Onest is open and friendly at small sizes, it is rarely seen in other apps, and the file is 13 KB smaller than the current one. It is free to self-host under the SIL Open Font License 1.1. We would also stop using the serif Newsreader, so the whole app uses one font. Do you approve switching to Onest? If you prefer to keep Schibsted Grotesk, everything else in the new design works with it unchanged.
+> Rótulo's new editor floats small glass controls over your website, so its own type has to read clearly at 11 to 15 px over any background and feel calm next to any site. We set the same toolbar, page list and settings panel in seven free typefaces and recommend switching the interface font from Schibsted Grotesk to Onest. Onest is open and friendly at small sizes, it is rarely seen in other apps, and the file is 13 KB smaller than the current one. It is free to self-host under the SIL Open Font License 1.1. We would also stop using the serif Newsreader, so the whole app uses one font. Do you approve switching to Onest? If you prefer to keep Schibsted Grotesk, everything else in the new design works with it unchanged.
 
 If the owner says no, set `--font-ui` to the value of `--font-ui-fallback`. The shipped file `assets/static/fonts/schibsted-grotesk-400-700.woff2` and its metric fallback stay. Every size, weight and tracking token stays the same. Schibsted renders well at these sizes (see `screens/specimen-schibsted-grotesk-1280.png`). Its cost is the print character tied to Proof, which this round moves away from.
 
@@ -45,7 +45,7 @@ The specimen pages measure each face in the browser with canvas `measureText` at
 | Geist | OFL 1.1, [vercel/geist-font](https://github.com/vercel/geist-font/blob/main/LICENSE.txt) | 29.4 KB | 0.540 em | Crisp and narrow. "rn" runs into "m" at 13 px in the ladder. Strongly tied to Vercel and developer tools, the feeling the brief wants to leave. |
 | Schibsted Grotesk | OFL 1.1, [schibsted/schibsted-grotesk](https://github.com/schibsted/schibsted-grotesk/blob/main/OFL.txt) | 46.8 KB | 0.530 em | Good at every size. Squarer, newspaper character. |
 | Manrope | OFL 1.1, [googlefonts/manrope](https://github.com/googlefonts/manrope/blob/master/OFL.txt) | 24.8 KB | 0.540 em | Tight spacing at 11 and 12 px. "rn m" merges. Reads as a display face pressed into UI work. |
-| DM Sans | OFL 1.1, [googlefonts/dm-fonts](https://github.com/googlefonts/dm-fonts/blob/main/Sans/OFL.txt) | 36.9 KB | 0.510 em | Geometric and pleasant, lower x-height, so 11 px labels look smaller than the others. Common in AI-generated sites, which are exactly the sites Pagehaven edits. |
+| DM Sans | OFL 1.1, [googlefonts/dm-fonts](https://github.com/googlefonts/dm-fonts/blob/main/Sans/OFL.txt) | 36.9 KB | 0.510 em | Geometric and pleasant, lower x-height, so 11 px labels look smaller than the others. Common in AI-generated sites, which are exactly the sites Rótulo edits. |
 | Figtree | OFL 1.1, [erikdkennedy/figtree](https://github.com/erikdkennedy/figtree/blob/master/OFL.txt) | 20.2 KB | 0.500 em | The smallest file and the narrowest set (188 px for the 13 px status line where the others take 198 to 201 px). The lowest x-height, so the 11 px chip loses legibility first. |
 
 The two faces added to the brief's list are Onest and Figtree. Instrument Sans, IBM Plex Sans and DM Sans appear on Impeccable's list of overused defaults, so Instrument Sans and Plex were not added.
@@ -55,7 +55,7 @@ Screenshots: `screens/specimen-compare-1280.png` (all seven stacked) and `screen
 ### Why Onest
 
 - It holds up at 11, 12 and 13 px in a 36 px capsule. Its x-height (0.53 em) matches Schibsted's and sits 0.02 em under Inter's. Its spacing stays open where Manrope and Geist start to merge letters.
-- It is distinctive without being loud. Its rounded joins sit well with capsule shapes and the iPadOS feel the owner asked for. Few products use it, so Pagehaven does not look like a dashboard template, and it is not the face of the AI-built sites being edited.
+- It is distinctive without being loud. Its rounded joins sit well with capsule shapes and the iPadOS feel the owner asked for. Few products use it, so Rótulo does not look like a dashboard template, and it is not the face of the AI-built sites being edited.
 - It is 33.8 KB, which is 13 KB less than the current Schibsted file.
 - It covers Cyrillic too (not measured here), which keeps a later translation open.
 
@@ -82,7 +82,7 @@ Inconsistencies found:
 1. **Size inside one bar.** Undo and redo use the 20 px icon in a 30 px button (`assets/views/projects/editor.html:53,56`). The mode and device segments next to them use 16 px (`editor.html:62-73`). The same bar mixes 20 and 16 px.
 2. **Three active-state languages.** A pressed `.seg` button is an ink fill with white text (`app.css:434`). A pressed `.tb-btn` is a cyan wash with link-coloured text (`editor.css:208`). A pressed `.btn-ghost` is a grey wash (`app.css:322`). The landing mock uses the cyan wash (`screens.css:239`). Owners cannot learn one meaning for "on".
 3. **One glyph, two meanings.** The eye (`preview`) means both Preview mode and Show section (`frontend/editor/toolbar.ts:38,285`). The pencil (`edit`) means Edit mode, Edit and Rename. The triangle (`alert`) is both warning and error (`frontend/editor/publish.ts:122,125`), so the two differ only by colour.
-4. **One meaning, two glyphs.** A web address is a globe on the Pagehaven address and a link icon on a custom domain (`assets/views/projects/index.html:49,55`). The off-screen pointer uses arrows for above and below but chevrons for left and right (`toolbar.ts:85-88`).
+4. **One meaning, two glyphs.** A web address is a globe on the Rótulo address and a link icon on a custom domain (`assets/views/projects/index.html:49,55`). The off-screen pointer uses arrows for above and below but chevrons for left and right (`toolbar.ts:85-88`).
 5. **Double disclosure.** The toolbar's More button carries an ellipsis plus a chevron caret (`toolbar.ts:225,342`, `editor.css:207`). Either one says "menu".
 6. **Hand-tuned alignment.** `.alert .icon` and `.delete-warning .icon` are nudged with `margin-top: 2px` (`app.css:404`, `screens.css:87`) instead of aligning to the first line's box.
 7. **Touch targets.** `.tb-btn` and `.btn-sm` are 30 px and the icon segments are 28 by 32 px (`app.css:425-435`). They meet WCAG 2.5.8 (24 px), and `(pointer: coarse)` raises them to 44 px. On a fine pointer, 30 px with a 16 px glyph is the smallest target in the app.
@@ -216,7 +216,7 @@ Seen in the light screenshot: the undo tooltip sits close to the selection chip 
 ## Tokens
 
 ```css
-/* Pagehaven Studio identity tokens (proposal). measure.py reads this file; README.md carries a copy. */
+/* Rótulo Studio identity tokens (proposal). measure.py reads this file; README.md carries a copy. */
 :root {
   /* Families. One UI face. --font-ui-fallback is the answer if the owner keeps Schibsted Grotesk. */
   --font-ui: "Onest", "Onest Fallback", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -236,7 +236,7 @@ Seen in the light screenshot: the undo tooltip sits close to the selection chip 
   --ws-ground-edge: #D9D9DF;   /* canvas edge on the ground */
   --surface: #FAFAFB;          /* opaque panels, inputs, fallback for every glass level */
   --surface-sunk: #F0F0F3;     /* search fields and tracks inside panels */
-  --ink: #17171C;              /* text and icons on any Pagehaven surface */
+  --ink: #17171C;              /* text and icons on any Rótulo surface */
   --ink-2: #4A4A55;            /* secondary text, idle icons */
   --ink-3: #5F5F6B;            /* meta on opaque and glass-3 surfaces; never on glass-2 */
   --rule: rgba(23, 23, 28, 0.10);

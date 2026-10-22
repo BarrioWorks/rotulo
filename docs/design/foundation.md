@@ -1,29 +1,29 @@
 # Design foundation (Phase C)
 
-This page records why Pagehaven's interface uses Schibsted Grotesk, Newsreader and Lucide, and what the screen and editor engineers inherit. The system itself is specified in `DESIGN.md`. The tokens and shared components live at the top of `assets/static/css/app.css`.
+This page records why Rótulo's interface uses Schibsted Grotesk, Newsreader and Lucide, and what the screen and editor engineers inherit. The system itself is specified in `DESIGN.md`. The tokens and shared components live at the top of `assets/static/css/app.css`.
 
 The direction is Proof (`docs/design/direction/README.md`, section 3A). A printer's proof is the last thing an owner checks before their words go out: black ink on plain stock, hairline rules and crop marks. The chrome copies that sheet. It has no hue of its own, so the owner's site is the only colourful thing on screen. Cyan appears only where the owner is touching something: selection, focus and links.
 
 ## Why Schibsted Grotesk carries the interface
 
-Schibsted Grotesk is a newspaper grotesk drawn for the Schibsted media group's digital products. That origin is the reason it fits. A newspaper face has to stay readable in short labels at small sizes, and Pagehaven's editor is mostly short labels at 13 to 15 px: "Edit text", "Replace image", "Saved", "Publish". The face also belongs to the print-production world that the Proof direction borrows from, so the type and the ink-and-hairline surfaces tell one story.
+Schibsted Grotesk is a newspaper grotesk drawn for the Schibsted media group's digital products. That origin is the reason it fits. A newspaper face has to stay readable in short labels at small sizes, and Rótulo's editor is mostly short labels at 13 to 15 px: "Edit text", "Replace image", "Saved", "Publish". The face also belongs to the print-production world that the Proof direction borrows from, so the type and the ink-and-hairline surfaces tell one story.
 
 The measured reasons:
 
 - **Real middle weights.** The shipped file is one variable font covering weights 400 to 700. Before this phase, Linux machines rendered the system stack as DejaVu Sans, which has only 400 and 700, so seven declared weights collapsed into two (`docs/design/type-icons/README.md`, section 1.2). With real 500 and 600 cuts, a button label (500) and a dialog title (600) look different on every platform.
 - **Legible at UI sizes.** The x-height is 0.527 of the em (read from the shipped file's `OS/2` table). That keeps 13 px meta text such as "Edited 4 minutes ago · 1 page" readable for the older owners PRODUCT.md describes.
 - **Small to ship.** All four weights cost 46,584 bytes as one woff2, subset to Latin-1 and Latin Extended-A with the `kern`, `liga`, `calt`, `tnum` and `case` features.
-- **Not the category default.** Inter would make Pagehaven look like every other SaaS tool, and Geist reads as developer tooling. Schibsted has more character in its 600 titles without going heavy.
+- **Not the category default.** Inter would make Rótulo look like every other SaaS tool, and Geist reads as developer tooling. Schibsted has more character in its 600 titles without going heavy.
 
 One quirk sets a rule. Schibsted's tabular figures give commas and words awkward spacing, so `tabular-nums` applies only to cells that hold digits alone (`.tnum`, `td.num`). Running text such as "18 files · 764 KB" keeps proportional figures.
 
 ## Why Newsreader appears only in a few titles
 
-Newsreader is Production Type's optical-size text serif. Pagehaven ships one static instance at weight 450 and optical size 36, which costs 29,108 bytes.
+Newsreader is Production Type's optical-size text serif. Rótulo ships one static instance at weight 450 and optical size 36, which costs 29,108 bytes.
 
-It gives the pages where Pagehaven is the host, not the frame, a calm editorial voice: the landing headline, page titles ("Your websites", "Import a website"), sign-in and register titles, the drop zone title, empty states, import result and error titles, and the "needs a bigger screen" message. That is where the brief asks for a recognisable identity.
+It gives the pages where Rótulo is the host, not the frame, a calm editorial voice: the landing headline, page titles ("Your websites", "Import a website"), sign-in and register titles, the drop zone title, empty states, import result and error titles, and the "needs a bigger screen" message. That is where the brief asks for a recognisable identity.
 
-It never appears in editor chrome, for two reasons. Many owner sites use serif headings, and a Pagehaven serif next to the canvas would blur whose type is whose. Its x-height is also small (0.426), so it reads poorly below 20 px. The smallest Newsreader role, `title-2`, is 24 px.
+It never appears in editor chrome, for two reasons. Many owner sites use serif headings, and a Rótulo serif next to the canvas would blur whose type is whose. Its x-height is also small (0.426), so it reads poorly below 20 px. The smallest Newsreader role, `title-2`, is 24 px.
 
 The split costs the editor nothing. The browser downloads a face only when visible text uses it. In the running editor at 1280 px, `document.fonts` reports Newsreader as `unloaded` and only `schibsted-grotesk-400-700.woff2` appears in the resource list (measured this session).
 
@@ -37,10 +37,10 @@ The split costs the editor nothing. The browser downloads a face only when visib
 
 ## Why Lucide is the one icon family
 
-Lucide is a maintained set of stroked icons on a 24-unit grid. Pagehaven already drew its icons that way: one SVG sprite, `currentColor` strokes, and a `<use href>` reference from templates and from `icon()` in `frontend/ui.ts`. Lucide therefore replaced hand-drawn glyphs without changing the delivery. There is no runtime package and no framework. The sprite is 7,938 bytes (2,268 gzipped) for 43 symbols.
+Lucide is a maintained set of stroked icons on a 24-unit grid. Rótulo already drew its icons that way: one SVG sprite, `currentColor` strokes, and a `<use href>` reference from templates and from `icon()` in `frontend/ui.ts`. Lucide therefore replaced hand-drawn glyphs without changing the delivery. There is no runtime package and no framework. The sprite is 7,938 bytes (2,268 gzipped) for 43 symbols.
 
 - **Action-named ids.** Sprite ids name the action, not the drawing (`i-edit-text` is Lucide's `text-cursor`, `i-replace-image` is `image-up`). Swapping a glyph later touches one row in `scripts/design/build_icons.py`.
-- **Clear metaphors for nontechnical owners.** The audit found one pencil meaning four things, Publish and Import sharing an arrow, and a sparkle that promised AI (`docs/design/type-icons/README.md`, section 4.2). Lucide has a distinct, conventional glyph for each Pagehaven action.
+- **Clear metaphors for nontechnical owners.** The audit found one pencil meaning four things, Publish and Import sharing an arrow, and a sparkle that promised AI (`docs/design/type-icons/README.md`, section 4.2). Lucide has a distinct, conventional glyph for each Rótulo action.
 - **One stroke weight on screen.** `.icon-sm` (16 px), `.icon` (20 px) and `.icon-lg` (24 px) set `stroke-width` to 2.25, 1.8 and 1.5 grid units, so every size renders at about 1.5 px. That matches the stem weight of the 500-weight labels beside them.
 - **Licences travel with the sprite.** Lucide is ISC, with MIT for glyphs derived from Feather. `assets/static/img/ICONS-LICENSE.txt` ships next to `icons.svg`.
 

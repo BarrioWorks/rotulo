@@ -10,7 +10,7 @@ use loco_rs::{
 };
 use serde_json::json;
 
-use crate::{db, hosts::Host, import::policy::FileKind, paths, preview::respond, state::Pagehaven};
+use crate::{db, hosts::Host, import::policy::FileKind, paths, preview::respond, state::Rotulo};
 
 /// The project id and live release number for a site host.
 async fn live_release(ctx: &AppContext, host: &Host) -> Result<Option<(i64, i64)>, sea_orm::DbErr> {
@@ -59,7 +59,7 @@ async fn serve_inner(
     host: &Host,
     uri_path: &str,
 ) -> Result<Response, std::io::Error> {
-    let state = Pagehaven::from(ctx);
+    let state = Rotulo::from(ctx);
     let Some((project, number)) = live_release(ctx, host)
         .await
         .map_err(std::io::Error::other)?
@@ -112,7 +112,7 @@ struct NotFoundPages {
 
 /// Render once at startup; website hosts do not use the app's view extractors.
 pub fn initialize_not_found(ctx: &AppContext, view: &TeraView) -> loco_rs::Result<()> {
-    let state = Pagehaven::from(ctx);
+    let state = Rotulo::from(ctx);
     let email = state.settings.abuse_email.as_deref().filter(|e| {
         !e.is_empty()
             && e.bytes()

@@ -1,4 +1,4 @@
-/* Pagehaven Studio identity tokens (proposal). measure.py reads this file; README.md carries a copy. */
+/* Rótulo Studio identity tokens (proposal). measure.py reads this file; README.md carries a copy. */
 :root {
   /* Families. One UI face. --font-ui-fallback is the answer if the owner keeps Schibsted Grotesk. */
   --font-ui: "Onest", "Onest Fallback", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -18,7 +18,7 @@
   --ws-ground-edge: #D9D9DF;   /* canvas edge on the ground */
   --surface: #FAFAFB;          /* opaque panels, inputs, fallback for every glass level */
   --surface-sunk: #F0F0F3;     /* search fields and tracks inside panels */
-  --ink: #17171C;              /* text and icons on any Pagehaven surface */
+  --ink: #17171C;              /* text and icons on any Rótulo surface */
   --ink-2: #4A4A55;            /* secondary text, idle icons */
   --ink-3: #5F5F6B;            /* meta on opaque and glass-3 surfaces; never on glass-2 */
   --rule: rgba(23, 23, 28, 0.10);

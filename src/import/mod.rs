@@ -183,7 +183,7 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
                 if path == "index.html" {
                     title = document.title();
                     if document.is_built_by_script() {
-                        report.warnings.push("This website builds its pages in the browser with JavaScript. It will publish and work, but Pagehaven can only edit text and images that are written in its HTML files.".to_owned());
+                        report.warnings.push("This website builds its pages in the browser with JavaScript. It will publish and work, but Rótulo can only edit text and images that are written in its HTML files.".to_owned());
                     }
                 }
                 let html = document.serialize();

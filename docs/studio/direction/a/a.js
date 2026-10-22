@@ -356,16 +356,16 @@ function buildPublish(el) {
   let head;
   if (p.phase === "done") {
     head = `<div class="pub-state"><span class="done-check"><svg class="icon"><use href="#i-check"/></svg></span><h3 id="pub-title">Published. Visitors now see version ${p.live}.</h3><p>Your website is up to date.</p></div>
-      <a class="addr" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">agency.pagehaven.site<svg class="icon"><use href="#i-ext"/></svg></a>
+      <a class="addr" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">agency.rotulo.site<svg class="icon"><use href="#i-ext"/></svg></a>
       <button class="btn-quiet btn-block" data-pub="view">View website</button>`;
   } else if (n === 0 && !p.older) {
     head = `<div class="pub-state"><h3 id="pub-title">Everything is published.</h3><p>Visitors see version ${p.live}.</p></div>
-      <a class="addr" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">agency.pagehaven.site<svg class="icon"><use href="#i-ext"/></svg></a>`;
+      <a class="addr" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">agency.rotulo.site<svg class="icon"><use href="#i-ext"/></svg></a>`;
   } else {
     const lead = p.older ? `Visitors see version ${p.live} · your editor is newer` : `${n} change${n > 1 ? "s" : ""} since version ${p.live}`;
-    head = `<div class="pub-state"><h3 id="pub-title">${lead}</h3><p>Publishing puts these on agency.pagehaven.site for everyone.</p></div>
+    head = `<div class="pub-state"><h3 id="pub-title">${lead}</h3><p>Publishing puts these on agency.rotulo.site for everyone.</p></div>
       <ul class="changes">${p.changes.map((c) => `<li><span>${c.what}</span><span>${c.how} · ${c.page}</span></li>`).join("")}</ul>
-      <a class="addr" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">agency.pagehaven.site<svg class="icon"><use href="#i-ext"/></svg></a>
+      <a class="addr" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">agency.rotulo.site<svg class="icon"><use href="#i-ext"/></svg></a>
       <button class="btn-publish btn-block" data-pub="go" ${p.phase === "publishing" ? 'aria-busy="true"' : ""}>${p.phase === "publishing" ? "Publishing…" : p.older ? "Publish my latest changes" : `Publish ${n} change${n > 1 ? "s" : ""}`}</button>`;
   }
   const rows = state.versions.slice(0, 5).map((v) => `
@@ -432,7 +432,7 @@ const SETTINGS = {
   general: ["General", () => `
     <h3>General</h3><p class="lead">Your website’s name and address.</p>
     <div class="field"><label for="s-name">Website name</label><div class="input"><input id="s-name" value="Agency"></div></div>
-    <div class="field"><label for="s-slug">Web address</label><div class="input"><input id="s-slug" value="agency" pattern="[a-z0-9\\-]{3,32}"><span class="suffix">.pagehaven.site</span></div>
+    <div class="field"><label for="s-slug">Web address</label><div class="input"><input id="s-slug" value="agency" pattern="[a-z0-9\\-]{3,32}"><span class="suffix">.rotulo.site</span></div>
       <span class="hint">Takes effect at once. Not part of Undo.</span>
       <div class="field-row"><button class="btn-sm">Save</button><a class="addr" style="margin:0 0 0 8px" href="${SITE_ORIGIN}/" target="_blank" rel="noopener">View website<svg class="icon"><use href="#i-ext"/></svg></a></div></div>
     <div class="field"><span class="label">Keyboard shortcuts</span><div class="kbd-list">
@@ -447,15 +447,15 @@ const SETTINGS = {
     <div class="set-rows">${[1, 2, 3, 4].map((i) => `<div class="set-row"><img alt="" src="${SITE_ORIGIN}/assets/img/portfolio/${i}.jpg"><span class="grow"><span>portfolio/${i}.jpg</span><span class="meta">${[48, 61, 39, 55][i - 1]} KB · used on Home</span></span><button class="btn-sm ghost" data-select-image>Select on page</button></div>`).join("")}</div>
     <p class="hint" style="margin-top:12px">Also used: 3 fonts, 2 style sheets, 1 script.</p>`],
   domains: ["Domains", () => `
-    <h3>Domains</h3><p class="lead">Use an address you own, such as agency.com, as well as agency.pagehaven.site.</p>
+    <h3>Domains</h3><p class="lead">Use an address you own, such as agency.com, as well as agency.rotulo.site.</p>
     <div class="field"><label for="s-dom">Your domain</label><div class="field-row"><div class="input" style="flex:1"><input id="s-dom" placeholder="example.com"></div><button class="btn-sm">Add domain</button></div>
     <span class="hint">We’ll show the two DNS records to add at your registrar, then check them for you.</span></div>`],
   publishing: ["Publishing", () => `
     <h3>Publishing</h3><p class="lead">What visitors see right now.</p>
-    <div class="set-rows"><div class="set-row"><span class="grow"><span>agency.pagehaven.site</span><span class="meta">Version ${state.pub.live} is live</span></span><span class="live-tag">Live</span></div>
+    <div class="set-rows"><div class="set-row"><span class="grow"><span>agency.rotulo.site</span><span class="meta">Version ${state.pub.live} is live</span></span><span class="live-tag">Live</span></div>
     <div class="set-row"><span class="grow"><span>${state.pub.changes.length} unpublished change${state.pub.changes.length === 1 ? "" : "s"}</span><span class="meta">Publish from the button at the top right</span></span>${state.pub.changes.length ? `<button class="btn-sm" data-settings-publish>Publish…</button>` : ""}</div></div>`],
   versions: ["Versions", () => `
-    <h3>Versions</h3><p class="lead">Every time you publish, Pagehaven keeps a version you can bring back.</p>
+    <h3>Versions</h3><p class="lead">Every time you publish, Rótulo keeps a version you can bring back.</p>
     <div class="set-rows">${state.versions.map((v) => `<div class="set-row"><span class="grow"><span>Version ${v.n}</span><span class="meta">${v.date}</span></span>${v.n === state.pub.live ? `<span class="live-tag">Live</span>` : `<button class="btn-sm ghost" data-restore="${v.n}">Make this version live</button><button class="btn-sm ghost">Open in editor</button>`}</div>`).join("")}</div>`],
 };
 function openSettings(section) {

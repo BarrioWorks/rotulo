@@ -17,7 +17,7 @@ The brief is `brief.md`. The plan and its definition of done are in `PLAN.md`, a
 
 ## Results against the plan
 
-1. **Purpose in five seconds.** Partly checked. A reader with no context saw only the 1280 hero and said "Pagehaven lets you visually edit and publish an AI-made website", who it is for, and to import (`seo-perf.md`). The reader was an agent, the exposure was not timed, and 834 and 390 were not tested this way.
+1. **Purpose in five seconds.** Partly checked. A reader with no context saw only the 1280 hero and said "Rótulo lets you visually edit and publish an AI-made website", who it is for, and to import (`seo-perf.md`). The reader was an agent, the exposure was not timed, and 834 and 390 were not tested this way.
 2. **One primary action, no invented claims.** `home/claims.md` checks each claim against the code. There are no prices, testimonials or counts, and custom domains are not promised.
 3. **Import first.** Sign-up lands on import. The source-only ZIP is refused in the browser before upload with the exact text. A clean import opens the editor directly. The named progress stages exist in `frontend/import.ts`, but the import finished too fast to capture them on the running app.
 4. **First edit without instructions.** A centred tip shows what can be edited. All twelve journeys completed and landed on the live site at 1280 on Furnace Hill. Journeys 3 to 10 also completed at 834 and 390. Landwind covered import, heading, image, link and publish, not all twelve. Landing to the first live site counted 12 actions under the baseline rule, down from 14. The walk itself took 13, because replacing a whole heading needed Ctrl+A after the second click (measured, `verification.md` section 1).
@@ -44,8 +44,8 @@ The brief is `brief.md`. The plan and its definition of done are in `PLAN.md`, a
 
 ## Owner calls
 
-- **Price.** The page says "Free to try. There is no billing in Pagehaven yet." Replace it once prices exist.
+- **Price.** The page says "Free to try. There is no billing in Rótulo yet." Replace it once prices exist.
 - **Custom domains.** They are off in production by default, so the site does not promise them.
 - **Password reset.** It does not exist, and the site says so. Building it needs outgoing email.
-- **Import before sign-up.** Not built. The audit estimates 11 to 17 days and a phishing risk on Pagehaven's own domain.
+- **Import before sign-up.** Not built. The audit estimates 11 to 17 days and a phishing risk on Rótulo's own domain.
 - **Funnel event retention.** Events keep account and website ids with no expiry. Choose a period, and a small scheduled delete can enforce it (`security-rereview.md` finding 2).

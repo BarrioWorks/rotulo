@@ -1,16 +1,16 @@
-# Pagehaven — Radical UX/UI Redesign and Interaction Research
+# Rótulo — Radical UX/UI Redesign and Interaction Research
 
 Act as a world-class interaction designer, HCI researcher, Apple-platform interface specialist, creative director, and principal frontend engineer.
 
 ## Mission
 
-Completely rethink and redesign Pagehaven's frontend.
+Completely rethink and redesign Rótulo's frontend.
 
 The existing interface works, but it feels generic, administrative, visually flat, and unnecessarily constrained.
 
 We are building a visual website editor for ordinary people who created a website using AI and now want to maintain it without coding or spending additional AI credits.
 
-**The new Pagehaven should feel closer to a next-generation macOS/iPad creative application than a traditional browser-based CMS.**
+**The new Rótulo should feel closer to a next-generation macOS/iPad creative application than a traditional browser-based CMS.**
 
 Use a canvas-first philosophy with floating controls, contextual interactions, elegant translucent materials, refined typography, and meaningful motion.
 
@@ -32,7 +32,7 @@ Investigate:
 
 Research Ben Shneiderman's direct manipulation principles and subsequent HCI work.
 
-Explore how Pagehaven can reduce the distance between what users see and what they can change.
+Explore how Rótulo can reduce the distance between what users see and what they can change.
 
 A user should click a heading to edit a heading, rather than locate a heading field in a form.
 
@@ -86,7 +86,7 @@ For each finding, explain:
 
 1. The established principle.
 2. Its source.
-3. Its relevance to Pagehaven.
+3. Its relevance to Rótulo.
 4. A concrete interface change we can implement.
 5. How to evaluate that change.
 
@@ -108,7 +108,7 @@ Study macOS, iPadOS, Liquid Glass, popovers, floating toolbars, contextual menus
 
 **Agent C — Visual identity**
 
-Develop a distinctive Pagehaven visual language, including typography, icons, materials, colors, elevation, and motion.
+Develop a distinctive Rótulo visual language, including typography, icons, materials, colors, elevation, and motion.
 
 **Agent D — Editor experience**
 
@@ -217,7 +217,7 @@ Reduce unnecessary margins, permanent panels, borders, and status bars.
 
 The website's own design should dominate the interface.
 
-Pagehaven should not impose its visual identity on imported websites.
+Rótulo should not impose its visual identity on imported websites.
 
 ### Canvas positioning
 
@@ -288,7 +288,7 @@ Define three levels.
 
 Imported website content.
 
-No Pagehaven glass effects applied inside it.
+No Rótulo glass effects applied inside it.
 
 **Level 2 — Floating controls**
 
@@ -567,7 +567,7 @@ All screens must belong to the same product.
 
 ## 11. Preserve the existing architecture and security
 
-Pagehaven uses Loco.rs and supports static-only ZIP imports.
+Rótulo uses Loco.rs and supports static-only ZIP imports.
 
 Preserve:
 
@@ -582,7 +582,7 @@ Preserve:
 - Domain verification.
 - Existing security boundaries.
 
-Do not allow imported website CSS or JavaScript to affect Pagehaven's application interface.
+Do not allow imported website CSS or JavaScript to affect Rótulo's application interface.
 
 Do not allow the new floating editor to bypass isolated iframe communication rules.
 
@@ -598,7 +598,7 @@ We want inspiration from Apple, Craft, Linear, Framer, and Raycast.
 
 We do not want a clone.
 
-Create a recognizable Pagehaven visual language.
+Create a recognizable Rótulo visual language.
 
 Explore:
 
@@ -822,7 +822,7 @@ The redesign is complete when:
 - The final design has been reviewed in a real browser.
 - The new interaction model demonstrates clear usability improvements over the baseline.
 
-**Success criterion:** Opening Pagehaven should feel like opening a premium creative application. The user should see their website first, understand how to edit it immediately, and interact with lightweight, elegant controls that never compete with the website itself.
+**Success criterion:** Opening Rótulo should feel like opening a premium creative application. The user should see their website first, understand how to edit it immediately, and interact with lightweight, elegant controls that never compete with the website itself.
 
 The product should feel thoughtfully designed, not merely decorated.
 

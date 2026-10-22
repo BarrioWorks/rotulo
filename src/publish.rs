@@ -14,7 +14,7 @@ use crate::{
     drafts::{self, Change, DraftFile},
     error::ApiError,
     projects::Project,
-    state::Pagehaven,
+    state::Rotulo,
     store::{self, Blob, Store},
 };
 
@@ -174,7 +174,7 @@ fn link_blob(source: &Path, destination: &Path) -> std::io::Result<()> {
 
 fn suspended() -> ApiError {
     ApiError::NotAllowed(
-        "This website was taken offline after a report. Contact Pagehaven support.".to_owned(),
+        "This website was taken offline after a report. Contact Rótulo support.".to_owned(),
     )
 }
 
@@ -189,7 +189,7 @@ pub fn ensure_publishable(project: &Project) -> Result<(), ApiError> {
 /// Publishes the draft at revision `base` as the next release and makes it live.
 pub async fn publish(
     db: &DatabaseConnection,
-    state: &Pagehaven,
+    state: &Rotulo,
     project: &Project,
     user_id: i64,
     base: i64,
@@ -297,7 +297,7 @@ async fn find(db: &DatabaseConnection, project: &Project, number: i64) -> Result
 /// Makes an earlier (or later) release of the same project live again.
 pub async fn activate(
     db: &DatabaseConnection,
-    state: &Pagehaven,
+    state: &Rotulo,
     project: &Project,
     number: i64,
 ) -> Result<Release, ApiError> {
@@ -336,7 +336,7 @@ pub async fn activate(
 /// Copies a release back into the draft as one undoable edit.
 pub async fn restore(
     db: &DatabaseConnection,
-    state: &Pagehaven,
+    state: &Rotulo,
     project: &Project,
     user_id: i64,
     number: i64,

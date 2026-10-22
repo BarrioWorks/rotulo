@@ -57,7 +57,7 @@ test("the source-only import message is shown word for word, with the export hel
 
 test("import answers map to the next step", (t) => {
   const previous = Object.getOwnPropertyDescriptor(globalThis, "location");
-  Object.defineProperty(globalThis, "location", { configurable: true, value: { origin: "https://pagehaven.example" } });
+  Object.defineProperty(globalThis, "location", { configurable: true, value: { origin: "https://rotulo.example" } });
   t.after(() => {
     if (previous) Object.defineProperty(globalThis, "location", previous);
     else delete globalThis.location;

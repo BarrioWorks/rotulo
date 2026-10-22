@@ -16,7 +16,7 @@ use sha2::{Digest, Sha256};
 use crate::{
     db,
     error::ApiError,
-    state::Pagehaven,
+    state::Rotulo,
     store::{hex, random_token},
 };
 
@@ -122,9 +122,7 @@ pub async fn register(
 /// A hash to verify against when the email is unknown, so both cases take the same time.
 fn decoy_hash() -> &'static str {
     static DECOY: OnceLock<String> = OnceLock::new();
-    DECOY.get_or_init(|| {
-        loco_rs::hash::hash_password("pagehaven-decoy-password").unwrap_or_default()
-    })
+    DECOY.get_or_init(|| loco_rs::hash::hash_password("rotulo-decoy-password").unwrap_or_default())
 }
 
 pub async fn authenticate(
@@ -300,7 +298,7 @@ impl FromRequestParts<AppContext> for MaybeUser {
 }
 
 pub fn secure_cookies(ctx: &AppContext) -> bool {
-    Pagehaven::from(ctx).settings.secure_cookies
+    Rotulo::from(ctx).settings.secure_cookies
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-# Pagehaven launch SEO audit
+# Rótulo launch SEO audit
 
 Audited on 20 October 2026 against the running app at `http://127.0.0.1:5150` and the current source. This is read-only research. No application files were changed. The app was not restarted.
 
@@ -14,10 +14,10 @@ Product scope comes from `docs/launch/brief.md:76`, `:196` and `:539`. Definitio
 
 Fetched with `curl --silent --show-error --max-time 15 -i http://127.0.0.1:5150/PATH`. These were anonymous GET requests without redirect following. The full rendered HTML was parsed in memory. The responses were observed at approximately 17:35 UTC.
 
-- `/`: **200**, `text/html; charset=utf-8`. Title: `Pagehaven · Your website. Yours to edit.` Description: `Import your finished website, change its words and pictures right on the page, and publish when you’re ready. No coding needed.` One h1. No canonical, robots meta, Open Graph or Twitter card tags.
-- `/login`: **200**, HTML. Title: `Sign in · Pagehaven`. One h1. No description, canonical, robots meta or social tags.
-- `/register`: **200**, HTML. Title: `Create your account · Pagehaven`. One h1. No description, canonical, robots meta or social tags.
-- `/seo-audit-missing-page`: **404**, HTML. Title: `Page not found · Pagehaven`. One h1. No description, canonical or robots meta. This is a real 404, not a soft 404.
+- `/`: **200**, `text/html; charset=utf-8`. Title: `Rótulo · Your website. Yours to edit.` Description: `Import your finished website, change its words and pictures right on the page, and publish when you’re ready. No coding needed.` One h1. No canonical, robots meta, Open Graph or Twitter card tags.
+- `/login`: **200**, HTML. Title: `Sign in · Rótulo`. One h1. No description, canonical, robots meta or social tags.
+- `/register`: **200**, HTML. Title: `Create your account · Rótulo`. One h1. No description, canonical, robots meta or social tags.
+- `/seo-audit-missing-page`: **404**, HTML. Title: `Page not found · Rótulo`. One h1. No description, canonical or robots meta. This is a real 404, not a soft 404.
 - `/robots.txt`: **404**, HTML. It returns the app's not-found page, not robots text.
 - `/sitemap.xml`: **404**, HTML. It returns the same not-found page, not XML.
 - `/projects` and `/projects/new`: **303** to `/login`. No private page content was fetched.
@@ -74,13 +74,13 @@ The collaborative browser loaded `/` and evaluated `document.querySelectorAll('s
 
 **Impact:** Shared links lack controlled titles, summaries and imagery. This is a sharing-quality issue, not a direct ranking claim.
 
-**Fix:** Add page-specific social metadata to marketing pages. Use an absolute URL for a real Pagehaven product image. Do not point cards at tokenized previews or customer sites. Omit social cards from auth, app and error pages.
+**Fix:** Add page-specific social metadata to marketing pages. Use an absolute URL for a real Rótulo product image. Do not point cards at tokenized previews or customer sites. Omit social cards from auth, app and error pages.
 
 ### P2. Medium: Homepage entity markup is absent
 
 **Evidence:** The rendered homepage DOM contains zero JSON-LD blocks. `assets/views/home.html:3` has only a description in its head block. The shared layout at `assets/views/layouts/base.html:14` provides an insertion point. The app CSP at `src/security.rs:43` permits only same-origin scripts.
 
-**Impact:** Search engines receive no explicit Pagehaven organization, website or application graph. This does not prevent indexing.
+**Impact:** Search engines receive no explicit Rótulo organization, website or application graph. This does not prevent indexing.
 
 **Fix:** Add the graph below to the homepage only. Use `Organization`, `WebSite` and a factual `SoftwareApplication`. Do not invent reviews, ratings, customers, awards, certifications or social profiles. Do not add `Offer`, a zero price or a “free” claim without a real published pricing policy. Billing is absent per `docs/launch/PLAN.md:14` and `:20`. The minimal graph does not satisfy Google's software-app rich-result requirements for price and reviews. Do not fabricate data to qualify. [Google's software-app requirements](https://developers.google.com/search/docs/appearance/structured-data/software-app).
 
@@ -94,7 +94,7 @@ The collaborative browser loaded `/` and evaluated `document.querySelectorAll('s
 
 ### P3. Low: Images reserve space, but the demo lacks responsive variants
 
-**Evidence:** Logos have dimensions and empty alt text beside the Pagehaven name at `assets/views/home.html:8` and `:104`. The coffee image has `width="720"`, `height="540"` and empty alt at `assets/views/home.html:44`. It sits inside an `aria-hidden="true"` mockup at `:27`. The external figcaption explains the demonstration at `:64`. CSS reserves a 4:3 ratio at `assets/static/css/screens.css:231`.
+**Evidence:** Logos have dimensions and empty alt text beside the Rótulo name at `assets/views/home.html:8` and `:104`. The coffee image has `width="720"`, `height="540"` and empty alt at `assets/views/home.html:44`. It sits inside an `aria-hidden="true"` mockup at `:27`. The external figcaption explains the demonstration at `:64`. CSS reserves a 4:3 ratio at `assets/static/css/screens.css:231`.
 
 **Impact:** Empty alt is appropriate for the redundant logos and decorative mock image. This is not missing alt text. The image lacks `srcset` and `sizes`, so small screens receive the same file. The caption describes a workflow, but the figure is a mockup rather than a verified product screenshot.
 
@@ -114,16 +114,16 @@ The collaborative browser loaded `/` and evaluated `document.querySelectorAll('s
 
 **Impact:** No hreflang is needed for this English-only site. The fetched error is not a soft 404. The local HTTP server provides no evidence about production TLS, redirects or HSTS.
 
-**Fix:** Preserve these settings and real 404 responses. Add explicit noindex to app errors as defense in depth. Leave hreflang out until real translated canonical pages exist. Keep app metadata out of customer responses. Do not inject Pagehaven canonicals, schema or blanket noindex into published HTML.
+**Fix:** Preserve these settings and real 404 responses. Add explicit noindex to app errors as defense in depth. Leave hreflang out until real translated canonical pages exist. Keep app metadata out of customer responses. Do not inject Rótulo canonicals, schema or blanket noindex into published HTML.
 
 ## 2. Keyword hypotheses
 
 These are hypotheses, not verified keyword opportunities. Search volume, difficulty, rankings and traffic potential cannot be verified with the available access. No numerical estimates are supplied. A limited public search sampled page formats. It did not establish a stable Google ranking set or demand.
 
-Product pages appear for visual HTML editing, including [Visual HTML Editor](https://visualhtmleditor.com/) and [HtmlDrag](https://htmldrag.com/). Their positioning supports testing a product page format. It does not prove Pagehaven can outrank them. The broad queries also mix creation, editing and deployment intents. Validate the exact queries and target country before finalizing titles. Use actual Search Console queries after launch.
+Product pages appear for visual HTML editing, including [Visual HTML Editor](https://visualhtmleditor.com/) and [HtmlDrag](https://htmldrag.com/). Their positioning supports testing a product page format. It does not prove Rótulo can outrank them. The broad queries also mix creation, editing and deployment intents. Validate the exact queries and target country before finalizing titles. Use actual Search Console queries after launch.
 
-1. **Visual editor for AI-generated websites.** Likely commercial intent. Serve it with the homepage and a working editing demonstration. Honest fit: strong for compatible built static exports. Do not imply Pagehaven generates websites or edits every AI app. Ranking is plausible as a focused category hypothesis, not assured.
-2. **Edit a website without coding.** Likely mixed tool-selection and how-to intent. Serve it with a product workflow page and clear supported edits. Honest fit: conditional. Pagehaven can edit supported text, images, links and styles after import. It cannot promise to edit any live URL, WordPress installation or backend. The broad phrase needs qualification.
+1. **Visual editor for AI-generated websites.** Likely commercial intent. Serve it with the homepage and a working editing demonstration. Honest fit: strong for compatible built static exports. Do not imply Rótulo generates websites or edits every AI app. Ranking is plausible as a focused category hypothesis, not assured.
+2. **Edit a website without coding.** Likely mixed tool-selection and how-to intent. Serve it with a product workflow page and clear supported edits. Honest fit: conditional. Rótulo can edit supported text, images, links and styles after import. It cannot promise to edit any live URL, WordPress installation or backend. The broad phrase needs qualification.
 3. **Host an AI-generated website.** Likely deployment intent after generation. Serve it with a static hosting workflow page. Honest fit: strong when a finished static ZIP exists. Explain assets, hosted addresses, custom domains and publishing. Do not imply server runtimes, databases or unrestricted application hosting.
 4. **Edit exported HTML visually.** Likely commercial intent from someone who already has files. Serve it with a visual HTML editor product page linked to compatibility guidance. Honest fit: strongest of these hypotheses for supported HTML content. Verify the example export before naming its source tool as compatible.
 5. **Publish a static website.** Likely task completion and hosting comparison intent. Serve it with the same publishing page as the AI hosting query. Honest fit: strong for ZIP upload and hosted publication. The page should show a real path from files to a URL. Avoid competing near-duplicate hosting pages.
@@ -131,9 +131,9 @@ Product pages appear for visual HTML editing, including [Visual HTML Editor](htt
 
 ### At most three additional pages
 
-1. **`/compatible-exports`**, titled `Compatible Website Exports for Pagehaven`. Show a valid ZIP tree with index.html and assets. Explain dist/build output, source-only ZIPs and server dependencies. Include tested examples and explicit limits. This earns its place because it helps visitors decide whether to sign up. Base it on `assets/views/partials/export_help.html:7`, `src/import/mod.rs:78` and `src/import/policy.rs:40`. Do not turn tool names into blanket compatibility claims.
-2. **`/visual-html-editor`**, titled `Edit Exported HTML Visually | Pagehaven`. Show a real before-and-after text, image and link edit. State what remains editable and when code or the original AI tool is still needed. Include the re-prompting alternative as a section. This earns its place because visitors can inspect the core editing workflow before uploading files.
-3. **`/static-website-hosting`**, titled `Publish a Static Website from a ZIP | Pagehaven`. Show import, preview and publish as distinct steps. Explain the hosted URL, domain verification and republishing an earlier version. State static-only limits. This earns its place because deployment is a separate purchase question. Ground claims in `src/controllers/pages.rs:259`, `:270` and `src/sites.rs:76`.
+1. **`/compatible-exports`**, titled `Compatible Website Exports for Rótulo`. Show a valid ZIP tree with index.html and assets. Explain dist/build output, source-only ZIPs and server dependencies. Include tested examples and explicit limits. This earns its place because it helps visitors decide whether to sign up. Base it on `assets/views/partials/export_help.html:7`, `src/import/mod.rs:78` and `src/import/policy.rs:40`. Do not turn tool names into blanket compatibility claims.
+2. **`/visual-html-editor`**, titled `Edit Exported HTML Visually | Rótulo`. Show a real before-and-after text, image and link edit. State what remains editable and when code or the original AI tool is still needed. Include the re-prompting alternative as a section. This earns its place because visitors can inspect the core editing workflow before uploading files.
+3. **`/static-website-hosting`**, titled `Publish a Static Website from a ZIP | Rótulo`. Show import, preview and publish as distinct steps. Explain the hosted URL, domain verification and republishing an earlier version. State static-only limits. This earns its place because deployment is a separate purchase question. Ground claims in `src/controllers/pages.rs:259`, `:270` and `src/sites.rs:76`.
 
 Each page needs original product evidence and one signup action. Do not ship empty SEO landing pages. Do not add a generic blog, separate near-duplicate keyword pages or a pricing page before pricing exists.
 
@@ -151,24 +151,24 @@ Use these rules:
 - App 404s: retain 404, set noindex, omit canonical and social cards. Never redirect missing URLs to the homepage.
 - API and operational responses: no sitemap entries. Add noindex headers where applicable without changing access controls.
 - Preview host responses: always `X-Robots-Tag: noindex, nofollow` in `src/preview.rs::headers`. Never use an app-wide allow rule on previews.
-- Published customer hosts: preserve their existing independent behavior. No automatic Pagehaven canonical, schema or index/noindex directive.
+- Published customer hosts: preserve their existing independent behavior. No automatic Rótulo canonical, schema or index/noindex directive.
 
 Suggested exact content:
 
-- Homepage title: `Visual Editor for AI-Generated Websites | Pagehaven`.
+- Homepage title: `Visual Editor for AI-Generated Websites | Rótulo`.
 - Homepage description: `Import a compatible static website ZIP, edit text, images and links visually, then publish to a hosted URL or custom domain. No coding for supported edits.`
 - Homepage h1: retain a concise outcome headline if desired. Put `A visual editor for AI-generated static websites` in the opening paragraph. Explain the ZIP requirement in the same hero.
-- Login description: `Sign in to Pagehaven to edit and publish your imported websites.`
-- Registration description: `Create a Pagehaven account to import a compatible static website ZIP, edit it visually and publish it.`
-- App 404 description: `This Pagehaven page could not be found. Return to the homepage or sign in to open your websites.`
+- Login description: `Sign in to Rótulo to edit and publish your imported websites.`
+- Registration description: `Create a Rótulo account to import a compatible static website ZIP, edit it visually and publish it.`
+- App 404 description: `This Rótulo page could not be found. Return to the homepage or sign in to open your websites.`
 
 Keep the existing unique auth and error titles. Titles should lead with the page's subject. Aim for about 50 to 60 characters where useful. Descriptions should usually fit about 150 to 160 characters. Clarity takes priority over padding to a count. Neither length guarantees a particular search snippet.
 
 ### B. Build URLs from the trusted app origin
 
-`config/development.yaml:38` and `config/test.yaml:38` default `PAGEHAVEN_APP_ORIGIN` to the loopback address. `config/production.yaml:38` requires the environment value. Settings are loaded and validated at `src/settings.rs:77`. Separate customer origin helpers exist at `src/settings.rs:155` and `:168`. Do not use those helpers for marketing SEO.
+`config/development.yaml:38` and `config/test.yaml:38` default `ROTULO_APP_ORIGIN` to the loopback address. `config/production.yaml:38` requires the environment value. Settings are loaded and validated at `src/settings.rs:77`. Separate customer origin helpers exist at `src/settings.rs:155` and `:168`. Do not use those helpers for marketing SEO.
 
-Read `Pagehaven::from(&ctx).settings.app_origin`. Validate it once as an absolute HTTP(S) origin. Reject credentials, query, fragment and any path other than `/`. Require HTTPS in production. Preserve the existing domain-isolation validation at `src/settings.rs:95`.
+Read `Rótulo::from(&ctx).settings.app_origin`. Validate it once as an absolute HTTP(S) origin. Reject credentials, query, fragment and any path other than `/`. Require HTTPS in production. Preserve the existing domain-isolation validation at `src/settings.rs:95`.
 
 Normalize the trailing slash once. For fixed allowlisted marketing paths, use:
 
@@ -195,7 +195,7 @@ The following is a target Tera shape. Values come from the controller metadata o
 {% endif %}
 {% if seo.social_image %}
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Pagehaven">
+<meta property="og:site_name" content="Rótulo">
 <meta property="og:title" content="{{ seo.title }}">
 <meta property="og:description" content="{{ seo.description }}">
 <meta property="og:url" content="{{ seo.canonical }}">
@@ -212,7 +212,7 @@ The following is a target Tera shape. Values come from the controller metadata o
 {% endif %}
 ```
 
-Create a real 1200 by 630 PNG product card at `/static/img/pagehaven-social.png` before enabling this block. Use the absolute app URL to it. Describe the actual card in its alt value, such as `Pagehaven editing controls around a heading on an imported static website`. The declared type and dimensions must match the file. Do not reuse the coffee photo as if it were a product screenshot. Omit twitter:site unless a real brand account is verified.
+Create a real 1200 by 630 PNG product card at `/static/img/rotulo-social.png` before enabling this block. Use the absolute app URL to it. Describe the actual card in its alt value, such as `Rótulo editing controls around a heading on an imported static website`. The declared type and dimensions must match the file. Do not reuse the coffee photo as if it were a product screenshot. Omit twitter:site unless a real brand account is verified.
 
 ### D. Serve robots.txt at the app root
 
@@ -261,13 +261,13 @@ Render this graph with all `{{ app_origin }}` occurrences replaced by the normal
     {
       "@type": "Organization",
       "@id": "{{ app_origin }}/#organization",
-      "name": "Pagehaven",
+      "name": "Rótulo",
       "url": "{{ app_origin }}/"
     },
     {
       "@type": "WebSite",
       "@id": "{{ app_origin }}/#website",
-      "name": "Pagehaven",
+      "name": "Rótulo",
       "url": "{{ app_origin }}/",
       "inLanguage": "en",
       "publisher": { "@id": "{{ app_origin }}/#organization" }
@@ -275,7 +275,7 @@ Render this graph with all `{{ app_origin }}` occurrences replaced by the normal
     {
       "@type": "SoftwareApplication",
       "@id": "{{ app_origin }}/#application",
-      "name": "Pagehaven",
+      "name": "Rótulo",
       "url": "{{ app_origin }}/",
       "description": "Import a compatible static website ZIP, edit supported text, images and links visually, then publish to a hosted URL or custom domain.",
       "applicationCategory": "DesignApplication",
@@ -287,7 +287,7 @@ Render this graph with all `{{ app_origin }}` occurrences replaced by the normal
 </script>
 ```
 
-Organization describes the Pagehaven brand operator. Do not add an unverified legal name, address or founding date. WebSite identifies the marketing site. Omit SearchAction because no public site search is implemented. SoftwareApplication describes the browser product. Omit Offer, aggregateRating and review. Add a logo only once a suitable public logo asset is selected and verified. Do not identify customer websites as part of this WebSite graph.
+Organization describes the Rótulo brand operator. Do not add an unverified legal name, address or founding date. WebSite identifies the marketing site. Omit SearchAction because no public site search is implemented. SoftwareApplication describes the browser product. Omit Offer, aggregateRating and review. Add a logo only once a suitable public logo asset is selected and verified. Do not identify customer websites as part of this WebSite graph.
 
 Build the graph as a serde_json value. Escape `<` as `\u003c` in the serialized script payload so embedded closing-script text cannot terminate the element. Mark only that controlled serialized payload safe in Tera. Never mark arbitrary user content safe. Preserve the app CSP. If the browser reports a CSP restriction for the data block, authorize its exact serialized bytes with a matching SHA-256 script hash in the marketing response CSP. Check the browser console and DOM after rendering. Do not add unsafe-inline or broaden the editor or preview CSP to make schema work.
 

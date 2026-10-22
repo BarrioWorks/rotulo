@@ -14,7 +14,7 @@ Studied live on the dev server at a 1280 by 800 window, on fresh imports of `fix
 |---|---|
 | `01-agency-hover-heading.png` | Hover outline on a white heading over a dark photo. The 1.5 px line at 60 percent accent is barely visible. |
 | `02-agency-select-heading.png` | The selected heading is labelled "Text", because its tag is a `div`. The toolbar covers the line above, "Welcome To Our Studio!". |
-| `03-agency-style-panel.png` | The style panel grows upward over the content above the selection and reaches the site's nav. The swatches are Pagehaven's palette (Haven Blue, purple), not the site's colours. |
+| `03-agency-style-panel.png` | The style panel grows upward over the content above the selection and reaches the site's nav. The swatches are Rótulo's palette (Haven Blue, purple), not the site's colours. |
 | `04-agency-link-panel.png` | A `#services` link appears under "Web address" while its badge says "Goes to a part of this page". The panel covers the whole headline. |
 | `05-agency-paragraph-toolbar-offset.png` | The toolbar is clamped to the browser window, not the canvas. It hangs right of the selection and covers the next column's heading. |
 | `06-agency-section-selected-offscreen.png` | A section reached after four "Select parent" clicks ("Box", "Box", "Box", then "Section"). Its top is scrolled behind the site's sticky nav. The only visible trace is a 2 px line at the bottom edge. A stale hover outline stays on the paragraph. |
@@ -37,7 +37,7 @@ Measured in the browser through `preview_evaluate`:
 
 ## 1. Spatial thesis
 
-The owner's page is the artwork, and everything Pagehaven draws is the mat and the hand that points at it.
+The owner's page is the artwork, and everything Rótulo draws is the mat and the hand that points at it.
 
 - **Primary.** The site at a true desktop or phone layout, as large as the window allows.
 - **Secondary.** One floating toolbar next to the current thing. It never sits on the thing it edits.
@@ -92,7 +92,7 @@ Security: the second iframe is the same preview origin with the same sandbox. Th
 
 ### 3.1 What `agent.ts` does today
 
-- It creates a custom element `<pagehaven-overlay>` and appends it to `<html>`, outside `<body>`.
+- It creates a custom element `<rotulo-overlay>` and appends it to `<html>`, outside `<body>`.
 - It attaches a closed shadow root styled by a constructed `CSSStyleSheet` (`adoptedStyleSheets`) with `:host { all: initial; }`.
 - It sets 13 inline `!important` properties on the host (`position: fixed`, `inset: 0`, `z-index: 2147483647`, `pointer-events: none`, `transform: none`, `filter: none`, `opacity: 1` and others).
 - It draws three boxes (hover, select, blocked) and a veil layer for hidden sections. Boxes are `position: fixed` rects at element rect ±2 px, with `transition: top/left/width/height 60ms linear`.
@@ -180,7 +180,7 @@ The toolbar and the veil must avoid the site's fixed and sticky headers and foot
 
 ### 3.6 Section rail (handles for reorder)
 
-All interactive controls stay in the app document. The overlay remains `pointer-events: none`. That keeps every action under the app's origin checks, and site JS cannot click Pagehaven buttons.
+All interactive controls stay in the app document. The overlay remains `pointer-events: none`. That keeps every action under the app's origin checks, and site JS cannot click Rótulo buttons.
 
 - When anything inside a section is selected, the app shows a vertical rail of 28 px buttons outside the site, in the canvas gutter to the left of the frame. It is aligned to the section's visible top, below any obstruction. Contents: a grip (`i-drag`, also the "select this section" button), Move up, Move down.
 - When the gutter is narrower than 36 px (fit-to-window at small widths), the rail overlaps the frame's left edge inside the site, with `--toolbar-surface` and `--shadow-float`.
@@ -363,7 +363,7 @@ Focus visibility: every toolbar, rail and panel control uses the shared `--focus
 
 ### 6.1 Text style panel (`textStylePanel()`)
 
-- **Colour.** Show the site's own colours first. The agent collects up to 10 distinct text and background colours from the page's computed styles (body, headings, links, buttons, and section backgrounds), sorted by area, and sends them once per page load in a new `palette` message. The app renders them as swatches, setting `element.style.background` through the CSSOM. Then "Original", then "Pick any colour". Today the swatches are Pagehaven's own palette, including Haven Blue and a purple (shot 03), which invites owners to paint Pagehaven's brand onto their site.
+- **Colour.** Show the site's own colours first. The agent collects up to 10 distinct text and background colours from the page's computed styles (body, headings, links, buttons, and section backgrounds), sorted by area, and sends them once per page load in a new `palette` message. The app renders them as swatches, setting `element.style.background` through the CSSOM. Then "Original", then "Pick any colour". Today the swatches are Rótulo's own palette, including Haven Blue and a purple (shot 03), which invites owners to paint Rótulo's brand onto their site.
 - **Contrast guard.** When the chosen text colour has a contrast ratio under 4.5:1 against the element's effective background, show an inline warning: "This may be hard to read on this background." The agent adds `effectiveBackground` (the nearest non-transparent ancestor background, as hex) to `SelectionInfo`.
 - **Size.** A stepper with "Smaller" and "Larger" buttons cycling through `SIZES`. The current value shows in px. "Original" resets it.
 - **Weight.** A select with Light, Regular, Medium, Semibold, Bold and Heavy. Keep it.
@@ -481,7 +481,7 @@ The app's global reduced-motion rule in `app.css` stays. The agent needs its own
 | Hidden veil | `agent.ts` `drawHiddenSections()`. | Clip below the obstructions. Pin the badge to the visible top. | None. |
 | Kind, name, ancestors, section | `agent.ts` `info()`, `select()`. `toolbar.ts` `labelFor()`, `TAG_NAMES`. `protocol.ts` `agentMessages.select`. | The agent computes them. Delete `labelFor` and `TAG_NAMES` from the toolbar once the agent sends `kind`. Migrate and delete in one change. | Additive fields on `select`: `kind` (literal enum), `name` (str 60), `ancestors` (at most 8 of `{element, kind, name}`), `section` (`{element, rect, name, can}` or null). All validated in `parseAgentMessage`. |
 | Obstructions | `agent.ts` `redraw()`. `protocol.ts` `viewport`. | Add `obstructions` (at most 4 rects). | Additive. Numbers finite and clamped as in `rectOf()`. |
-| Palette | `agent.ts` `start()`. `toolbar.ts` `TEXT_COLORS`, `BACKGROUNDS`, `swatches()`. | New agent message `palette {colors: string[] at most 10}`. Delete the hard-coded Pagehaven palettes. | New message. Each colour must match `^#[0-9a-f]{6}$`. The editor applies them through `style.background`, never `innerHTML`. |
+| Palette | `agent.ts` `start()`. `toolbar.ts` `TEXT_COLORS`, `BACKGROUNDS`, `swatches()`. | New agent message `palette {colors: string[] at most 10}`. Delete the hard-coded Rótulo palettes. | New message. Each colour must match `^#[0-9a-f]{6}$`. The editor applies them through `style.background`, never `innerHTML`. |
 | Anchors for links | `agent.ts`. `toolbar.ts` `linkFields()`, `classifyHref()`. | New agent message `anchors {items: {id, name}[] at most 50}`, sent on `ready` and refreshed on mutation. | New message. `id` regex as in 6.4, `name` capped at 60. |
 | Image metrics, effective background | `agent.ts` `info()`. `protocol.ts` `parseSelectionInfo`. | Add `naturalWidth`, `naturalHeight`, `renderedWidth`, `renderedHeight` (finite numbers or null) and `effectiveBackground` (hex or null). | Additive and validated. |
 | Keyboard selection | `agent.ts` `keydown` handler. `main.ts` `keydown`. | New editor messages `select_relative {direction: "parent", "child", "prev" or "next"}` and `select_element {element}`. New agent message `focus_toolbar`. | New messages. The agent re-checks that the target has a valid id and `data-ph-can` before selecting. `select_parent` is removed once `select_relative` lands. |
@@ -515,7 +515,7 @@ Editor to agent:
 
 While this spec was written, the code gained an agent message `navigate` (Preview-mode link clicks open another draft page) and an element id on `start_text`. Nothing here conflicts with them. Page changes caused by `navigate` should use the double-buffered reload (2.5) and update the page switcher on `ready`, like any other page switch.
 
-Every addition follows the existing rules. Each message has a known `type`, carries `channel: "pagehaven"`, is posted with an explicit target origin and is accepted only from the exact origin and source window. Arrays are length-capped, strings are capped, numbers are finite and clamped, and ids match `^[0-9a-z]{1,10}$`. Nothing from a message is inserted with `innerHTML`.
+Every addition follows the existing rules. Each message has a known `type`, carries `channel: "rotulo"`, is posted with an explicit target origin and is accepted only from the exact origin and source window. Arrays are length-capped, strings are capped, numbers are finite and clamped, and ids match `^[0-9a-z]{1,10}$`. Nothing from a message is inserted with `innerHTML`.
 
 None of these messages can publish, delete a page or navigate the app. A forged `palette` or `anchors` message from the site's JS can only change which swatches or link targets the owner sees, on their own site. The worst case of a forged `focus_toolbar` is a focus move.
 

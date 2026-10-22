@@ -1,12 +1,12 @@
-# Pagehaven funnel reference
+# Rótulo funnel reference
 
-Pagehaven records first-party account milestones. It does not measure visitor conversion or paid conversion.
+Rótulo records first-party account milestones. It does not measure visitor conversion or paid conversion.
 
 ## Commands
 
-The Loco task is `funnel`. Run `cargo loco task funnel` or `cargo run --bin pagehaven-cli -- task funnel`.
+The Loco task is `funnel`. Run `cargo loco task funnel` or `cargo run --bin rotulo-cli -- task funnel`.
 
-The optional signup cohort starts at midnight UTC, inclusively. The CLI accepts `since=2026-10-20` and Loco's colon-separated task arguments: `cargo loco task funnel since:2026-10-20`, or `cargo run --bin pagehaven-cli -- task funnel since:2026-10-20`. `DATABASE_URL` selects the SQLite database. Apply migrations with `cargo run --bin pagehaven-cli -- db migrate` before reporting an existing database.
+The optional signup cohort starts at midnight UTC, inclusively. The CLI accepts `since=2026-10-20` and Loco's colon-separated task arguments: `cargo loco task funnel since:2026-10-20`, or `cargo run --bin rotulo-cli -- task funnel since:2026-10-20`. `DATABASE_URL` selects the SQLite database. Apply migrations with `cargo run --bin rotulo-cli -- db migrate` before reporting an existing database.
 
 The task prints account counts, conversion from the preceding row, median elapsed seconds from signup, and source counts. An empty denominator or median prints `—`. An even-sized median averages the two middle elapsed times. The first row has no preceding-stage conversion.
 
@@ -36,7 +36,7 @@ The task merges events with surviving historical rows. `users.created_at` suppli
 
 Each milestone uses the earliest qualifying timestamp and prefers an event on a timestamp tie. The report labels the selected source as Events or Backfill; it never adds the same milestone twice. Backfill also fills gaps from failed event writes. Deleting a website removes its old imports, edits, and releases, so historical backfill undercounts. Events survive website deletion.
 
-Visitors are not measured because no visitor, landing-view, or referrer event exists. There is no visitor-to-signup denominator. Paid conversion is not measured because Pagehaven has no billing. A return is not proof of editing, retention over a fixed period, or a separate browser session. The task does not claim conversion improvements.
+Visitors are not measured because no visitor, landing-view, or referrer event exists. There is no visitor-to-signup denominator. Paid conversion is not measured because Rótulo has no billing. A return is not proof of editing, retention over a fixed period, or a separate browser session. The task does not claim conversion improvements.
 
 ## Storage and privacy
 

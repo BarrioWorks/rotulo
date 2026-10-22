@@ -150,7 +150,7 @@ async function request<T>(method: "GET" | "POST" | "DELETE", path: string, body:
   }
   if (parse === null) return undefined as T;
   const parsed = parse(json);
-  if (parsed === undefined) throw new ApiError(response.status, "bad_response", "Pagehaven sent an unexpected answer. Please reload the page.");
+  if (parsed === undefined) throw new ApiError(response.status, "bad_response", "Rótulo sent an unexpected answer. Please reload the page.");
   return parsed;
 }
 
@@ -195,7 +195,7 @@ export const api = {
         }
         const parsed = parseUpload(json);
         if (parsed) resolve(parsed);
-        else reject(new ApiError(xhr.status, "bad_response", "Pagehaven sent an unexpected answer. Please reload the page."));
+        else reject(new ApiError(xhr.status, "bad_response", "Rótulo sent an unexpected answer. Please reload the page."));
       });
       xhr.send(form);
     }),

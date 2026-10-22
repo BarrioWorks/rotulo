@@ -38,7 +38,7 @@ async fn releases_are_immutable_can_be_reactivated_and_can_be_restored_as_an_und
                 hosted(&server, &p.preview, path).await.as_bytes()
             );
         }
-        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let state = rotulo::state::Rotulo::from(&ctx);
         let id = project_id(&ctx, &p.pid).await;
         let first_dir = state.store.release_dir(id, 1);
         assert!(first_dir.is_dir());
@@ -83,7 +83,7 @@ async fn releases_are_immutable_can_be_reactivated_and_can_be_restored_as_an_und
             .await;
         r.assert_status_conflict();
         assert_eq!(r.json::<Value>()["revision"], p.revision);
-        pagehaven::db::exec(
+        rotulo::db::exec(
             &ctx.db,
             "DELETE FROM draft_files WHERE project_id = ? AND path = ?",
             [id.into(), "css/styles.css".into()],
@@ -179,7 +179,7 @@ async fn an_operator_can_take_a_harmful_website_offline() {
             .unwrap()
             .to_owned();
         let vars = loco_rs::task::Vars::from_cli_args(vec![("slug".to_owned(), slug)]);
-        loco_rs::task::Task::run(&pagehaven::tasks::Unpublish, &ctx, &vars)
+        loco_rs::task::Task::run(&rotulo::tasks::Unpublish, &ctx, &vars)
             .await
             .unwrap();
         let r = hosted(&server, &p.site, "/").await;
@@ -190,23 +190,23 @@ async fn an_operator_can_take_a_harmful_website_offline() {
                 .json(&json!({"base_revision":p.revision}))
                 .await;
             r.assert_status_unprocessable_entity();
-            assert_eq!(r.json::<Value>()["message"], "This website was taken offline after a report. Contact Pagehaven support.");
+            assert_eq!(r.json::<Value>()["message"], "This website was taken offline after a report. Contact Rótulo support.");
         }
         let id = project_id(&ctx, &p.pid).await;
-        let row = pagehaven::db::one(&ctx.db, "SELECT suspended_at FROM projects WHERE id = ?", [id.into()])
+        let row = rotulo::db::one(&ctx.db, "SELECT suspended_at FROM projects WHERE id = ?", [id.into()])
             .await.unwrap().unwrap();
         assert!(row.try_get::<Option<i64>>("", "suspended_at").unwrap().is_some());
-        pagehaven::db::exec(
+        rotulo::db::exec(
             &ctx.db,
             "INSERT INTO domains (project_id, hostname, token, verified_at, created_at) VALUES (?, 'reported.example.com', 'proof', 1, 1)",
             [id.into()],
         ).await.unwrap();
         // A stale live pointer must never bypass a suspension on either kind of host.
-        pagehaven::db::exec(&ctx.db, "UPDATE projects SET live_release_id = (SELECT id FROM releases WHERE project_id = ? AND number = 1) WHERE id = ?", [id.into(), id.into()]).await.unwrap();
+        rotulo::db::exec(&ctx.db, "UPDATE projects SET live_release_id = (SELECT id FROM releases WHERE project_id = ? AND number = 1) WHERE id = ?", [id.into(), id.into()]).await.unwrap();
         hosted(&server, &p.site, "/").await.assert_status_not_found();
         hosted(&server, "reported.example.com:5150", "/").await.assert_status_not_found();
-        pagehaven::db::exec(&ctx.db, "UPDATE projects SET live_release_id = NULL WHERE id = ?", [id.into()]).await.unwrap();
-        loco_rs::task::Task::run(&pagehaven::tasks::Reinstate, &ctx, &vars)
+        rotulo::db::exec(&ctx.db, "UPDATE projects SET live_release_id = NULL WHERE id = ?", [id.into()]).await.unwrap();
+        loco_rs::task::Task::run(&rotulo::tasks::Reinstate, &ctx, &vars)
             .await
             .unwrap();
         hosted(&server, &p.site, "/").await.assert_status_not_found();
@@ -281,7 +281,7 @@ async fn unchanged_drafts_cannot_create_duplicate_live_releases() {
         .await;
         assert_eq!(p.publish(&server, &cookie).await["release"]["number"], 2);
         let id = project_id(&ctx, &p.pid).await;
-        pagehaven::db::exec(
+        rotulo::db::exec(
             &ctx.db,
             "UPDATE projects SET live_release_id = NULL WHERE id = ?",
             [id.into()],
@@ -299,7 +299,7 @@ async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_
     request_with_create_db::<App, _, _>(|server, ctx| async move {
         let cookie = register(&server, "alice@example.com").await;
         let p = Project::new(&server, &cookie).await;
-        let email = pagehaven::state::Pagehaven::from(&ctx)
+        let email = rotulo::state::Rotulo::from(&ctx)
             .settings
             .abuse_email
             .clone()
@@ -310,7 +310,7 @@ async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_
         ] {
             let response = hosted(&server, host, path).await;
             assert_site_miss(&response, &email, "No website here yet");
-            let origin = &pagehaven::state::Pagehaven::from(&ctx).settings.app_origin;
+            let origin = &rotulo::state::Rotulo::from(&ctx).settings.app_origin;
             assert!(response
                 .text()
                 .contains(&format!("href=\"{origin}/projects\"")));
@@ -325,7 +325,7 @@ async fn site_misses_render_the_designed_template_and_abuse_contact_without_app_
         head.assert_status_not_found();
         head.assert_header("x-content-type-options", "nosniff");
         assert!(head.as_bytes().is_empty());
-        let state = pagehaven::state::Pagehaven::from(&ctx);
+        let state = rotulo::state::Rotulo::from(&ctx);
         let id = project_id(&ctx, &p.pid).await;
         std::fs::write(
             state.store.release_dir(id, 1).join("404.html"),
@@ -348,7 +348,7 @@ fn assert_site_miss(response: &TestResponse, email: &str, heading: &str) {
     let html = response.text();
     assert!(html.contains(&format!("<h1>{heading}</h1>")), "{html}");
     assert!(
-        html.contains("Hosted with Pagehaven"),
+        html.contains("Hosted with Rótulo"),
         "expected designed template footer, got {html:?}"
     );
     assert!(html.contains("Report a harmful website:"));

@@ -1,5 +1,5 @@
 {% extends "layouts/base.html" %}
-{% block title %}{{ project.name }} · Pagehaven{% endblock title %}
+{% block title %}{{ project.name }} · Rótulo{% endblock title %}
 {% block styles %}<link rel="stylesheet" href="/static/css/editor.css">{% endblock styles %}
 {% block head %}<script type="module" src="/static/js/editor/main.js"></script>{% endblock head %}
 {% block body_class %}editor-body{% endblock body_class %}
@@ -154,7 +154,7 @@
       <div class="field">
         <label class="label" for="site-name">Website name</label>
         <input class="input" id="site-name" type="text" maxlength="80" required data-settings-name aria-describedby="site-name-hint">
-        <span class="hint" id="site-name-hint">Only you see this name, in Pagehaven. Visitors see each page’s title and description; change those in Page settings.</span>
+        <span class="hint" id="site-name-hint">Only you see this name, in Rótulo. Visitors see each page’s title and description; change those in Page settings.</span>
       </div>
       <div class="field">
         <label class="label" for="site-slug">Web address</label>
@@ -172,7 +172,7 @@
     <section class="settings-group" data-settings-content="domains" hidden data-domain-section aria-labelledby="domain-title">
       <h3 class="settings-heading" id="domain-title">Your own domain</h3>
       <p class="hint" data-domains-intro>Use an address you own, like www.yourbusiness.com.</p>
-      <p class="hint" data-domains-disabled hidden>Custom domains are disabled on this Pagehaven host. Your Pagehaven address still works.</p>
+      <p class="hint" data-domains-disabled hidden>Custom domains are disabled on this Rótulo host. Your Rótulo address still works.</p>
       <div class="domain-list" data-domain-list></div>
       <form class="domain-form" data-domain-form>
         <label class="visually-hidden" for="domain-input">Domain name</label>

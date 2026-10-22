@@ -68,7 +68,7 @@ def page(slug, ui, disp):
             ('Agency', 'Published', 'ok', '3 days ago', '2 pages')]))
     numrows = ''.join(f'<tr><td>Version {v}</td><td class="r">{kb}</td></tr>' for v, kb in ((11, '1,018 KB'), (14, '711 KB'), (101, '96 KB'), (7, '10,240 KB')))
     water = ''.join(f'<div class="wf" style="font-size:{s}px"><b>{s}px</b> Edited 10 minutes ago · 2 pages · Il1 0O rn m · Select the part around this one</div>' for s in (11, 12, 13, 14, 15))
-    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><title>{html.escape(title)} · Pagehaven specimen</title>
+    return f'''<!doctype html><html lang="en"><meta charset="utf-8"><title>{html.escape(title)} · Rótulo specimen</title>
 <style>
 {faces}
 :root{{--ui:{ui_name};--disp:{disp_name};--bg:#f8f7f4;--sunk:#f1efea;--surf:#fff;--ink:#1c1b18;--ink2:#57534b;--ink3:#6f6a61;--line:rgba(40,34,24,.09);--line2:rgba(40,34,24,.16);--acc:#2f5ce0;--acct:#2448b8;--accs:#edf1fd}}
@@ -141,7 +141,7 @@ ul{{list-style:none;margin:0;padding:0}} li{{padding:8px 0;border-top:1px solid 
     <div class="pg" style="color:var(--ink2)">{ic('add-page')}Add page</div>
     <div class="sum" style="border-top:1px solid var(--line);margin-top:8px">Publishing {ic('chevron-down')}</div>
     <div class="sb"><div class="st"><i></i>Unpublished changes</div>
-      <div class="addr">{ic('domain')}harbor-bakery.pagehaven.site</div>
+      <div class="addr">{ic('domain')}harbor-bakery.rotulo.site</div>
       <span class="btn sec blk">Publish changes</span>
       <div class="h3">Version history</div><ul>{vrows}</ul></div>
   </div>
