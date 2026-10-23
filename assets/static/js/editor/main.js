@@ -6,10 +6,11 @@ import { createEdits } from "./edits.js";
 import { closeMenus, menuOpen } from "./menu.js";
 import { createPublishing } from "./publish.js";
 import { createSurfaces } from "./surfaces.js";
-import { createSaver, editRecovery } from "./saves.js";
+import { createSaver } from "./saves.js";
 import { createStore, initialState, selection } from "./state.js";
 import { createToolbar, describeSelection } from "./toolbar.js";
 import { createTopBar } from "./topbar.js";
+import { createStructure } from "./structure.js";
 import { publicationShortcut } from "./shortcuts.js";
 const root = must(document, "#editor");
 const pid = root.dataset["pid"] ?? "";
@@ -156,7 +157,7 @@ async function main() {
         return;
     }
     const store = createStore(initialState(data, Date.now()));
-    const saver = createSaver(store, () => api.bootstrap(pid));
+    const saver = createSaver(store);
     const change = saver.change;
     document.addEventListener("studio-retry", () => {
         if (store.get().saves.problem?.kind === "conflict")
@@ -180,15 +181,16 @@ async function main() {
     }, { log: "none" });
     let canvas = null;
     async function history(action) {
-        const s = store.get();
-        if (action === "undo" ? !s.history.can_undo : !s.history.can_redo)
+        if (canvas && !await canvas.finishText())
             return;
-        await canvas?.finishText();
-        const label = action === "undo" ? s.history.undo_label : s.history.redo_label;
-        const result = await change((base) => (action === "undo" ? api.undo(pid, base) : api.redo(pid, base)), {
-            log: action,
-            recover: (fresh) => ({ ...editRecovery(fresh), pages: fresh.pages.map((p) => p.path) }),
-        });
+        let label = null;
+        const result = await change((base) => {
+            const current = store.get();
+            if (action === "undo" ? !current.history.can_undo : !current.history.can_redo)
+                return Promise.resolve(null);
+            label = action === "undo" ? current.history.undo_label : current.history.redo_label;
+            return action === "undo" ? api.undo(pid, base) : api.redo(pid, base);
+        }, { log: action });
         if (!result)
             return;
         announce(`${action === "undo" ? "Undone" : "Redone"}${label ? `: ${label}` : ""}`);
@@ -209,12 +211,14 @@ async function main() {
     }
     const undo = () => void history("undo");
     const redo = () => void history("redo");
+    let structure = null;
     canvas = createCanvas(store, {
+        onStructure(nodes, truncated) { structure?.update(nodes, truncated); },
+        onMove(element, target, position) { void structure?.move(element, target, position); },
         onText(element, html, page) {
             void change((base) => api.edit(pid, base, page, { op: "set_text", element, html }), {
                 page,
                 element,
-                recover: editRecovery,
                 onRejected: () => canvas?.reload(element),
             });
         },
@@ -228,7 +232,8 @@ async function main() {
     });
     const publishing = createPublishing({ store, canvas, saver, afterRestore: afterDraftReplaced });
     const edits = createEdits({ store, canvas, change, undo });
-    const toolbar = createToolbar({ store, canvas, edits });
+    structure = createStructure({ store, canvas, edits });
+    const toolbar = createToolbar({ store, canvas, edits, structure });
     const surfaces = createSurfaces({
         store,
         canvas,

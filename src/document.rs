@@ -10,9 +10,15 @@ use html5ever::{ns, Attribute, LocalName, QualName};
 use scraper::{node::Element, node::Text, Html, Node};
 use serde::{Deserialize, Serialize};
 
+mod structure;
+use structure::Content;
+pub use structure::{InsertKind, Position};
+
 pub const ID_ATTR: &str = "data-ph-id";
 pub const CAN_ATTR: &str = "data-ph-can";
 pub const HIDDEN_ATTR: &str = "data-ph-hidden";
+/// A name the owner gives an element to find it in the page structure. Never published.
+pub const NAME_ATTR: &str = "data-ph-name";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
@@ -60,6 +66,8 @@ impl From<ElementId> for String {
     }
 }
 
+/// The inline style properties the editor may set. Each one names its value grammar in
+/// [`StyleProperty::grammar`], and `frontend/protocol.ts` mirrors the same table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StyleProperty {
@@ -74,6 +82,69 @@ pub enum StyleProperty {
     PaddingRight,
     MarginTop,
     MarginBottom,
+    MarginLeft,
+    MarginRight,
+    Width,
+    MaxWidth,
+    Height,
+    MinHeight,
+    Display,
+    FlexDirection,
+    FlexWrap,
+    JustifyContent,
+    AlignItems,
+    Gap,
+    GridTemplateColumns,
+    BorderWidth,
+    BorderStyle,
+    BorderColor,
+    BorderRadius,
+    Opacity,
+    Overflow,
+}
+
+/// Lengths in `px`, `rem`, `em`, `%` and, where `viewport` is above zero, `vh` and `vw`.
+/// `rem` and `em` are bounded by `min_px / 16 ..= max_px / 10`.
+#[derive(Debug, Clone, Copy)]
+struct Bounds {
+    min_px: f64,
+    max_px: f64,
+    percent: f64,
+    viewport: f64,
+    zero: bool,
+    keywords: &'static [&'static str],
+}
+
+const SPACE: Bounds = Bounds {
+    min_px: 0.0,
+    max_px: 400.0,
+    percent: 400.0,
+    viewport: 0.0,
+    zero: true,
+    keywords: &[],
+};
+const MARGIN: Bounds = Bounds {
+    keywords: &["auto"],
+    ..SPACE
+};
+const SIZE: Bounds = Bounds {
+    min_px: 0.0,
+    max_px: 4000.0,
+    percent: 100.0,
+    viewport: 0.0,
+    zero: true,
+    keywords: &[],
+};
+
+#[derive(Debug, Clone, Copy)]
+enum Grammar {
+    Color,
+    Length(Bounds),
+    Keyword(&'static [&'static str]),
+    Opacity,
+    /// `repeat(N, minmax(0, 1fr))` for 1 to 12 equal columns, or
+    /// `repeat(auto-fit, minmax(Npx, 1fr))` for as many columns of at least 80 to 640 px as fit.
+    GridColumns,
 }
 
 impl StyleProperty {
@@ -90,24 +161,115 @@ impl StyleProperty {
             Self::PaddingRight => "padding-right",
             Self::MarginTop => "margin-top",
             Self::MarginBottom => "margin-bottom",
+            Self::MarginLeft => "margin-left",
+            Self::MarginRight => "margin-right",
+            Self::Width => "width",
+            Self::MaxWidth => "max-width",
+            Self::Height => "height",
+            Self::MinHeight => "min-height",
+            Self::Display => "display",
+            Self::FlexDirection => "flex-direction",
+            Self::FlexWrap => "flex-wrap",
+            Self::JustifyContent => "justify-content",
+            Self::AlignItems => "align-items",
+            Self::Gap => "gap",
+            Self::GridTemplateColumns => "grid-template-columns",
+            Self::BorderWidth => "border-width",
+            Self::BorderStyle => "border-style",
+            Self::BorderColor => "border-color",
+            Self::BorderRadius => "border-radius",
+            Self::Opacity => "opacity",
+            Self::Overflow => "overflow",
+        }
+    }
+
+    fn grammar(self) -> Grammar {
+        match self {
+            Self::Color | Self::BackgroundColor | Self::BorderColor => Grammar::Color,
+            Self::FontSize => Grammar::Length(Bounds {
+                min_px: 4.0,
+                max_px: 160.0,
+                zero: false,
+                ..SPACE
+            }),
+            Self::FontWeight => Grammar::Keyword(&[
+                "100", "200", "300", "400", "500", "600", "700", "800", "900",
+            ]),
+            Self::TextAlign => Grammar::Keyword(&["left", "center", "right", "justify"]),
+            Self::PaddingTop | Self::PaddingBottom | Self::PaddingLeft | Self::PaddingRight => {
+                Grammar::Length(SPACE)
+            }
+            Self::MarginTop | Self::MarginBottom | Self::MarginLeft | Self::MarginRight => {
+                Grammar::Length(MARGIN)
+            }
+            Self::Width => Grammar::Length(Bounds {
+                keywords: &["auto", "fit-content"],
+                ..SIZE
+            }),
+            Self::MaxWidth => Grammar::Length(Bounds {
+                keywords: &["none"],
+                ..SIZE
+            }),
+            Self::Height => Grammar::Length(Bounds {
+                viewport: 100.0,
+                keywords: &["auto"],
+                ..SIZE
+            }),
+            Self::MinHeight => Grammar::Length(Bounds {
+                viewport: 100.0,
+                ..SIZE
+            }),
+            Self::Display => Grammar::Keyword(&[
+                "block",
+                "inline-block",
+                "inline",
+                "flex",
+                "inline-flex",
+                "grid",
+            ]),
+            Self::FlexDirection => {
+                Grammar::Keyword(&["row", "row-reverse", "column", "column-reverse"])
+            }
+            Self::FlexWrap => Grammar::Keyword(&["nowrap", "wrap"]),
+            Self::JustifyContent => Grammar::Keyword(&[
+                "flex-start",
+                "center",
+                "flex-end",
+                "space-between",
+                "space-around",
+                "space-evenly",
+            ]),
+            Self::AlignItems => {
+                Grammar::Keyword(&["stretch", "flex-start", "center", "flex-end", "baseline"])
+            }
+            Self::Gap => Grammar::Length(Bounds {
+                percent: 100.0,
+                ..SPACE
+            }),
+            Self::GridTemplateColumns => Grammar::GridColumns,
+            Self::BorderWidth => Grammar::Length(Bounds {
+                max_px: 32.0,
+                percent: 0.0,
+                ..SPACE
+            }),
+            Self::BorderStyle => Grammar::Keyword(&["none", "solid", "dashed", "dotted", "double"]),
+            Self::BorderRadius => Grammar::Length(Bounds {
+                max_px: 999.0,
+                percent: 50.0,
+                ..SPACE
+            }),
+            Self::Opacity => Grammar::Opacity,
+            Self::Overflow => Grammar::Keyword(&["visible", "hidden", "clip", "auto"]),
         }
     }
 
     fn accepts(self, value: &str) -> bool {
-        match self {
-            Self::Color | Self::BackgroundColor => is_hex_color(value),
-            Self::FontSize => is_length(value, 4.0, 160.0, false),
-            Self::FontWeight => matches!(
-                value,
-                "100" | "200" | "300" | "400" | "500" | "600" | "700" | "800" | "900"
-            ),
-            Self::TextAlign => matches!(value, "left" | "center" | "right" | "justify"),
-            Self::PaddingTop
-            | Self::PaddingBottom
-            | Self::PaddingLeft
-            | Self::PaddingRight
-            | Self::MarginTop
-            | Self::MarginBottom => is_length(value, 0.0, 400.0, true),
+        match self.grammar() {
+            Grammar::Color => is_hex_color(value),
+            Grammar::Length(bounds) => is_length(value, bounds),
+            Grammar::Keyword(values) => values.contains(&value),
+            Grammar::Opacity => is_unit_fraction(value),
+            Grammar::GridColumns => is_grid_columns(value),
         }
     }
 }
@@ -118,30 +280,59 @@ fn is_hex_color(value: &str) -> bool {
     })
 }
 
-/// `12px`, `1.5rem`, `2em`, `10%`. `px` values are bounded by `min..=max`, relative units by a tenth of it.
-fn is_length(value: &str, min: f64, max: f64, allow_zero: bool) -> bool {
-    if allow_zero && value == "0" {
+/// A plain decimal such as `12`, `1.5` or `.5`, at most `max_len` characters.
+fn decimal(number: &str, max_len: usize) -> Option<f64> {
+    let digits = |s: &str| s.bytes().all(|b| b.is_ascii_digit());
+    let well_formed = match number.split_once('.') {
+        Some((whole, fraction)) => digits(whole) && !fraction.is_empty() && digits(fraction),
+        None => !number.is_empty() && digits(number),
+    };
+    if !well_formed || number.len() > max_len {
+        return None;
+    }
+    number.parse::<f64>().ok()
+}
+
+fn is_length(value: &str, bounds: Bounds) -> bool {
+    if bounds.keywords.contains(&value) || (bounds.zero && value == "0") {
         return true;
     }
     let Some(split) = value.find(|c: char| c.is_ascii_alphabetic() || c == '%') else {
         return false;
     };
     let (number, unit) = value.split_at(split);
-    if number.is_empty()
-        || number.len() > 7
-        || !number.bytes().all(|b| b.is_ascii_digit() || b == b'.')
-    {
-        return false;
-    }
-    let Ok(n) = number.parse::<f64>() else {
+    let Some(n) = decimal(number, 7) else {
         return false;
     };
     match unit {
-        "px" => n >= min && n <= max,
-        "rem" | "em" => n >= min / 16.0 && n <= max / 10.0,
-        "%" => (0.0..=400.0).contains(&n),
+        "px" => n >= bounds.min_px && n <= bounds.max_px,
+        "rem" | "em" => n >= bounds.min_px / 16.0 && n <= bounds.max_px / 10.0,
+        "%" => bounds.percent > 0.0 && n <= bounds.percent,
+        "vh" | "vw" => bounds.viewport > 0.0 && n <= bounds.viewport,
         _ => false,
     }
+}
+
+fn is_unit_fraction(value: &str) -> bool {
+    decimal(value, 4).is_some_and(|n| (0.0..=1.0).contains(&n))
+}
+
+fn is_grid_columns(value: &str) -> bool {
+    let whole = |n: &str, range: std::ops::RangeInclusive<u32>| {
+        !n.starts_with('0')
+            && n.bytes().all(|b| b.is_ascii_digit())
+            && n.parse().is_ok_and(|n| range.contains(&n))
+    };
+    if let Some(n) = value
+        .strip_prefix("repeat(")
+        .and_then(|v| v.strip_suffix(", minmax(0, 1fr))"))
+    {
+        return whole(n, 1..=12);
+    }
+    value
+        .strip_prefix("repeat(auto-fit, minmax(")
+        .and_then(|v| v.strip_suffix("px, 1fr))"))
+        .is_some_and(|n| whole(n, 80..=640))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -195,6 +386,39 @@ pub enum PageEdit {
     RemoveSection {
         element: ElementId,
     },
+    MoveElement {
+        element: ElementId,
+        target: ElementId,
+        position: Position,
+    },
+    /// `element` is the part the new one is placed against. A new link takes the classes of `like`,
+    /// a neighbouring link or list item, so it looks like the rest of its menu.
+    InsertElement {
+        element: ElementId,
+        position: Position,
+        kind: InsertKind,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        like: Option<ElementId>,
+    },
+    /// Without a `target` the copy goes next to the original.
+    DuplicateElement {
+        element: ElementId,
+        target: Option<ElementId>,
+        position: Option<Position>,
+    },
+    RemoveElement {
+        element: ElementId,
+    },
+    WrapElement {
+        element: ElementId,
+    },
+    UnwrapElement {
+        element: ElementId,
+    },
+    RenameElement {
+        element: ElementId,
+        name: String,
+    },
     SetPageMeta {
         title: String,
         description: String,
@@ -214,6 +438,13 @@ impl PageEdit {
             Self::DuplicateSection { .. } => "duplicate_section",
             Self::MoveSection { .. } => "move_section",
             Self::RemoveSection { .. } => "remove_section",
+            Self::MoveElement { .. } => "move_element",
+            Self::InsertElement { .. } => "insert_element",
+            Self::DuplicateElement { .. } => "duplicate_element",
+            Self::RemoveElement { .. } => "remove_element",
+            Self::WrapElement { .. } => "wrap_element",
+            Self::UnwrapElement { .. } => "unwrap_element",
+            Self::RenameElement { .. } => "rename_element",
             Self::SetPageMeta { .. } => "set_page_meta",
         }
     }
@@ -229,7 +460,14 @@ impl PageEdit {
             | Self::HideSection { element, .. }
             | Self::DuplicateSection { element }
             | Self::MoveSection { element, .. }
-            | Self::RemoveSection { element } => Some(element),
+            | Self::RemoveSection { element }
+            | Self::MoveElement { element, .. }
+            | Self::InsertElement { element, .. }
+            | Self::DuplicateElement { element, .. }
+            | Self::RemoveElement { element }
+            | Self::WrapElement { element }
+            | Self::UnwrapElement { element }
+            | Self::RenameElement { element, .. } => Some(element),
             Self::SetPageMeta { .. } => None,
         }
     }
@@ -259,6 +497,9 @@ pub struct Capabilities {
     pub move_up: bool,
     pub move_down: bool,
     pub duplicate: bool,
+    pub movable: bool,
+    /// Accepts parts placed inside it.
+    pub container: bool,
 }
 
 impl Capabilities {
@@ -273,6 +514,8 @@ impl Capabilities {
             (self.move_up, 'u'),
             (self.move_down, 'd'),
             (self.duplicate, 'c'),
+            (self.movable, 'm'),
+            (self.container, 'n'),
         ]
         .iter()
         .filter_map(|(on, c)| on.then_some(*c))
@@ -383,6 +626,7 @@ const NOT_SECTIONS: &[&str] = &[
 
 pub struct Document {
     html: Html,
+    copy_stylesheets: HashMap<String, String>,
 }
 
 #[derive(Default)]
@@ -395,6 +639,7 @@ struct NodeFacts {
     phrasing: bool,
     script: bool,
     single_wrapper: bool,
+    content: Content,
 }
 
 fn qual(name: &str) -> QualName {
@@ -411,6 +656,13 @@ fn set_attr(element: &mut Element, name: &str, value: &str) {
 
 fn remove_attr(element: &mut Element, name: &str) {
     element.attrs.shift_remove(&qual(name));
+}
+
+/// Removes every `data-ph-` attribute: the editor's own, or ones an imported page copied.
+fn remove_editor_attrs(element: &mut Element) {
+    element
+        .attrs
+        .retain(|name, _| !name.local.starts_with("data-ph-"));
 }
 
 fn new_element(name: &str, attrs: &[(&str, &str)]) -> Node {
@@ -430,7 +682,30 @@ impl Document {
     pub fn parse(source: &str) -> Self {
         Self {
             html: Html::parse_document(source),
+            copy_stylesheets: HashMap::new(),
         }
+    }
+
+    pub fn stylesheet_urls(&self) -> Vec<String> {
+        self.html
+            .tree
+            .root()
+            .descendants()
+            .filter_map(|node| {
+                let element = node.value().as_element()?;
+                (element.name() == "link"
+                    && element.attr("rel").is_some_and(|rel| {
+                        rel.split_ascii_whitespace()
+                            .any(|value| value.eq_ignore_ascii_case("stylesheet"))
+                    }))
+                .then(|| element.attr("href").map(str::to_owned))
+                .flatten()
+            })
+            .collect()
+    }
+
+    pub fn set_copy_stylesheets(&mut self, sources: HashMap<String, String>) {
+        self.copy_stylesheets = sources;
     }
 
     /// Stops a hostile page before the HTML parser builds an unbounded open-element stack.
@@ -463,6 +738,7 @@ impl Document {
         }
         let document = Self {
             html: parser.finish(),
+            copy_stylesheets: HashMap::new(),
         };
         document.validate_depth()?;
         Ok(document)
@@ -496,6 +772,13 @@ impl Document {
                 matches!(name, "header" | "nav" | "footer") || parent.is_some_and(|p| p.chrome);
             let hidden_text = matches!(name, "script" | "noscript" | "style" | "template")
                 || parent.is_some_and(|p| p.hidden_text);
+            let content = if sealed {
+                Content::Nothing
+            } else {
+                structure::own_content(name).unwrap_or_else(|| {
+                    structure::transparent(parent.map_or(Content::Nothing, |p| p.content))
+                })
+            };
             let single_wrapper = node
                 .children()
                 .filter_map(|c| c.value().as_element())
@@ -510,6 +793,7 @@ impl Document {
                     chrome,
                     hidden_text,
                     single_wrapper,
+                    content,
                     ..NodeFacts::default()
                 },
             );
@@ -549,17 +833,7 @@ impl Document {
             .map(|n| n.id())
             .collect();
         for id in &all {
-            self.with_element(*id, |element| {
-                let foreign: Vec<QualName> = element
-                    .attrs
-                    .keys()
-                    .filter(|name| name.local.starts_with("data-ph-"))
-                    .cloned()
-                    .collect();
-                for name in foreign {
-                    element.attrs.shift_remove(&name);
-                }
-            });
+            self.with_element(*id, remove_editor_attrs);
         }
         let mut next = 1;
         if let Some(body) = self.body() {
@@ -605,10 +879,7 @@ impl Document {
             .map(|n| n.id())
             .collect();
         for id in ids {
-            self.with_element(id, |element| {
-                remove_attr(element, ID_ATTR);
-                remove_attr(element, CAN_ATTR);
-            });
+            self.with_element(id, remove_editor_attrs);
         }
     }
 
@@ -657,6 +928,14 @@ impl Document {
         for id in ids {
             let f = &facts[&id];
             let name = self.name(id);
+            let movable = !f.sealed
+                && structure::fit(name) != structure::Fit::Fixed
+                && self
+                    .html
+                    .tree
+                    .get(id)
+                    .and_then(|n| n.parent())
+                    .is_some_and(|p| facts[&p.id()].content != Content::Nothing);
             let section = sections.get(&id).copied().unwrap_or(false);
             let (previous, next) = neighbors.get(&id).copied().unwrap_or_default();
             let can = if f.sealed {
@@ -671,7 +950,9 @@ impl Document {
                     section,
                     move_up: section && previous.is_some_and(|n| sections[&n]),
                     move_down: section && next.is_some_and(|n| sections[&n]),
-                    duplicate: section && !f.script,
+                    duplicate: (section || movable) && !f.script,
+                    movable,
+                    container: f.content != Content::Nothing,
                 }
             }
             .encode();
@@ -742,7 +1023,8 @@ impl Document {
     fn find(&self, id: &ElementId) -> Option<NodeId> {
         self.html
             .tree
-            .nodes()
+            .root()
+            .descendants()
             .find(|n| {
                 n.value()
                     .as_element()
@@ -899,6 +1181,7 @@ impl Document {
         }
         let name = self.name(id);
         let section = self.is_section(id);
+        let movable = self.is_movable(id);
         Capabilities {
             text: self.is_text_editable(id),
             image: name == "img",
@@ -908,7 +1191,9 @@ impl Document {
             section,
             move_up: section && self.sibling_section(id, Direction::Up).is_some(),
             move_down: section && self.sibling_section(id, Direction::Down).is_some(),
-            duplicate: section && !self.contains_script(id),
+            duplicate: (section || movable) && !self.contains_script(id),
+            movable,
+            container: self.content_of(id) != Content::Nothing,
         }
     }
 
@@ -935,7 +1220,11 @@ impl Document {
             return false;
         };
         let facts = self.node_facts();
-        let has_script = facts[&body.id()].script;
+        let has_script = self.html.tree.root().descendants().any(|node| {
+            node.value()
+                .as_element()
+                .is_some_and(|element| element.name() == "script")
+        });
         let has_text = body.descendants().any(|n| {
             n.value().as_text().is_some_and(|t| !t.trim().is_empty()) && !facts[&n.id()].hidden_text
         });
@@ -1013,7 +1302,17 @@ impl Document {
         changed
     }
 
+    /// Applies one edit. A refused edit leaves the page as it was.
     pub fn apply(&mut self, edit: &PageEdit) -> Result<(), EditError> {
+        let before = self.html.clone();
+        let result = self.apply_edit(edit);
+        if result.is_err() {
+            self.html = before;
+        }
+        result
+    }
+
+    fn apply_edit(&mut self, edit: &PageEdit) -> Result<(), EditError> {
         if let PageEdit::SetPageMeta { title, description } = edit {
             self.set_meta(title, description)?;
             return self.validate_depth();
@@ -1144,13 +1443,12 @@ impl Document {
                 Ok(())
             }
             PageEdit::DuplicateSection { .. } => {
-                if !can.duplicate {
+                if !can.section {
                     return Err(EditError::NotAllowed(
-                        "This section contains code, so it can't be duplicated safely.",
+                        "Only whole sections can be duplicated.",
                     ));
                 }
-                self.duplicate(id);
-                Ok(())
+                self.duplicate_element(id, None, None)
             }
             PageEdit::MoveSection { direction, .. } => {
                 let sibling = can
@@ -1174,6 +1472,22 @@ impl Document {
                 self.html.tree.get_mut(id).expect("element").detach();
                 Ok(())
             }
+            PageEdit::MoveElement {
+                target, position, ..
+            } => self.move_element(id, target, *position),
+            PageEdit::InsertElement {
+                position,
+                kind,
+                like,
+                ..
+            } => self.insert_element(id, *position, *kind, like.as_ref()),
+            PageEdit::DuplicateElement {
+                target, position, ..
+            } => self.duplicate_element(id, target.as_ref(), *position),
+            PageEdit::RemoveElement { .. } => self.remove_element(id),
+            PageEdit::WrapElement { .. } => self.wrap_element(id),
+            PageEdit::UnwrapElement { .. } => self.unwrap_element(id),
+            PageEdit::RenameElement { name, .. } => self.rename_element(id, name),
             PageEdit::SetPageMeta { .. } => unreachable!("handled above"),
         }?;
         self.validate_depth()
@@ -1277,56 +1591,6 @@ impl Document {
         Ok(())
     }
 
-    fn duplicate(&mut self, id: NodeId) {
-        let mut next = self.next_number();
-        let copy = self.clone_subtree(id, &mut next);
-        self.html
-            .tree
-            .get_mut(id)
-            .expect("section")
-            .insert_id_after(copy);
-    }
-
-    /// Copies a subtree with fresh editor ids and without HTML `id`s, which must stay unique.
-    fn clone_subtree(&mut self, id: NodeId, next: &mut u64) -> NodeId {
-        let mut value = self.html.tree.get(id).expect("node").value().clone();
-        if let Node::Element(element) = &mut value {
-            let mut attrs: Vec<Attribute> = element
-                .attrs
-                .iter()
-                .filter(|(name, _)| !matches!(&*name.local, "id" | ID_ATTR | CAN_ATTR))
-                .map(|(name, value)| Attribute {
-                    name: name.clone(),
-                    value: value.clone(),
-                })
-                .collect();
-            attrs.push(Attribute {
-                name: qual(ID_ATTR),
-                value: ElementId::from_number(*next).as_str().into(),
-            });
-            *next += 1;
-            value = Node::Element(Element::new(element.name.clone(), attrs));
-        }
-        let children: Vec<NodeId> = self
-            .html
-            .tree
-            .get(id)
-            .expect("node")
-            .children()
-            .map(|c| c.id())
-            .collect();
-        let copy = self.html.tree.orphan(value).id();
-        for child in children {
-            let child_copy = self.clone_subtree(child, next);
-            self.html
-                .tree
-                .get_mut(copy)
-                .expect("copy")
-                .append_id(child_copy);
-        }
-        copy
-    }
-
     /// Replaces the content of a text element with sanitized markup from the editor.
     fn set_text(&mut self, id: NodeId, markup: &str) -> Result<(), EditError> {
         if markup.len() > 64 * 1024 {
@@ -1371,54 +1635,59 @@ impl Document {
 
     fn build(&mut self, parent: NodeId, plan: Vec<Plan>, next: &mut u64) {
         for item in plan {
-            let child = match item {
-                Plan::Text(text) => self
-                    .html
-                    .tree
-                    .orphan(Node::Text(Text {
-                        text: text.as_str().into(),
-                    }))
-                    .id(),
-                Plan::Keep { node, children } => {
-                    self.html.tree.get_mut(node).expect("kept").detach();
-                    if let Some(children) = children {
-                        let old: Vec<NodeId> = self
-                            .html
-                            .tree
-                            .get(node)
-                            .expect("kept")
-                            .children()
-                            .map(|c| c.id())
-                            .collect();
-                        for c in old {
-                            self.html.tree.get_mut(c).expect("child").detach();
-                        }
-                        self.build(node, children, next);
-                    }
-                    node
-                }
-                Plan::New {
-                    name,
-                    attrs,
-                    children,
-                } => {
-                    let mut all: Vec<(&str, &str)> = attrs
-                        .iter()
-                        .map(|(k, v)| (k.as_str(), v.as_str()))
-                        .collect();
-                    let number = ElementId::from_number(*next);
-                    *next += 1;
-                    all.push((ID_ATTR, number.as_str()));
-                    let node = self.html.tree.orphan(new_element(&name, &all)).id();
-                    self.build(node, children, next);
-                    node
-                }
-            };
+            let child = self.build_one(item, next);
             self.html
                 .tree
                 .get_mut(parent)
                 .expect("parent")
                 .append_id(child);
+        }
+    }
+
+    /// An unattached node for `item`, with fresh editor ids on every new element.
+    fn build_one(&mut self, item: Plan, next: &mut u64) -> NodeId {
+        match item {
+            Plan::Text(text) => self
+                .html
+                .tree
+                .orphan(Node::Text(Text {
+                    text: text.as_str().into(),
+                }))
+                .id(),
+            Plan::Keep { node, children } => {
+                self.html.tree.get_mut(node).expect("kept").detach();
+                if let Some(children) = children {
+                    let old: Vec<NodeId> = self
+                        .html
+                        .tree
+                        .get(node)
+                        .expect("kept")
+                        .children()
+                        .map(|c| c.id())
+                        .collect();
+                    for c in old {
+                        self.html.tree.get_mut(c).expect("child").detach();
+                    }
+                    self.build(node, children, next);
+                }
+                node
+            }
+            Plan::New {
+                name,
+                attrs,
+                children,
+            } => {
+                let mut all: Vec<(&str, &str)> = attrs
+                    .iter()
+                    .map(|(k, v)| (k.as_str(), v.as_str()))
+                    .collect();
+                let number = ElementId::from_number(*next);
+                *next += 1;
+                all.push((ID_ATTR, number.as_str()));
+                let node = self.html.tree.orphan(new_element(&name, &all)).id();
+                self.build(node, children, next);
+                node
+            }
         }
     }
 }
@@ -1990,6 +2259,119 @@ mod tests {
                 styles: bad
             })
             .is_err());
+    }
+
+    #[test]
+    fn style_merges_match_the_shared_fixture() {
+        let cases: Vec<serde_json::Value> =
+            serde_json::from_str(include_str!("../fixtures/style-merge.json")).unwrap();
+        for case in cases {
+            let changes = case["changes"]
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str().map(str::to_owned)))
+                .collect();
+            let existing = case["existing"].as_str().unwrap();
+            assert_eq!(
+                merge_declarations(existing, &changes),
+                case["merged"].as_str().unwrap(),
+                "{existing}"
+            );
+        }
+    }
+
+    #[test]
+    fn style_values_match_the_shared_fixture() {
+        let cases: serde_json::Value =
+            serde_json::from_str(include_str!("../fixtures/style-values.json")).unwrap();
+        for (list, expected) in [("accept", true), ("reject", false)] {
+            for case in cases[list].as_array().unwrap() {
+                let (key, value) = (case[0].as_str().unwrap(), case[1].as_str().unwrap());
+                let property: StyleProperty =
+                    serde_json::from_value(serde_json::Value::from(key)).unwrap();
+                assert_eq!(property.css_name(), key);
+                assert_eq!(property.accepts(value), expected, "{key}: {value}");
+            }
+        }
+    }
+
+    #[test]
+    fn layout_styles_set_and_clear_without_touching_other_declarations() {
+        let mut doc = doc();
+        let story = element_by_tag_text(&doc, "section", "Our story");
+        let layout = BTreeMap::from([
+            (StyleProperty::MaxWidth, Some("960px".to_owned())),
+            (StyleProperty::MarginLeft, Some("auto".to_owned())),
+            (StyleProperty::MarginRight, Some("auto".to_owned())),
+            (StyleProperty::Display, Some("grid".to_owned())),
+            (
+                StyleProperty::GridTemplateColumns,
+                Some("repeat(auto-fit, minmax(240px, 1fr))".to_owned()),
+            ),
+            (StyleProperty::Gap, Some("24px".to_owned())),
+            (StyleProperty::BorderRadius, Some("12px".to_owned())),
+        ]);
+        doc.apply(&PageEdit::SetStyle {
+            element: story.clone(),
+            styles: layout.clone(),
+        })
+        .unwrap();
+        let html = doc.serialize();
+        assert!(
+            html.contains(r#"style="background: url(a;b.png); color: red; border-radius: 12px; display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-left: auto; margin-right: auto; max-width: 960px""#),
+            "{html}"
+        );
+        let mut reloaded = Document::parse(&html);
+        let cleared = layout.keys().map(|property| (*property, None)).collect();
+        reloaded
+            .apply(&PageEdit::SetStyle {
+                element: story,
+                styles: cleared,
+            })
+            .unwrap();
+        assert!(
+            reloaded
+                .serialize()
+                .contains(r#"style="background: url(a;b.png); color: red""#),
+            "{}",
+            reloaded.serialize()
+        );
+    }
+
+    #[test]
+    fn a_rejected_style_change_leaves_the_page_unchanged() {
+        let mut doc = doc();
+        let story = element_by_tag_text(&doc, "section", "Our story");
+        let before = doc.serialize();
+        let mixed = BTreeMap::from([
+            (StyleProperty::Width, Some("50%".to_owned())),
+            (
+                StyleProperty::GridTemplateColumns,
+                Some("1fr; position: fixed".to_owned()),
+            ),
+        ]);
+        assert_eq!(
+            doc.apply(&PageEdit::SetStyle {
+                element: story,
+                styles: mixed
+            }),
+            Err(EditError::Invalid("That style value isn't supported."))
+        );
+        assert_eq!(doc.serialize(), before);
+    }
+
+    #[test]
+    fn unknown_style_properties_are_refused_when_the_edit_is_read() {
+        let edit = serde_json::from_value::<PageEdit>(serde_json::json!({
+            "op": "set_style", "element": "a", "styles": {"position": "fixed"}
+        }));
+        assert!(edit.is_err());
+        let edit = serde_json::from_value::<PageEdit>(serde_json::json!({
+            "op": "set_style", "element": "a", "styles": {"max-width": "640px", "grid-template-columns": null}
+        }))
+        .unwrap();
+        assert_eq!(edit.kind(), "set_style");
     }
 
     #[test]

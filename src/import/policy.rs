@@ -242,6 +242,18 @@ pub fn classify(path: &str) -> Result<FileKind, Skip> {
     if segments.first() == Some(&".well-known") || segments.first() == Some(&"__rotulo") {
         return Err(Skip::Reserved);
     }
+    let javascript = [".js", ".mjs", ".cjs"]
+        .iter()
+        .any(|ext| name.ends_with(ext));
+    if javascript
+        && ((segments.len() == 1 && matches!(name, "server.js" | "server.mjs" | "server.cjs"))
+            || segments
+                .first()
+                .is_some_and(|dir| matches!(*dir, "api" | "server" | "functions"))
+            || name.contains(".server."))
+    {
+        return Err(Skip::ServerCode);
+    }
     if matches!(
         name,
         ".htaccess"
@@ -336,6 +348,12 @@ mod tests {
     #[test]
     fn server_code_and_secrets_are_never_hosted() {
         assert_eq!(classify("api/index.php"), Err(Skip::ServerCode));
+        assert_eq!(classify("api/contact.js"), Err(Skip::ServerCode));
+        assert_eq!(classify("server.js"), Err(Skip::ServerCode));
+        assert_eq!(classify("functions/contact.mjs"), Err(Skip::ServerCode));
+        assert_eq!(classify("chunks/page.server.js"), Err(Skip::ServerCode));
+        assert_eq!(classify("assets/server.js"), Ok(FileKind::Js));
+        assert_eq!(classify("api/products.json"), Ok(FileKind::Json));
         assert_eq!(classify(".htaccess"), Err(Skip::ServerCode));
         assert_eq!(classify("web.config"), Err(Skip::ServerCode));
         assert_eq!(classify(".env.production"), Err(Skip::Secret));

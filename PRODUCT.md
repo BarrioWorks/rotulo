@@ -12,7 +12,7 @@ web
 
 Owners of small businesses (a bakery, a studio, a local service) whose website was made for them by an AI tool such as Lovable, Bolt, v0 or Claude, or comes from a Bootstrap or Tailwind template. They are not technical. They want to change a headline, a photo, a phone number or a button link without writing a prompt, spending AI credits or hiring a developer, and then put the site online at an address they can share.
 
-They use Rótulo on a computer. The editor needs a screen at least 900 px wide; the dashboard, sign in and import pages also work on a phone. **(assumption)** Most sessions are short and occasional: a few changes, then publish.
+They primarily use Rótulo on a computer. The editor prioritizes the canvas with floating controls and also adapts to narrow screens; the dashboard, sign in and import pages work on a phone. **(assumption)** Most sessions are short and occasional: a few changes, then publish.
 
 A second audience, for now: venture investors watching a live demo (`docs/demo-script.md`). They judge whether the product looks finished and trustworthy within a few minutes. **(assumption)** They watch on a laptop or a projected 1280 to 1440 px wide screen.
 
@@ -24,12 +24,12 @@ Success: a nontechnical owner imports a site, makes a change and publishes it wi
 
 ## Positioning
 
-Rótulo edits the HTML the site actually ships, in place. It does not convert the page into a template model, it does not re-generate it with AI, and it never runs uploaded code on the server. Untouched markup stays exactly as it was. Hosting, versions and rollback come with it.
+Rótulo edits the HTML the site actually ships, in place. It does not convert the page into a template model, it does not re-generate it with AI, and it never runs uploaded code on the server. Imported HTML is normalized by the HTML parser. Editing preserves existing elements and attributes outside the requested change, subject to documented parser and layout constraints. Hosting, versions and rollback come with it.
 
 ## Operating Context
 
 - Import: a ZIP exported from the tool that made the site. Rótulo checks every file, leaves out server code and secrets, and reports what it skipped. Source projects that need a build are refused with an explanation.
-- Edit: the real page in a sandboxed preview, with a floating toolbar for text, images, links, styles (colors, size, weight, alignment, spacing) and top-level sections (hide, duplicate, move, remove). Pages can be added, renamed and deleted. Undo and redo cover every change. Changes save automatically.
+- Edit: the real page in a sandboxed preview, with a floating toolbar for text, images, links, styles (colors, size, weight, alignment, spacing) and page structure (insert, nest, duplicate, move, wrap, remove). Pages can be added, renamed and deleted. Undo and redo cover every change. Changes save automatically.
 - Publish: one click. Each publish creates an immutable version. Version history offers "Make live" (rollback) and "Edit this version".
 - Own domain: the owner adds a hostname and gets the exact DNS records to create; Rótulo checks them. In production this stays off until TLS is approved.
 - Two tabs on the same site: a stale change is refused and the user is told to reload.

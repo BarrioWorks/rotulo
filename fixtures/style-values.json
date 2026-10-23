@@ -1,0 +1,31 @@
+{
+  "accept": [
+    ["color", "#1a2b3c"], ["color", "#fff"], ["background-color", "#ffffff80"], ["border-color", "#000"],
+    ["font-size", "16px"], ["font-size", "1.5rem"], ["font-weight", "700"], ["text-align", "justify"],
+    ["padding-top", "0"], ["padding-bottom", "2.5rem"], ["padding-left", "24px"], ["padding-right", "10%"], ["margin-left", "auto"], ["margin-right", "auto"], ["margin-bottom", "48px"],
+    ["width", "auto"], ["width", "fit-content"], ["width", "100%"], ["width", "320px"], ["width", "4000px"], ["width", "20rem"], ["width", ".5em"],
+    ["max-width", "none"], ["max-width", "1200px"], ["max-width", "60%"],
+    ["height", "auto"], ["height", "50vh"], ["min-height", "100vh"], ["min-height", "480px"],
+    ["display", "flex"], ["display", "grid"], ["display", "inline-block"],
+    ["flex-direction", "column"], ["flex-wrap", "wrap"], ["justify-content", "space-between"], ["align-items", "center"],
+    ["gap", "16px"], ["gap", "0"],
+    ["grid-template-columns", "repeat(3, minmax(0, 1fr))"], ["grid-template-columns", "repeat(12, minmax(0, 1fr))"], ["grid-template-columns", "repeat(auto-fit, minmax(240px, 1fr))"],
+    ["border-width", "2px"], ["border-style", "dashed"], ["border-radius", "999px"], ["border-radius", "50%"],
+    ["opacity", "0"], ["opacity", "0.5"], ["opacity", ".25"], ["opacity", "1"],
+    ["overflow", "hidden"]
+  ],
+  "reject": [
+    ["color", "red"], ["color", "red; background: url(javascript:x)"], ["color", "#12345"],
+    ["font-size", "0"], ["font-size", "2px"], ["font-size", "200px"], ["font-weight", "450"], ["text-align", "start"],
+    ["padding-top", "-4px"], ["padding-bottom", "41rem"], ["padding-top", "auto"], ["padding-top", "500px"], ["padding-top", "10vh"], ["margin-top", "1e3px"],
+    ["width", "4001px"], ["width", "101%"], ["width", "50vw"], ["width", "calc(100% - 2px)"], ["width", "none"], ["width", "12345678px"], ["width", "1.2.3px"], ["width", "px"], ["width", "1.px"], ["width", ".px"], ["font-size", "1.rem"], ["padding-right", "1.%"],
+    ["max-width", "auto"], ["height", "101vh"], ["min-height", "auto"],
+    ["display", "none"], ["display", "contents"], ["flex-direction", "up"], ["flex-wrap", "wrap-reverse"], ["justify-content", "left"], ["align-items", "start"],
+    ["gap", "101%"], ["gap", "auto"],
+    ["grid-template-columns", "repeat(0, minmax(0, 1fr))"], ["grid-template-columns", "repeat(13, minmax(0, 1fr))"], ["grid-template-columns", "repeat(03, minmax(0, 1fr))"],
+    ["grid-template-columns", "repeat(3,minmax(0,1fr))"], ["grid-template-columns", "1fr 1fr"], ["grid-template-columns", "repeat(+3, minmax(0, 1fr))"], ["width", "+5px"], ["grid-template-columns", "repeat(auto-fit, minmax(60px, 1fr))"],
+    ["grid-template-columns", "repeat(auto-fill, minmax(240px, 1fr))"], ["grid-template-columns", "repeat(auto-fit, minmax(240px, 1fr)); color: red"],
+    ["border-width", "33px"], ["border-width", "10%"], ["border-style", "groove"], ["border-radius", "1000px"], ["border-radius", "51%"],
+    ["opacity", "1.5"], ["opacity", "50%"], ["opacity", "-0"], ["opacity", "0.555"], ["opacity", "1."], ["opacity", "."], ["overflow", "scroll"]
+  ]
+}

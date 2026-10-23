@@ -42,6 +42,9 @@
         <button type="button" data-device="desktop" aria-pressed="true" aria-label="Computer screen" data-tip="Computer screen">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-desktop"/></svg>
         </button>
+        <button type="button" data-device="tablet" aria-pressed="false" aria-label="Tablet screen" data-tip="Tablet screen">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-tablet"/></svg>
+        </button>
         <button type="button" data-device="mobile" aria-pressed="false" aria-label="Phone screen" data-tip="Phone screen">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-phone"/></svg>
         </button>
@@ -199,7 +202,11 @@
       <dt><span class="kbd">Enter</span></dt><dd>Change the selected part, for example edit its text</dd>
       <dt><span class="kbd">Tab</span></dt><dd>Move from the page to its tools</dd>
       <dt><span class="kbd">Esc</span></dt><dd>Close a panel, stop editing, or deselect</dd>
-      <dt><span class="kbd">Alt</span> <span class="kbd">Shift</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move the selected section up or down</dd>
+      <dt><span class="kbd">Alt</span> <span class="kbd">Shift</span> <span class="kbd">↑</span> <span class="kbd">↓</span></dt><dd>Move the selected element earlier or later</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">D</span></dt><dd>Duplicate the selected element</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">C</span> / <span class="kbd">X</span> / <span class="kbd">V</span></dt><dd>Copy, choose a move destination, or paste an element on this page</dd>
+      <dt><span class="kbd">Delete</span></dt><dd>Delete the selected element</dd>
+      <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">L</span></dt><dd>Open or close page structure</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Z</span></dt><dd>Undo</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">Z</span></dt><dd>Redo</dd>
       <dt><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">P</span></dt><dd>Open publish review</dd>
@@ -251,8 +258,8 @@
 
 <dialog class="modal" data-dialog="conflict">
   <div class="modal-body">
-    <h2>This website was changed in another tab.</h2>
-    <p>Reload to see the latest version. The change you just made in this tab was not saved.</p>
+    <h2>Check your latest changes before continuing.</h2>
+    <p>This tab could not confirm its last save. Reload to see what was saved before editing again.</p>
   </div>
   <div class="modal-actions">
     <button class="btn btn-primary" type="button" data-conflict-reload>Reload</button>

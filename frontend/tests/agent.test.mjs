@@ -50,7 +50,7 @@ test('tap click selects; a second tap requests parent-authorized editing and nev
   let handler, selected = null;
   const requests = [], el = {};
   const context = { window: { addEventListener: (_, callback) => { handler = callback; } },
-    isOurs: () => false, mode: 'edit', editingContains: () => false,
+    clickGuard: 'off', isOurs: () => false, mode: 'edit', editingContains: () => false,
     asElement: () => el, pickAt: () => ({ kind: 'element', el }),
     canOf: () => 't', idOf: () => 'a', post: (m) => requests.push(m),
     select: (value) => { selected = value; context.selected = selected; }, selected,

@@ -1,36 +1,68 @@
 {% extends "layouts/base.html" %}
 {% block title %}Your websites · Rótulo{% endblock title %}
 {% block body_class %}screens-body{% endblock body_class %}
+{% block head %}<script src="/static/js/dashboard-view.js"></script>{% endblock head %}
 {% block body %}
 {% include "partials/app_header.html" %}
-<main id="main" class="page dash">
+<main id="main" class="page dash" data-dashboard>
   {% set count = projects | length %}
   <div class="page-head screen-banner">
     <div>
       <h1>Your websites</h1>
       {% if count > 0 %}
-      <p>{{ count }} of {{ limit }} websites. Open one to change it.</p>
+      <p>{{ count }} of {{ limit }} websites</p>
       {% endif %}
     </div>
     {% if can_create and count > 0 %}
-    <a class="btn btn-primary btn-lg" href="/projects/new">
-      <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
-      Import another website
-    </a>
+    <div class="dash-actions">
+      <button class="btn btn-on-field btn-lg" type="button" data-create data-needs-script hidden>
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-add-page"/></svg>
+        New blank website
+      </button>
+      <a class="btn btn-primary btn-lg" href="/projects/new">
+        <svg class="icon" aria-hidden="true"><use href="/static/img/icons.svg#i-upload"/></svg>
+        Import a website
+      </a>
+    </div>
     {% endif %}
   </div>
 
   {% if not can_create %}
-  <div class="alert alert-warn limit-note" role="note">
+  <div class="alert alert-warn limit-note" role="note" id="limit-note">
     <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-info"/></svg>
-    <p>You have {{ limit }} websites, the most one account can hold. To import another, delete one you no longer need: open its <span class="nowrap"><svg class="icon icon-sm inline-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg> More</span> menu and choose Delete website.</p>
+    <p>You have {{ limit }} websites, the most one account can hold. To add another, delete one you no longer need: open its <span class="nowrap"><svg class="icon icon-sm inline-icon" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg> More</span> menu and choose Delete website.</p>
+  </div>
+  {% endif %}
+
+  {% if count > 1 %}
+  <div class="dash-tools" data-dash-tools hidden>
+    <div class="dash-search">
+      <label class="visually-hidden" for="dash-search">Find a website</label>
+      <input class="input" id="dash-search" type="search" placeholder="Find by name or address" autocomplete="off" spellcheck="false" maxlength="200" aria-describedby="dash-count" aria-keyshortcuts="/" data-dash-search>
+    </div>
+    <p class="dash-count" id="dash-count" data-dash-count>{{ count }} websites</p>
+    <p class="visually-hidden" role="status" data-dash-announce></p>
+    <div class="dash-arrange">
+      <label class="dash-sort">
+        <span>Sort by</span>
+        <select class="select" data-dash-sort>
+          <option value="recent">Last edited</option>
+          <option value="name">Name</option>
+          <option value="status">Publishing status</option>
+        </select>
+      </label>
+      <div class="seg dash-view" role="group" aria-label="Show websites as">
+        <button type="button" data-view-option="grid" aria-pressed="true">Grid</button>
+        <button type="button" data-view-option="list" aria-pressed="false">List</button>
+      </div>
+    </div>
   </div>
   {% endif %}
 
   {% if count > 0 %}
-  <ul class="site-grid" role="list">
+  <ul class="site-grid" role="list" data-site-list>
     {% for p in projects %}
-    <li class="site" data-site data-pid="{{ p.pid }}" data-name="{{ p.name }}" data-slug="{{ p.slug }}" data-live="{% if p.live %}true{% else %}false{% endif %}" data-address="{{ p.site_host }}">
+    <li class="site" data-site data-pid="{{ p.pid }}" data-name="{{ p.name }}" data-slug="{{ p.slug }}" data-live="{% if p.live %}true{% else %}false{% endif %}" data-address="{{ p.site_host }}" data-addresses="{{ p.site_host }}{% for d in p.domains %} {{ d }}{% endfor %}" data-status="{{ p.status }}" data-edited="{{ p.updated_at }}">
       <div class="site-thumb" data-tone="{{ p.name | length % 4 }}">
         {% if p.thumbnail_url %}
         <img src="{{ p.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-thumb>
@@ -79,7 +111,14 @@
               <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-more"/></svg>
             </summary>
             <div class="menu">
-              <button class="menu-item" type="button" data-rename>Rename website…</button>
+              <button class="menu-item" type="button" data-rename>
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-edit-text"/></svg>
+                Rename website…
+              </button>
+              <button class="menu-item" type="button" data-duplicate{% if not can_create %} disabled aria-describedby="limit-note"{% endif %}>
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-duplicate"/></svg>
+                Duplicate website
+              </button>
               <button class="menu-item danger" type="button" data-delete>
                 <svg class="icon icon-sm" aria-hidden="true"><use href="/static/img/icons.svg#i-remove"/></svg>
                 Delete website…
@@ -91,6 +130,12 @@
     </li>
     {% endfor %}
   </ul>
+
+  <section class="dash-empty" data-no-results hidden aria-labelledby="no-results-title">
+    <h2 id="no-results-title">Nothing found</h2>
+    <p data-no-results-text></p>
+    <button class="btn btn-secondary" type="button" data-clear-search>Clear search</button>
+  </section>
 
   <dialog class="modal" data-rename-dialog aria-labelledby="rename-title" aria-describedby="rename-hint">
     <form data-rename-form>
@@ -138,8 +183,29 @@
     <h2>Bring your website into Rótulo</h2>
     <p class="empty-import-lead">Change its words and pictures right on the page. Nothing goes live until you publish.</p>
     {% include "partials/import_area.html" %}
+    {% if can_create %}
+    <p class="empty-blank" data-needs-script hidden>Don't have a website yet? <button class="link-btn" type="button" data-create>Start from a blank page</button></p>
+    {% endif %}
   </section>
   {% endif %}
+
+  <dialog class="modal" data-create-dialog aria-labelledby="create-title" aria-describedby="create-hint">
+    <form data-create-form novalidate>
+      <div class="modal-body">
+        <h2 id="create-title">New blank website</h2>
+        <p id="create-hint">You get one simple page to fill in. You can rename it later.</p>
+        <div class="field">
+          <label class="label" for="create-name">Website name</label>
+          <input class="input" id="create-name" maxlength="80" autocomplete="off" placeholder="My bakery" aria-describedby="create-error" data-create-input>
+          <p class="field-error" id="create-error" data-create-error role="alert" hidden></p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-create-cancel>Cancel</button>
+        <button class="btn btn-primary" type="submit" data-create-submit>Create website</button>
+      </div>
+    </form>
+  </dialog>
 </main>
 {% include "partials/app_footer.html" %}
 {% endblock body %}

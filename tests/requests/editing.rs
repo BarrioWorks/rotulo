@@ -346,3 +346,127 @@ async fn background_photo_upload_is_published_and_can_be_removed() {
         assert!(!p.html(&server, "about.html").await.contains("background-image:"));
     }).await;
 }
+
+fn texts(html: &str, selector: &str) -> Vec<String> {
+    scraper::Html::parse_document(html)
+        .select(&scraper::Selector::parse(selector).unwrap())
+        .map(|e| e.text().collect::<String>().trim().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+#[serial_test::serial]
+async fn structural_edits_reach_navigation_and_footer_and_survive_history_and_publish() {
+    request_with_create_db::<App, _, _>(|server, _ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let mut p = Project::new(&server, &cookie).await;
+        let original = p.html(&server, "index.html").await;
+        let menu = element(&original, "nav.site-nav ul");
+        assert!(attr(&original, "nav.site-nav ul", "data-ph-can").contains('n'));
+        assert!(attr(&original, "nav.site-nav li.nav-cta", "data-ph-can").contains('m'));
+        p.edit(&server, &cookie, "index.html", json!({"op":"move_element","element":element(&original,"nav.site-nav li.nav-cta"),"target":element(&original,"nav.site-nav li"),"position":"before"})).await;
+        let moved = p.html(&server, "index.html").await;
+        assert_eq!(texts(&moved, "nav.site-nav li")[0], "Order ahead");
+        assert_eq!(attr(&moved, "nav.site-nav li", "class"), "nav-cta");
+
+        p.edit(&server, &cookie, "index.html", json!({"op":"insert_element","element":menu,"position":"inside","kind":"link"})).await;
+        let footer_column = element(&moved, ".footer-grid > div:last-child");
+        let applied = p.edit(&server, &cookie, "index.html", json!({"op":"insert_element","element":footer_column,"position":"after","kind":"container"})).await;
+        assert_eq!(applied["history"]["undo_label"], "new element");
+        let built = p.html(&server, "index.html").await;
+        assert_eq!(texts(&built, "nav.site-nav li").last().unwrap(), "New link");
+        assert_eq!(attr(&built, "nav.site-nav li:last-child > a", "href"), "#");
+        assert_eq!(texts(&built, ".footer-grid > div:last-child").last().unwrap(), "New text");
+        let ids = scraper::Html::parse_document(&built)
+            .select(&scraper::Selector::parse("[data-ph-id]").unwrap())
+            .map(|e| e.value().attr("data-ph-id").unwrap().to_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(ids.len(), ids.iter().collect::<std::collections::HashSet<_>>().len());
+
+        let body = element(&built, "body");
+        for edit in [
+            json!({"op":"move_element","element":menu,"target":element(&built,"nav.site-nav li"),"position":"inside"}),
+            json!({"op":"move_element","element":body,"target":element(&built,"main"),"position":"after"}),
+            json!({"op":"insert_element","element":element(&built,"footer"),"position":"inside","kind":"list_item"}),
+            json!({"op":"insert_element","element":element(&built,"h1"),"position":"inside","kind":"section"}),
+            json!({"op":"insert_element","element":menu,"position":"inside","kind":"script"}),
+        ] {
+            post(&server, &p.api("edits"), &cookie)
+                .json(&json!({"base_revision":p.revision,"page":"index.html","edit":edit}))
+                .await
+                .assert_status_unprocessable_entity();
+        }
+        assert_eq!(p.html(&server, "index.html").await, built);
+
+        p.edit(&server, &cookie, "index.html", json!({"op":"rename_element","element":menu,"name":"Main menu"})).await;
+        assert_eq!(attr(&p.html(&server, "index.html").await, "nav.site-nav ul", "data-ph-name"), "Main menu");
+        p.change(&server, &cookie, "undo", json!({})).await;
+        p.change(&server, &cookie, "undo", json!({})).await;
+        p.change(&server, &cookie, "undo", json!({})).await;
+        assert_eq!(p.html(&server, "index.html").await, moved);
+        p.change(&server, &cookie, "redo", json!({})).await;
+        p.change(&server, &cookie, "redo", json!({})).await;
+        p.change(&server, &cookie, "redo", json!({})).await;
+        assert!(p.html(&server, "index.html").await.contains("data-ph-name=\"Main menu\""));
+
+        p.publish(&server, &cookie).await;
+        let published = hosted(&server, &p.site, "/index.html").await.text();
+        assert!(!published.contains("data-ph-"), "editor markup is never published");
+        assert_eq!(texts(&published, "nav.site-nav li")[0], "Order ahead");
+        assert_eq!(texts(&published, "nav.site-nav li").last().unwrap(), "New link");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial_test::serial]
+async fn duplicates_wraps_and_removals_keep_ids_unique_through_undo() {
+    request_with_create_db::<App, _, _>(|server, _ctx| async move {
+        let cookie = register(&server, "alice@example.com").await;
+        let mut p = Project::new(&server, &cookie).await;
+        let original = p.html(&server, "index.html").await;
+        let nav = element(&original, "#site-nav");
+        p.edit(
+            &server,
+            &cookie,
+            "index.html",
+            json!({"op":"duplicate_element","element":nav}),
+        )
+        .await;
+        let copied = p.html(&server, "index.html").await;
+        assert_eq!(texts(&copied, "#site-nav-copy li").len(), 5);
+        assert_eq!(copied.matches(r#"id="site-nav""#).count(), 1);
+        let copy = element(&copied, "#site-nav-copy");
+        p.edit(
+            &server,
+            &cookie,
+            "index.html",
+            json!({"op":"wrap_element","element":copy}),
+        )
+        .await;
+        let wrapped = p.html(&server, "index.html").await;
+        let wrapper = attr(&wrapped, "div:has(> #site-nav-copy)", "data-ph-id");
+        p.edit(
+            &server,
+            &cookie,
+            "index.html",
+            json!({"op":"remove_element","element":wrapper}),
+        )
+        .await;
+        assert!(!p
+            .html(&server, "index.html")
+            .await
+            .contains("site-nav-copy"));
+        p.change(&server, &cookie, "undo", json!({})).await;
+        assert_eq!(p.html(&server, "index.html").await, wrapped);
+        p.edit(
+            &server,
+            &cookie,
+            "index.html",
+            json!({"op":"unwrap_element","element":wrapper}),
+        )
+        .await;
+        assert_eq!(p.html(&server, "index.html").await, copied);
+    })
+    .await;
+}

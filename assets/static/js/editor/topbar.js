@@ -2,6 +2,10 @@ import { openMenu } from "./menu.js";
 import { h, icon, must } from "../ui.js";
 import { pageLabel } from "./pages.js";
 import { changed, publishText, siteState } from "./state.js";
+function deviceOf(button) {
+    const device = button.dataset["device"];
+    return device === "mobile" || device === "tablet" ? device : "desktop";
+}
 export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }) {
     const undoBtn = must(document, '[data-action="undo"]');
     const redoBtn = must(document, '[data-action="redo"]');
@@ -49,11 +53,12 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
     redoBtn.addEventListener("click", redo);
     for (const b of modeButtons)
         b.addEventListener("click", async () => {
-            await canvas.finishText();
+            if (!await canvas.finishText())
+                return;
             store.dispatch({ type: "mode", mode: b.dataset["mode"] === "preview" ? "preview" : "edit" });
         });
     for (const b of deviceButtons)
-        b.addEventListener("click", () => store.dispatch({ type: "device", device: b.dataset["device"] === "mobile" ? "mobile" : "desktop" }));
+        b.addEventListener("click", () => store.dispatch({ type: "device", device: deviceOf(b) }));
     pill.addEventListener("click", () => publishing.openReview(pill));
     publishBtn.addEventListener("click", () => publishing.openReview(publishBtn));
     pageButton.addEventListener("click", () => surfaces.openPages());
@@ -88,6 +93,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
             { label: "Change the main heading", run: () => must(document, '[data-start="heading"]').click() },
             { label: "Replace a picture", run: () => must(document, '[data-start="picture"]').click() },
             { label: "Pages", run: surfaces.openPages },
+            { label: "Page structure", run: () => document.querySelector("[data-structure-toggle]")?.click() },
             { label: "Add a page…", run: surfaces.openAddPage },
             { label: "Images", run: () => must(document, "[data-open-images]").click() },
             { label: "Settings", run: () => publishing.openSettings(pageButton) },
@@ -96,6 +102,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
             { label: "Edit", run: () => store.dispatch({ type: "mode", mode: "edit" }) },
             { label: "Preview", run: () => store.dispatch({ type: "mode", mode: "preview" }) },
             { label: "Computer", run: () => store.dispatch({ type: "device", device: "desktop" }) },
+            { label: "Tablet", run: () => store.dispatch({ type: "device", device: "tablet" }) },
             { label: "Phone", run: () => store.dispatch({ type: "device", device: "mobile" }) },
             { label: "Focus mode", run: () => setFocus(true) },
             { label: s.history.undo_label ? `Undo: ${s.history.undo_label}` : "Undo", run: undo },

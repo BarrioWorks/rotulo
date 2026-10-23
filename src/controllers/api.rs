@@ -19,7 +19,7 @@ use sha2::{Digest, Sha256};
 use crate::{
     auth::ApiUser,
     db,
-    document::{Document, PageEdit},
+    document::{Document, PageEdit, StyleProperty},
     domains, drafts,
     drafts::{Change, Step},
     error::{ApiError, ApiResult},
@@ -158,14 +158,7 @@ async fn import_request(
     let state = Rotulo::from(ctx);
     let limits = state.settings.limits.clone();
     if projects::count(&ctx.db, user).await? >= limits.projects_per_user {
-        return Err(ApiError::Rejected {
-            code: "project_limit",
-            status: StatusCode::FORBIDDEN,
-            message: format!(
-                "You can have up to {} websites. Delete one to import another.",
-                limits.projects_per_user
-            ),
-        });
+        return Err(projects::limit_reached(limits.projects_per_user));
     }
     let staging = state.store.staging()?;
     let archive = staging.path().join("upload.zip");
@@ -265,49 +258,51 @@ async fn import_request(
         state.store.adopt(&file.staged, &file.blob)?;
     }
     let kept = state.store.keep_archive(&archive, &pid, &archive_sha)?;
-    let now = db::now();
-    let slug = projects::unique_slug(&ctx.db, user.id, &display_name).await?;
-    let tx = ctx.db.begin().await?;
-    projects::claim_slug(&tx, user.id, &slug).await?;
-    let project_id = db::insert(
-        &tx,
-        "INSERT INTO projects (pid, user_id, name, slug, revision, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)",
-        [pid.as_str().into(), user.id.into(), display_name.as_str().into(), slug.as_str().into(), now.into(), now.into()],
-    )
-    .await
-    .map_err(projects::slug_write_error)?;
-    let content_bytes: u64 = site.files.iter().map(|f| f.bytes).sum();
-    db::exec(
-        &tx,
-        "INSERT INTO imports (project_id, archive_path, archive_sha256, archive_bytes, file_count, content_bytes, root_dir, report_json, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-            project_id.into(),
-            kept.to_string_lossy().into_owned().into(),
-            archive_sha.into(),
-            (archive_bytes as i64).into(),
-            (site.files.len() as i64).into(),
-            (content_bytes as i64).into(),
-            site.root_dir.as_str().into(),
-            serde_json::to_string(&site.report).map_err(ApiError::internal)?.into(),
-            now.into(),
-        ],
-    )
-    .await?;
-    for file in &site.files {
+    let committed = async {
+        let tx = ctx.db.begin().await?;
+        let project_id = projects::insert(
+            &tx,
+            user.id,
+            &pid,
+            &display_name,
+            limits.projects_per_user,
+        )
+        .await?;
+        let content_bytes: u64 = site.files.iter().map(|f| f.bytes).sum();
         db::exec(
             &tx,
-            "INSERT INTO draft_files (project_id, path, blob, bytes) VALUES (?, ?, ?, ?)",
+            "INSERT INTO imports (project_id, archive_path, archive_sha256, archive_bytes, file_count, content_bytes, root_dir, report_json, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 project_id.into(),
-                file.path.as_str().into(),
-                file.blob.to_string().into(),
-                (file.bytes as i64).into(),
+                kept.to_string_lossy().into_owned().into(),
+                archive_sha.into(),
+                (archive_bytes as i64).into(),
+                (site.files.len() as i64).into(),
+                (content_bytes as i64).into(),
+                site.root_dir.as_str().into(),
+                serde_json::to_string(&site.report).map_err(ApiError::internal)?.into(),
+                db::now().into(),
             ],
         )
         .await?;
+        for file in &site.files {
+            insert_draft_file(&tx, project_id, &file.path, &file.blob, file.bytes as i64).await?;
+        }
+        tx.commit().await?;
+        Ok::<_, ApiError>(project_id)
     }
-    tx.commit().await?;
+    .await;
+    let project_id = match committed {
+        Ok(id) => id,
+        Err(error) => {
+            // The project never existed, so its kept archive must not outlive the rollback.
+            if let Some(dir) = kept.parent() {
+                let _ = std::fs::remove_dir_all(dir);
+            }
+            return Err(error);
+        }
+    };
     crate::events::record(&ctx.db, Some(user.id), Some(project_id), "import_ok", None).await;
     drop(staging);
     let thumbnail = super::pages::thumbnail(ctx, &state, project_id).await;
@@ -323,7 +318,168 @@ async fn import_request(
         .into_response())
 }
 
+async fn insert_draft_file<C: sea_orm::ConnectionTrait>(
+    tx: &C,
+    project_id: i64,
+    path: &str,
+    blob: &Blob,
+    bytes: i64,
+) -> ApiResult<()> {
+    db::exec(
+        tx,
+        "INSERT INTO draft_files (project_id, path, blob, bytes) VALUES (?, ?, ?, ?)",
+        [
+            project_id.into(),
+            path.into(),
+            blob.to_string().into(),
+            bytes.into(),
+        ],
+    )
+    .await?;
+    Ok(())
+}
+
+// ---------- New and duplicated websites ----------
+
+fn escape_html(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
+/// The starter home page named `name`, with element IDs assigned the way imports assign them.
+fn starter_page(name: &str) -> ApiResult<String> {
+    let html = include_str!("../starter.html").replace("{{name}}", &escape_html(name));
+    let mut document = Document::parse_checked(&html)?;
+    document.validate_depth()?;
+    document.assign_ids();
+    Ok(document.serialize())
+}
+
+fn created(pid: &str, name: &str) -> Response {
+    (StatusCode::CREATED, Json(json!({"pid": pid, "name": name}))).into_response()
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CreateProject {
+    name: String,
+}
+
+async fn create_project(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Json(body): Json<CreateProject>,
+) -> ApiResult<Response> {
+    let state = Rotulo::from(&ctx);
+    state.limit(state::IMPORT, &user.id.to_string())?;
+    let name = projects::valid_name(&body.name)?;
+    let html = starter_page(&name)?;
+    let pid = uuid::Uuid::new_v4().to_string();
+    let tx = ctx.db.begin().await?;
+    let project_id = projects::insert(
+        &tx,
+        user.id,
+        &pid,
+        &name,
+        state.settings.limits.projects_per_user,
+    )
+    .await?;
+    let blob = state.store.put_bytes(html.as_bytes())?;
+    insert_draft_file(&tx, project_id, "index.html", &blob, html.len() as i64).await?;
+    tx.commit().await?;
+    Ok(created(&pid, &name))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DuplicateProject {
+    #[serde(default)]
+    name: Option<String>,
+}
+
+/// "Harbor Bakery" becomes "Harbor Bakery copy", shortening the name to stay within 80.
+fn copy_name(name: &str) -> String {
+    let head: String = name.chars().take(80 - " copy".len()).collect();
+    format!("{} copy", head.trim_end())
+}
+
+/// Copies the current draft into a new project. Blobs are immutable and shared, so only the
+/// file rows are copied. History, releases, domains and preview tokens stay with the source.
+async fn duplicate_project(
+    State(ctx): State<AppContext>,
+    ApiUser(user): ApiUser,
+    Path(pid): Path<String>,
+    Json(body): Json<DuplicateProject>,
+) -> ApiResult<Response> {
+    let state = Rotulo::from(&ctx);
+    state.limit(state::IMPORT, &user.id.to_string())?;
+    let source = projects::owned(&ctx.db, &user, &pid).await?;
+    publish::ensure_publishable(&source)?;
+    let name = projects::valid_name(&body.name.unwrap_or_else(|| copy_name(&source.name)))?;
+    let copy_pid = uuid::Uuid::new_v4().to_string();
+    let tx = ctx.db.begin().await?;
+    let project_id = projects::insert(
+        &tx,
+        user.id,
+        &copy_pid,
+        &name,
+        state.settings.limits.projects_per_user,
+    )
+    .await?;
+    // Check again inside the write transaction: the source may have been deleted or suspended.
+    let source = projects::owned(&tx, &user, &pid).await?;
+    publish::ensure_publishable(&source)?;
+    db::exec(
+        &tx,
+        "INSERT INTO draft_files (project_id, path, blob, bytes)
+         SELECT ?, path, blob, bytes FROM draft_files WHERE project_id = ?",
+        [project_id.into(), source.id.into()],
+    )
+    .await?;
+    tx.commit().await?;
+    Ok(created(&copy_pid, &name))
+}
+
 // ---------- Editor ----------
+
+/// Style properties supported by this server for the editor bootstrap.
+const STYLE_PROPERTIES: [StyleProperty; 30] = {
+    use StyleProperty::*;
+    [
+        Color,
+        BackgroundColor,
+        FontSize,
+        FontWeight,
+        TextAlign,
+        PaddingTop,
+        PaddingBottom,
+        PaddingLeft,
+        PaddingRight,
+        MarginTop,
+        MarginBottom,
+        MarginLeft,
+        MarginRight,
+        Width,
+        MaxWidth,
+        Height,
+        MinHeight,
+        Display,
+        FlexDirection,
+        FlexWrap,
+        JustifyContent,
+        AlignItems,
+        Gap,
+        GridTemplateColumns,
+        BorderWidth,
+        BorderStyle,
+        BorderColor,
+        BorderRadius,
+        Opacity,
+        Overflow,
+    ]
+};
 
 async fn editor_state(
     State(ctx): State<AppContext>,
@@ -340,7 +496,10 @@ async fn editor_state(
         "history": drafts::history(&ctx.db, project.id).await?,
         "draft_changed_since_publish": drafts::changed_since_publish(&ctx.db, &project).await?,
         "limits": {"image_bytes": state.settings.limits.image_bytes},
-        "features": {"custom_domains": state.settings.custom_domains},
+        "features": {
+            "custom_domains": state.settings.custom_domains,
+            "editor": {"style_properties": STYLE_PROPERTIES, "structural_editing": true},
+        },
     })))
 }
 
@@ -506,8 +665,37 @@ async fn create_edit(
             let summary = json!({"page": body.page, "op": edit.kind(), "element": edit.element()});
             (edit, summary)
         };
+        let mut sources = std::collections::HashMap::new();
+        if matches!(
+            edit,
+            PageEdit::DuplicateElement { .. } | PageEdit::DuplicateSection { .. }
+        ) {
+            let mut bytes = 0_i64;
+            let urls = Document::parse_checked(&html)?.stylesheet_urls();
+            for href in urls
+                .into_iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .take(100)
+            {
+                let Some(path) = import::references::resolve(&body.page, &href) else {
+                    continue;
+                };
+                let Some(file) = drafts::file(&ctx.db, project.id, &path).await? else {
+                    continue;
+                };
+                if file.bytes > 2 * 1024 * 1024 || bytes + file.bytes > 8 * 1024 * 1024 {
+                    continue;
+                }
+                bytes += file.bytes;
+                if let Ok(css) = String::from_utf8(state.store.read(&file.blob)?) {
+                    sources.insert(href, css);
+                }
+            }
+        }
         let page = {
             let mut document = Document::parse_checked(&html)?;
+            document.set_copy_stylesheets(sources);
             document.apply(&edit)?;
             store_page(&state, &body.page, &document)?
         };
@@ -1027,7 +1215,9 @@ pub fn routes(upload_bytes: u64, image_bytes: u64) -> Routes {
                 (upload_bytes + multipart_slack) as usize,
             )),
         )
+        .add("/projects", post(create_project))
         .add("/projects/{pid}", delete(delete_project))
+        .add("/projects/{pid}/duplicate", post(duplicate_project))
         .add("/projects/{pid}/editor", get(editor_state))
         .add("/projects/{pid}/edits", post(create_edit))
         .add("/projects/{pid}/undo", post(undo))
@@ -1059,4 +1249,19 @@ pub fn routes(upload_bytes: u64, image_bytes: u64) -> Routes {
         )
         .add("/projects/{pid}/domains/{id}/check", post(domains_check))
         .add("/projects/{pid}/domains/{id}/delete", post(domains_delete))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn advertised_style_properties_are_the_wire_names_once_each() {
+        let names: Vec<String> = serde_json::from_value(json!(STYLE_PROPERTIES)).unwrap();
+        let unique: std::collections::BTreeSet<&str> = names.iter().map(String::as_str).collect();
+        assert_eq!(unique.len(), STYLE_PROPERTIES.len());
+        for (name, property) in names.iter().zip(STYLE_PROPERTIES) {
+            assert_eq!(name, property.css_name());
+        }
+    }
 }

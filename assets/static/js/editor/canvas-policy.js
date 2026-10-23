@@ -14,6 +14,13 @@ export function acceptsCanvasMessage(session, message) {
             return session.mode === "edit" && session.textElement === null;
         case "navigate":
             return session.mode === "preview";
+        case "dragging":
+            return false;
+        case "move_element":
+            return session.mode === "edit" && session.textElement === null
+                && session.committing?.element === message.element
+                && session.committing.request === message.request
+                && session.committing.path === session.path && Date.now() < session.committing.expiresAt;
         default:
             return true;
     }

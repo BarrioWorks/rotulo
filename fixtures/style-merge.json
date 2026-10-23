@@ -1,0 +1,13 @@
+[
+  { "existing": "border: 4px solid red", "changes": { "border-width": "2px" }, "merged": "border: 4px solid red; border-width: 2px" },
+  { "existing": "border: 4px solid red; border-width: 2px", "changes": { "border-width": null }, "merged": "border: 4px solid red" },
+  { "existing": "margin: 0 auto; color: red", "changes": { "margin-left": "24px" }, "merged": "margin: 0 auto; color: red; margin-left: 24px" },
+  { "existing": "margin: 0 auto; color: red; margin-left: 24px", "changes": { "margin-left": null }, "merged": "margin: 0 auto; color: red" },
+  { "existing": "font-family: \"a;b\"; background: url('x;y.png'); color: red !important", "changes": { "width": "10px" }, "merged": "font-family: \"a;b\"; background: url('x;y.png'); color: red !important; width: 10px" },
+  { "existing": "color: red !important; width: 10px", "changes": { "color": "#fff" }, "merged": "width: 10px; color: #fff" },
+  { "existing": "/* note */ color: red;  padding-top: 4px ;", "changes": { "padding-top": null }, "merged": "/* note */ color: red" },
+  { "existing": "color: red /* a;b */; gap: 0", "changes": { "gap": null }, "merged": "color: red /* a; b */" },
+  { "existing": "Border-Width: 1px; border: 1px solid", "changes": { "border-width": null }, "merged": "border: 1px solid" },
+  { "existing": "gap: 0", "changes": { "gap": null }, "merged": "" },
+  { "existing": "", "changes": { "width": "1px", "color": "#000", "border-width": null }, "merged": "color: #000; width: 1px" }
+]

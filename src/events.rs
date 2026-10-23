@@ -73,6 +73,7 @@ pub async fn record(
 pub fn import_reason(error: &ImportError) -> &'static str {
     match error {
         ImportError::SourceOnly => "source_only",
+        ImportError::HydratedApplication => "hydrated_application",
         ImportError::NoWebsite | ImportError::Empty => "no_website",
         ImportError::Limit(_) => "too_large",
         ImportError::InvalidArchive
@@ -94,6 +95,7 @@ mod tests {
     fn import_errors_have_private_categories() {
         for (error, reason) in [
             (ImportError::SourceOnly, "source_only"),
+            (ImportError::HydratedApplication, "hydrated_application"),
             (ImportError::NoWebsite, "no_website"),
             (ImportError::Empty, "no_website"),
             (ImportError::Limit("private filename".into()), "too_large"),

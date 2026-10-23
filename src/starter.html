@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{name}}</title>
+  <meta name="description" content="A short sentence about what {{name}} offers and who it is for.">
+  <style>
+    :root {
+      --ink: #1d2433;
+      --muted: #5b6475;
+      --paper: #fbfaf7;
+      --card: #ffffff;
+      --line: #e6e2da;
+      --accent: #2f6f62;
+      --accent-ink: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    img { max-width: 100%; height: auto; }
+    a { color: var(--accent); }
+    .container { width: min(1080px, 100% - 2.5rem); margin-inline: auto; }
+    .site-header { border-bottom: 1px solid var(--line); background: var(--card); }
+    .header-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 2rem;
+      padding-block: 1rem;
+    }
+    .brand { font-weight: 700; font-size: 1.15rem; color: var(--ink); text-decoration: none; }
+    .site-nav ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; margin: 0; padding: 0; list-style: none; }
+    .site-nav a { color: var(--muted); text-decoration: none; }
+    .site-nav a:hover { color: var(--ink); }
+    .hero { padding-block: clamp(3rem, 9vw, 6.5rem); }
+    .hero h1 {
+      max-width: 18ch;
+      margin: 0 0 1rem;
+      font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .lead { max-width: 56ch; margin: 0 0 2rem; font-size: 1.15rem; color: var(--muted); }
+    .button {
+      display: inline-block;
+      padding: 0.8rem 1.4rem;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .features { padding-block: 0 clamp(3rem, 8vw, 5.5rem); }
+    .features h2 { margin: 0 0 1.5rem; font-size: 1.6rem; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; }
+    .card { padding: 1.5rem; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+    .card h3 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+    .card p { margin: 0; color: var(--muted); }
+    .site-footer { padding-block: 2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.95rem; }
+    .site-footer p { margin: 0; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">{{name}}</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+          <li><a href="#about">About</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="about">
+      <div class="container">
+        <h1>Say what you do in one clear sentence.</h1>
+        <p class="lead">Use this space to tell visitors who you help and why they should choose you. Click any text to change it.</p>
+        <a class="button" href="#contact">Get in touch</a>
+      </div>
+    </section>
+
+    <section class="features" id="services">
+      <div class="container">
+        <h2>What we offer</h2>
+        <div class="cards">
+          <article class="card">
+            <h3>First service</h3>
+            <p>Describe one thing you offer and what a customer gets from it.</p>
+          </article>
+          <article class="card">
+            <h3>Second service</h3>
+            <p>Describe another offer. Keep it to two or three short sentences.</p>
+          </article>
+          <article class="card">
+            <h3>Third service</h3>
+            <p>Add a third offer, or remove this card if you only need two.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="contact">
+    <div class="container">
+      <p>{{name}} · hello@example.com</p>
+    </div>
+  </footer>
+</body>
+</html>

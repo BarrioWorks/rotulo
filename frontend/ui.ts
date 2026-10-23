@@ -1,8 +1,8 @@
 export type IconName =
   | "add-page" | "alert" | "align-left" | "align-center" | "align-right" | "align-justify" | "background" | "bold"
   | "check" | "chevron-down" | "chevron-left" | "chevron-right" | "close" | "desktop" | "domain" | "duplicate"
-  | "edit" | "edit-text" | "folder" | "hide" | "home-page" | "info" | "italic" | "link"
-  | "more" | "move-down" | "move-up" | "page" | "phone" | "preview" | "redo" | "refresh"
+  | "edit" | "edit-text" | "grip" | "folder" | "hide" | "home-page" | "info" | "italic" | "link"
+  | "more" | "move-down" | "move-up" | "page" | "phone" | "tablet" | "preview" | "redo" | "refresh"
   | "remove" | "replace-image" | "select-parent" | "sign-out" | "success" | "text-style" | "undo" | "unlink"
   | "upload" | "view-live" | "zip";
 

@@ -5,3 +5,37 @@
 *.sqlite-wal
 /node_modules
 /.audit
+
+# Build output
+/dist
+/build
+*.tsbuildinfo
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Databases and dumps
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+*.dump
+*.sql.gz
+
+# Logs
+*.log
+logs/
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store

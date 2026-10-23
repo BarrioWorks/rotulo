@@ -22,7 +22,10 @@ const parseBootstrap = obj({
     history: parseHistory,
     draft_changed_since_publish: bool,
     limits: obj({ image_bytes: int() }),
-    features: opt(obj({ custom_domains: bool })),
+    features: opt(obj({
+        custom_domains: bool,
+        editor: opt(obj({ style_properties: arr(str(64)), structural_editing: bool })),
+    })),
 });
 const parseEditResult = obj({ revision: int(), history: parseHistory, draft_changed_since_publish: bool });
 const parseUndoResult = obj({
@@ -57,6 +60,8 @@ const parseDomain = obj({
 });
 const parseDns = obj({ cname_target: str(300), a_record: str(64) });
 const parseErrorBody = obj({ error: str(64), message: str(1000), revision: opt(int()) });
+/** The parts the server can create with `insert_element`. */
+export const INSERT_KINDS = ["paragraph", "heading", "container", "section", "link", "button", "list", "list_item", "image", "columns", "footer", "dropdown", "table", "divider", "navigation", "icon"];
 export class ApiError extends Error {
     status;
     code;

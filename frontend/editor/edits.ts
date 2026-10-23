@@ -2,8 +2,8 @@ import type { StyleChanges } from "../protocol.js";
 import { announce, toast } from "../ui.js";
 import { api, type Edit } from "./api.js";
 import type { Canvas } from "./canvas.js";
-import { editRecovery, type Change } from "./saves.js";
-import type { Selection, Store } from "./state.js";
+import { type Change } from "./saves.js";
+import { unsupportedStyles, type Selection, type Store } from "./state.js";
 
 export interface EditDeps {
   store: Store;
@@ -106,7 +106,6 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     return change((base) => api.edit(store.get().project.pid, base, page, edit), {
       page,
       element,
-      recover: editRecovery,
       toastRejection: after.toastRejection ?? true,
       onRejected: (error) => {
         after.onRejected?.(error.message);
@@ -119,6 +118,12 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
   }
 
   function setStyle(sel: Selection, styles: StyleChanges): Promise<boolean> {
+    if (unsupportedStyles(store.get().editSupport, styles).length > 0) {
+      const message = "This server can't make that change yet. Reload the editor to see what it supports.";
+      announce(message);
+      toast(message, { kind: "warning" });
+      return Promise.resolve(false);
+    }
     canvas.send({ type: "preview_style", element: sel.element, styles });
     return save({ op: "set_style", element: sel.element, styles });
   }
@@ -240,22 +245,6 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     }
   }
 
-  function moveSection(sel: Selection, direction: "up" | "down"): Promise<void> {
-    return once(sel, async () => {
-      if (await save({ op: "move_section", element: sel.element, direction }, { reload: true, select: true, pulse: true })) {
-        undoToast(direction === "up" ? "Section moved up" : "Section moved down");
-      }
-    });
-  }
-
-  function duplicateSection(sel: Selection): Promise<void> {
-    return once(sel, async () => {
-      if (await save({ op: "duplicate_section", element: sel.element }, { reload: true, select: true, pulse: true })) {
-        undoToast("Section duplicated. The copy is right below it.");
-      }
-    });
-  }
-
   function setHidden(sel: Selection, hidden: boolean): Promise<void> {
     return once(sel, async () => {
       canvas.send({ type: "preview_hidden", element: sel.element, hidden });
@@ -267,13 +256,5 @@ export function createEdits({ store, canvas, change, undo }: EditDeps) {
     });
   }
 
-  function removeSection(sel: Selection): Promise<void> {
-    return once(sel, async () => {
-      if (await save({ op: "remove_section", element: sel.element }, { reload: true })) {
-        undoToast("Section removed")?.focus();
-      }
-    });
-  }
-
-  return { undo, save, setStyle, chooseImage, checkImage, replaceImage, refit, replacementOf, replaceBackground, moveSection, duplicateSection, setHidden, removeSection, undoToast };
+  return { undo, save, setStyle, chooseImage, checkImage, replaceImage, refit, replacementOf, replaceBackground, setHidden, undoToast };
 }

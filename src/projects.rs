@@ -311,18 +311,74 @@ pub async fn claim_slug<C: ConnectionTrait>(
     Ok(())
 }
 
-pub async fn update_settings(
-    db: &DatabaseConnection,
-    project: &Project,
-    name: &str,
-    slug: &str,
-) -> Result<Project, ApiError> {
+/// A website name as owners type it: trimmed, 1 to 80 characters.
+pub fn valid_name(name: &str) -> Result<String, ApiError> {
     let name = name.trim();
     if name.is_empty() || name.chars().count() > 80 {
         return Err(ApiError::Invalid(
             "Give your website a name of up to 80 characters.".to_owned(),
         ));
     }
+    Ok(name.to_owned())
+}
+
+pub fn limit_reached(limit: u64) -> ApiError {
+    ApiError::Rejected {
+        code: "project_limit",
+        status: axum::http::StatusCode::FORBIDDEN,
+        message: format!("You can have up to {limit} websites. Delete one to add another."),
+    }
+}
+
+/// Inserts an empty draft project for `user_id` inside `tx`, claiming a fresh web address. The
+/// quota is checked in the same statement, so concurrent creations cannot exceed `limit`.
+pub async fn insert<C: ConnectionTrait>(
+    tx: &C,
+    user_id: i64,
+    pid: &str,
+    name: &str,
+    limit: u64,
+) -> Result<i64, ApiError> {
+    // Write first so the transaction holds SQLite's write lock before it reads anything.
+    db::exec(
+        tx,
+        "UPDATE users SET id = id WHERE id = ?",
+        [user_id.into()],
+    )
+    .await?;
+    let slug = unique_slug(tx, user_id, name).await?;
+    claim_slug(tx, user_id, &slug).await?;
+    let now = db::now();
+    let row = db::one(
+        tx,
+        "INSERT INTO projects (pid, user_id, name, slug, revision, created_at, updated_at)
+         SELECT ?, ?, ?, ?, 0, ?, ?
+         WHERE (SELECT COUNT(*) FROM projects WHERE user_id = ?) < ?
+         RETURNING id",
+        [
+            pid.into(),
+            user_id.into(),
+            name.into(),
+            slug.as_str().into(),
+            now.into(),
+            now.into(),
+            user_id.into(),
+            (limit as i64).into(),
+        ],
+    )
+    .await
+    .map_err(slug_write_error)?
+    .ok_or_else(|| limit_reached(limit))?;
+    Ok(row.try_get("", "id")?)
+}
+
+pub async fn update_settings(
+    db: &DatabaseConnection,
+    project: &Project,
+    name: &str,
+    slug: &str,
+) -> Result<Project, ApiError> {
+    let name = valid_name(name)?;
     let slug = slug.trim().to_ascii_lowercase();
     validate_slug(&slug)?;
     let tx = db.begin().await?;
@@ -334,7 +390,7 @@ pub async fn update_settings(
         &tx,
         "UPDATE projects SET name = ?, slug = ?, updated_at = ? WHERE id = ?",
         [
-            name.into(),
+            name.as_str().into(),
             slug.into(),
             db::now().into(),
             project.id.into(),

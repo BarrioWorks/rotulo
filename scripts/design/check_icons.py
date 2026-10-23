@@ -3,7 +3,7 @@ or an icon-only button (.btn-icon) has no aria-label.
 
 Usage: python3 -I scripts/design/check_icons.py (from the repository root)
 """
-import pathlib, re, sys
+import ast, pathlib, re, sys
 
 sprite = set(re.findall(r'<symbol id="i-([a-z0-9-]+)"', pathlib.Path("assets/static/img/icons.svg").read_text()))
 ui = pathlib.Path("frontend/ui.ts").read_text()
@@ -13,7 +13,11 @@ ts = "".join(p.read_text() for p in pathlib.Path("frontend").rglob("*.ts") if "a
 in_views = set(re.findall(r"icons\.svg#i-([a-z0-9-]+)", views))
 used = in_views | {i for i in sprite if f'"{i}"' in ts} | {f"align-{a}" for a in ("left", "center", "right", "justify") if "`align-${" in ts}
 
-errors = [f"template uses missing symbol i-{i}" for i in sorted(in_views - sprite)]
+generator = ast.parse(pathlib.Path("scripts/design/build_icons.py").read_text())
+glyphs = next(ast.literal_eval(node.value) for node in generator.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "GLYPHS" for target in node.targets))
+generated = {row[0] for row in glyphs}
+errors = [f"sprite and generator disagree on i-{i}" for i in sorted(sprite ^ generated)]
+errors += [f"template uses missing symbol i-{i}" for i in sorted(in_views - sprite)]
 errors += [f"IconName lists i-{i}, which the sprite lacks" for i in sorted(typed - sprite)]
 errors += [f"sprite symbol i-{i} is missing from IconName" for i in sorted(sprite - typed)]
 errors += [f"sprite symbol i-{i} is unused" for i in sorted(sprite - used)]

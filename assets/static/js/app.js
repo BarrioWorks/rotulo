@@ -38,6 +38,30 @@ export function fieldMessage(validity, field) {
     return null;
 }
 const FLASH_KEY = "ph.flash";
+/** Session storage is a nicety: when it is blocked or full, the action it follows still completes. */
+export function remember(key, value) {
+    try {
+        sessionStorage.setItem(key, value);
+    }
+    catch {
+        // The message or focus hint is lost; nothing else depends on it.
+    }
+}
+/** Reads and forgets a value saved with `remember`, or null when storage is unavailable. */
+export function recall(key) {
+    try {
+        const value = sessionStorage.getItem(key);
+        sessionStorage.removeItem(key);
+        return value;
+    }
+    catch {
+        return null;
+    }
+}
+/** Shows `message` as a toast on the next page load. */
+export function flash(message) {
+    remember(FLASH_KEY, message);
+}
 function wireMenus() {
     const openMenus = () => document.querySelectorAll("details[data-menu][open]");
     document.addEventListener("click", (event) => {
@@ -185,7 +209,7 @@ function wireRename() {
                 return;
             }
             if (response.ok) {
-                sessionStorage.setItem(FLASH_KEY, "Website renamed.");
+                flash("Website renamed.");
                 window.location.reload();
                 return;
             }
@@ -289,7 +313,7 @@ function wireDelete() {
         submit.removeAttribute("aria-busy");
         switch (result.kind) {
             case "deleted":
-                sessionStorage.setItem(FLASH_KEY, `${target.name} was deleted.`);
+                flash(`${target.name} was deleted.`);
                 window.location.reload();
                 break;
             case "signed_out":
@@ -304,15 +328,16 @@ function wireDelete() {
     });
 }
 function showFlash() {
-    const message = sessionStorage.getItem(FLASH_KEY);
+    const message = recall(FLASH_KEY);
     if (!message)
         return;
-    sessionStorage.removeItem(FLASH_KEY);
     toast(message);
 }
 if (typeof document !== "undefined") {
     if (document.querySelector("#import"))
         void import("./import.js");
+    if (document.querySelector("[data-dashboard]"))
+        void import("./dashboard.js");
     wireMenus();
     wireForms();
     wireThumbnails();

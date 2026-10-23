@@ -253,3 +253,23 @@ fn module_imports(script: &str) -> Vec<String> {
     }
     imports
 }
+
+/// Known framework payloads can replace saved HTML after the browser loads it.
+pub fn requires_hydration(source: &str) -> bool {
+    let html = Html::parse_document(source);
+    html.select(&Selector::parse("script").expect("constant selector"))
+        .any(|script| {
+            let element = script.value();
+            element.attr("id") == Some("__NEXT_DATA__")
+                || element.attr("src").is_some_and(|src| {
+                    src.split(['?', '#'])
+                        .next()
+                        .unwrap_or(src)
+                        .contains("/_next/")
+                })
+                || script.text().any(|text| {
+                    text.contains("self.__next_f.push(")
+                        || text.contains("self.__next_f=self.__next_f||[]")
+                })
+        })
+}

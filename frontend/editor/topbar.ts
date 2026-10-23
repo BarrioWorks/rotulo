@@ -4,7 +4,7 @@ import type { Canvas } from "./canvas.js";
 import type { Publishing } from "./publish.js";
 import type { Surfaces } from "./surfaces.js";
 import { pageLabel } from "./pages.js";
-import { changed, publishText, siteState, type Store } from "./state.js";
+import { changed, publishText, siteState, type Device, type Store } from "./state.js";
 
 export interface TopBarDeps {
   store: Store;
@@ -19,6 +19,11 @@ export interface TopBar {
   openPalette(): void;
   toggleFocus(): void;
   exitFocus(): boolean;
+}
+
+function deviceOf(button: HTMLButtonElement): Device {
+  const device = button.dataset["device"];
+  return device === "mobile" || device === "tablet" ? device : "desktop";
 }
 
 export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }: TopBarDeps): TopBar {
@@ -36,6 +41,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
   const touch = matchMedia("(max-width: 899px), (pointer: coarse)");
   const modeButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-mode]")];
   const deviceButtons = [...document.querySelectorAll<HTMLButtonElement>("button[data-device]")];
+
   const toolsHome = center.parentElement;
   const zoom = must<HTMLButtonElement>(document, "[data-zoom]");
   zoom.hidden = false;
@@ -58,10 +64,10 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
   layout(); touch.addEventListener("change", layout);
   undoBtn.addEventListener("click", undo); redoBtn.addEventListener("click", redo);
   for (const b of modeButtons) b.addEventListener("click", async () => {
-    await canvas.finishText();
+    if (!await canvas.finishText()) return;
     store.dispatch({ type: "mode", mode: b.dataset["mode"] === "preview" ? "preview" : "edit" });
   });
-  for (const b of deviceButtons) b.addEventListener("click", () => store.dispatch({ type: "device", device: b.dataset["device"] === "mobile" ? "mobile" : "desktop" }));
+  for (const b of deviceButtons) b.addEventListener("click", () => store.dispatch({ type: "device", device: deviceOf(b) }));
   pill.addEventListener("click", () => publishing.openReview(pill));
   publishBtn.addEventListener("click", () => publishing.openReview(publishBtn));
   pageButton.addEventListener("click", () => surfaces.openPages());
@@ -94,6 +100,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
       { label: "Change the main heading", run: () => must<HTMLButtonElement>(document, '[data-start="heading"]').click() },
       { label: "Replace a picture", run: () => must<HTMLButtonElement>(document, '[data-start="picture"]').click() },
       { label: "Pages", run: surfaces.openPages },
+      { label: "Page structure", run: () => document.querySelector<HTMLButtonElement>("[data-structure-toggle]")?.click() },
       { label: "Add a page…", run: surfaces.openAddPage },
       { label: "Images", run: () => must<HTMLButtonElement>(document, "[data-open-images]").click() },
       { label: "Settings", run: () => publishing.openSettings(pageButton) },
@@ -102,6 +109,7 @@ export function createTopBar({ store, canvas, surfaces, publishing, undo, redo }
       { label: "Edit", run: () => store.dispatch({ type: "mode", mode: "edit" }) },
       { label: "Preview", run: () => store.dispatch({ type: "mode", mode: "preview" }) },
       { label: "Computer", run: () => store.dispatch({ type: "device", device: "desktop" }) },
+      { label: "Tablet", run: () => store.dispatch({ type: "device", device: "tablet" }) },
       { label: "Phone", run: () => store.dispatch({ type: "device", device: "mobile" }) },
       { label: "Focus mode", run: () => setFocus(true) },
       { label: s.history.undo_label ? `Undo: ${s.history.undo_label}` : "Undo", run: undo },

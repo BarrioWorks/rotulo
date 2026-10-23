@@ -45,6 +45,31 @@ export function fieldMessage(validity: Pick<ValidityState, "valueMissing" | "typ
 
 const FLASH_KEY = "ph.flash";
 
+/** Session storage is a nicety: when it is blocked or full, the action it follows still completes. */
+export function remember(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // The message or focus hint is lost; nothing else depends on it.
+  }
+}
+
+/** Reads and forgets a value saved with `remember`, or null when storage is unavailable. */
+export function recall(key: string): string | null {
+  try {
+    const value = sessionStorage.getItem(key);
+    sessionStorage.removeItem(key);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/** Shows `message` as a toast on the next page load. */
+export function flash(message: string): void {
+  remember(FLASH_KEY, message);
+}
+
 function wireMenus(): void {
   const openMenus = () => document.querySelectorAll<HTMLDetailsElement>("details[data-menu][open]");
   document.addEventListener("click", (event) => {
@@ -177,7 +202,7 @@ function wireRename(): void {
       const response = await fetch(`/api/projects/${encodeURIComponent(target.pid)}/settings`, renameRequest(input.value, target.slug));
       if (response.status === 401) { window.location.assign("/login"); return; }
       if (response.ok) {
-        sessionStorage.setItem(FLASH_KEY, "Website renamed.");
+        flash("Website renamed.");
         window.location.reload();
         return;
       }
@@ -276,7 +301,7 @@ function wireDelete(): void {
     submit.removeAttribute("aria-busy");
     switch (result.kind) {
       case "deleted":
-        sessionStorage.setItem(FLASH_KEY, `${target.name} was deleted.`);
+        flash(`${target.name} was deleted.`);
         window.location.reload();
         break;
       case "signed_out":
@@ -292,14 +317,14 @@ function wireDelete(): void {
 }
 
 function showFlash(): void {
-  const message = sessionStorage.getItem(FLASH_KEY);
+  const message = recall(FLASH_KEY);
   if (!message) return;
-  sessionStorage.removeItem(FLASH_KEY);
   toast(message);
 }
 
 if (typeof document !== "undefined") {
   if (document.querySelector("#import")) void import("./import.js");
+  if (document.querySelector("[data-dashboard]")) void import("./dashboard.js");
   wireMenus();
   wireForms();
   wireThumbnails();

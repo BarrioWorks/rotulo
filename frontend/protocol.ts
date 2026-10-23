@@ -8,8 +8,10 @@ import { arr, bool, bytes, lit, num, obj, opt, str, type Parsed, type Parser } f
 export const CHANNEL = "rotulo";
 
 export const ELEMENT_ID = /^[0-9a-z]{1,10}$/;
-export const CAPABILITIES = /^[tilsbxudc]{0,9}$/;
-const TAG = /^[a-z][a-z0-9-]{0,31}$/;
+/** One letter per capability the server grants; `m` can be moved and `n` can hold other parts. */
+export const CAPABILITIES = /^[tilsbxudcmn]{0,11}$/;
+const CAN_MAX = 11;
+export const TAG_NAME = /^[a-z][a-z0-9-]{0,31}$/;
 /** An `id` a link can point at with `#id`. */
 export const ANCHOR_ID = /^[A-Za-z][\w-]{0,63}$/;
 const HEX6 = /^#[0-9a-f]{6}$/;
@@ -37,40 +39,102 @@ export const KIND_LABELS: Record<Kind, string> = {
   box: "Area",
 };
 
-export const STYLE_KEYS = [
-  "color",
-  "background-color",
-  "font-size",
-  "font-weight",
-  "text-align",
-  "padding-top",
-  "padding-bottom",
-  "padding-left",
-  "padding-right",
-  "margin-top",
-  "margin-bottom",
-] as const;
-export type StyleKey = (typeof STYLE_KEYS)[number];
+/** Lengths in `px`, `rem`, `em`, `%` and, where `viewport` is above zero, `vh` and `vw`. */
+interface Bounds { minPx: number; maxPx: number; percent: number; viewport: number; zero: boolean; keywords: readonly string[] }
+type Grammar =
+  | { kind: "color" }
+  | ({ kind: "length" } & Bounds)
+  | { kind: "keyword"; values: readonly string[] }
+  | { kind: "opacity" }
+  | { kind: "grid-columns" };
 
-const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-const LENGTH = /^(?:0|\d{1,4}(?:\.\d{1,3})?(?:px|rem|em|%))$/;
-const WEIGHT = /^[1-9]00$/;
-const ALIGN = /^(?:left|center|right|justify)$/;
+const SPACE: Bounds = { minPx: 0, maxPx: 400, percent: 400, viewport: 0, zero: true, keywords: [] };
+const SIZE: Bounds = { minPx: 0, maxPx: 4000, percent: 100, viewport: 0, zero: true, keywords: [] };
+const COLOR: Grammar = { kind: "color" };
+const length = (bounds: Bounds, extra: Partial<Bounds> = {}): Grammar => ({ kind: "length", ...bounds, ...extra });
+const keyword = (...values: string[]): Grammar => ({ kind: "keyword", values });
+const SPACING = length(SPACE);
+const MARGIN = length(SPACE, { keywords: ["auto"] });
+
+/** Mirrors `StyleProperty::grammar` in `src/document.rs`; `fixtures/style-values.json` holds the cases both sides test. */
+const STYLE_SPEC = {
+  color: COLOR,
+  "background-color": COLOR,
+  "font-size": length(SPACE, { minPx: 4, maxPx: 160, zero: false }),
+  "font-weight": keyword("100", "200", "300", "400", "500", "600", "700", "800", "900"),
+  "text-align": keyword("left", "center", "right", "justify"),
+  "padding-top": SPACING,
+  "padding-bottom": SPACING,
+  "padding-left": SPACING,
+  "padding-right": SPACING,
+  "margin-top": MARGIN,
+  "margin-bottom": MARGIN,
+  "margin-left": MARGIN,
+  "margin-right": MARGIN,
+  width: length(SIZE, { keywords: ["auto", "fit-content"] }),
+  "max-width": length(SIZE, { keywords: ["none"] }),
+  height: length(SIZE, { viewport: 100, keywords: ["auto"] }),
+  "min-height": length(SIZE, { viewport: 100 }),
+  display: keyword("block", "inline-block", "inline", "flex", "inline-flex", "grid"),
+  "flex-direction": keyword("row", "row-reverse", "column", "column-reverse"),
+  "flex-wrap": keyword("nowrap", "wrap"),
+  "justify-content": keyword("flex-start", "center", "flex-end", "space-between", "space-around", "space-evenly"),
+  "align-items": keyword("stretch", "flex-start", "center", "flex-end", "baseline"),
+  gap: length(SPACE, { percent: 100 }),
+  "grid-template-columns": { kind: "grid-columns" },
+  "border-width": length(SPACE, { maxPx: 32, percent: 0 }),
+  "border-style": keyword("none", "solid", "dashed", "dotted", "double"),
+  "border-color": COLOR,
+  "border-radius": length(SPACE, { maxPx: 999, percent: 50 }),
+  opacity: { kind: "opacity" },
+  overflow: keyword("visible", "hidden", "clip", "auto"),
+} as const satisfies Record<string, Grammar>;
+
+export type StyleKey = keyof typeof STYLE_SPEC;
+export const STYLE_KEYS = Object.keys(STYLE_SPEC) as StyleKey[];
+
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+function decimal(text: string, maxLength: number): number | null {
+  if (!/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(text) || text.length > maxLength) return null;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : null;
+}
+
+function isLength(value: string, b: Bounds): boolean {
+  if (b.keywords.includes(value) || (b.zero && value === "0")) return true;
+  const m = /^([^a-z%]*)([a-z]+|%)$/i.exec(value);
+  const n = m ? decimal(m[1] ?? "", 7) : null;
+  if (!m || n === null) return false;
+  switch (m[2]) {
+    case "px": return n >= b.minPx && n <= b.maxPx;
+    case "rem": case "em": return n >= b.minPx / 16 && n <= b.maxPx / 10;
+    case "%": return b.percent > 0 && n <= b.percent;
+    case "vh": case "vw": return b.viewport > 0 && n <= b.viewport;
+    default: return false;
+  }
+}
+
+/** `repeat(N, minmax(0, 1fr))` for 1 to 12 equal columns, or as many columns of at least 80 to 640 px as fit. */
+export const GRID_EQUAL = (n: number) => `repeat(${n}, minmax(0, 1fr))`;
+export const GRID_FIT = (px: number) => `repeat(auto-fit, minmax(${px}px, 1fr))`;
+
+function isGridColumns(value: string): boolean {
+  const m = /^repeat\(([1-9]\d*), minmax\(0, 1fr\)\)$/.exec(value);
+  if (m) return Number(m[1]) <= 12;
+  const fit = /^repeat\(auto-fit, minmax\(([1-9]\d*)px, 1fr\)\)$/.exec(value);
+  return fit !== null && Number(fit[1]) >= 80 && Number(fit[1]) <= 640;
+}
 
 /** Mirrors the values the server accepts for `set_style`. */
 export function isStyleValue(key: StyleKey, value: string): boolean {
-  switch (key) {
-    case "color":
-    case "background-color":
-      return HEX_COLOR.test(value);
-    case "font-weight":
-      return WEIGHT.test(value);
-    case "text-align":
-      return ALIGN.test(value);
-    case "font-size":
-      return value !== "0" && LENGTH.test(value);
-    default:
-      return LENGTH.test(value);
+  const g: Grammar = STYLE_SPEC[key];
+  switch (g.kind) {
+    case "color": return HEX_COLOR.test(value);
+    case "length": return isLength(value, g);
+    case "keyword": return g.values.includes(value);
+    case "opacity": { const n = decimal(value, 4); return n !== null && n >= 0 && n <= 1; }
+    case "grid-columns": return isGridColumns(value);
   }
 }
 
@@ -109,6 +173,30 @@ const parseStyleSnapshot: Parser<StyleSnapshot> = (v) => {
 };
 
 const elementId = str(10, ELEMENT_ID);
+const requestToken = str(36, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+const point = obj({ x: num(-1e6, 1e6), y: num(-1e6, 1e6) });
+
+/** Where a moved or new part lands, relative to a target part. `inside` appends it as the target's last child. */
+export const POSITIONS = ["before", "after", "inside"] as const;
+export type Position = (typeof POSITIONS)[number];
+const position = lit(...POSITIONS);
+
+/** The editable parts of the page as a tree, in document order, for the navigator. */
+export const MAX_STRUCTURE_NODES = 5000;
+const parseStructureNode = obj({ element: elementId, parent: opt(elementId), tag: str(32, TAG_NAME), name: str(60), can: str(CAN_MAX, CAPABILITIES) });
+export type StructureNode = Parsed<typeof parseStructureNode>;
+
+/** Accepts only a real tree: unique ids, and every parent listed before its children. */
+const parseStructureNodes: Parser<StructureNode[]> = (v) => {
+  const nodes = arr(parseStructureNode, MAX_STRUCTURE_NODES)(v);
+  if (!nodes) return undefined;
+  const seen = new Set<string>();
+  for (const node of nodes) {
+    if (seen.has(node.element) || (node.parent !== null && !seen.has(node.parent))) return undefined;
+    seen.add(node.element);
+  }
+  return nodes;
+};
 const scroll = num(0, 1e7);
 
 export const parseRect = obj({
@@ -132,6 +220,8 @@ const parseSelectionInfo = obj({
   hidden: bool,
   text: str(200),
   styles: parseStyleSnapshot,
+  /** The values written in the element's own `style` attribute, so a panel can tell a set value from an inherited one. */
+  own: opt(parseStyleSnapshot),
   /** The computed background is a photo (`background-image: url(...)`). */
   bgImage: bool,
   /** For images: the file's own size and the size it is shown at, in CSS px. */
@@ -163,8 +253,8 @@ const agentMessages = {
   select: obj({
     type: lit("select"),
     element: elementId,
-    can: str(9, CAPABILITIES),
-    tag: str(32, TAG),
+    can: str(CAN_MAX, CAPABILITIES),
+    tag: str(32, TAG_NAME),
     kind,
     /** A short human name: a section's first heading, an image's description, a link's text. */
     name,
@@ -195,6 +285,15 @@ const agentMessages = {
   editing: obj({ type: lit("editing"), element: elementId, active: bool, formats: parseFormats }),
   text: obj({ type: lit("text"), element: elementId, html: str(65536) }),
   navigate: obj({ type: lit("navigate"), href: str(2048) }),
+  /** Sent on `init` and on `request_structure`. `truncated` when the page has more parts than the cap. */
+  structure: obj({ type: lit("structure"), nodes: parseStructureNodes, truncated: bool }),
+  /** Legacy feedback only. This never authorizes a move in the app. */
+  dragging: obj({ type: lit("dragging"), active: bool }),
+  /** A proposal answering the app's single-use drag_end request. */
+  move_element: (v: unknown) => {
+    const message = obj({ type: lit("move_element"), request: requestToken, element: elementId, target: elementId, position })(v);
+    return message && message.element !== message.target ? message : undefined;
+  },
 } as const;
 
 const editorMessages = {
@@ -219,6 +318,13 @@ const editorMessages = {
   /** Scrolls an element into view, optionally with a one-off pulse after a change. */
   reveal: obj({ type: lit("reveal"), element: elementId, pulse: bool }),
   deselect: obj({ type: lit("deselect") }),
+  request_structure: obj({ type: lit("request_structure") }),
+  /** Ends a drag on the canvas without moving anything, for Escape pressed while the app has focus. */
+  cancel_drag: obj({ type: lit("cancel_drag") }),
+  drag_start: obj({ type: lit("drag_start"), drag: requestToken, element: elementId, point }),
+  drag_point: obj({ type: lit("drag_point"), drag: requestToken, point }),
+  drag_end: obj({ type: lit("drag_end"), drag: requestToken, request: requestToken, point }),
+  drag_cancel: obj({ type: lit("drag_cancel"), drag: requestToken }),
   /**
    * Sent only after the owner's own input in the app. `input` is the key the owner
    * typed on the canvas surface to start, inserted as the first change.

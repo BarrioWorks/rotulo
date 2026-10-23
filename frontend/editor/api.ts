@@ -1,3 +1,4 @@
+import type { Position } from "../protocol.js";
 import { arr, bool, int, lit, obj, opt, str, type Parsed, type Parser } from "../schema.js";
 
 const parseHistory = obj({
@@ -29,7 +30,10 @@ const parseBootstrap = obj({
   history: parseHistory,
   draft_changed_since_publish: bool,
   limits: obj({ image_bytes: int() }),
-  features: opt(obj({ custom_domains: bool })),
+  features: opt(obj({
+    custom_domains: bool,
+    editor: opt(obj({ style_properties: arr(str(64)), structural_editing: bool })),
+  })),
 });
 export type Bootstrap = Parsed<typeof parseBootstrap>;
 
@@ -86,6 +90,10 @@ const parseErrorBody = obj({ error: str(64), message: str(1000), revision: opt(i
 
 export type StyleProps = Partial<Record<string, string | null>>;
 
+/** The parts the server can create with `insert_element`. */
+export const INSERT_KINDS = ["paragraph", "heading", "container", "section", "link", "button", "list", "list_item", "image", "columns", "footer", "dropdown", "table", "divider", "navigation", "icon"] as const;
+export type InsertKind = (typeof INSERT_KINDS)[number];
+
 export type Edit =
   | { op: "set_text"; element: string; html: string }
   | { op: "set_image"; element: string; upload: string; alt: string }
@@ -98,6 +106,14 @@ export type Edit =
   | { op: "duplicate_section"; element: string }
   | { op: "move_section"; element: string; direction: "up" | "down" }
   | { op: "remove_section"; element: string }
+  | { op: "move_element"; element: string; target: string; position: Position }
+  /** `element` is the target the new part is placed against. */
+  | { op: "insert_element"; element: string; position: Position; kind: InsertKind; like?: string }
+  /** Without a destination the copy goes right after the original. */
+  | { op: "duplicate_element"; element: string }
+  | { op: "duplicate_element"; element: string; target: string; position: Position }
+  | { op: "remove_element" | "wrap_element" | "unwrap_element"; element: string }
+  | { op: "rename_element"; element: string; name: string }
   | { op: "set_page_meta"; title: string; description: string };
 
 export class ApiError extends Error {

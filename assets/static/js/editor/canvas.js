@@ -1,27 +1,29 @@
 import { pageLabel } from "./pages.js";
 import { envelope, parseAgentMessage } from "../protocol.js";
-import { announce, must } from "../ui.js";
+import { announce, h, icon, must, toast } from "../ui.js";
 import { changed, selection } from "./state.js";
 import { acceptsCanvasMessage, canvasNavigation } from "./canvas-policy.js";
 const PREVIEW_MAX_AGE_MS = 11 * 60 * 60 * 1000;
 /** The site always lays out at least this wide on "Computer", then scales to fit. */
 export const DESKTOP_WIDTH = 1280;
 export const PHONE = { width: 390, height: 844 };
+export const TABLET = { width: 834, height: 1112 };
 const BEZEL = 11;
 const VEIL_DELAY_MS = 300;
-/** Fits a 1280 px desktop or a 390 by 844 phone into the space the window leaves. */
+/** Fits a 1280 px desktop, an 834 by 1112 tablet or a 390 by 844 phone into the space the window leaves. */
 export function frameLayout(device, zoom, available) {
     const width = Math.max(1, available.width);
     const height = Math.max(1, available.height);
-    if (device === "mobile") {
+    if (device !== "desktop") {
+        const screen = device === "mobile" ? PHONE : TABLET;
         // On a phone this is the real viewport, not a miniature device mockup.
-        if (width < 600) {
+        if (device === "mobile" && width < 600) {
             const viewport = { width: Math.min(PHONE.width, width), height };
             return { scale: 1, viewport, frame: { ...viewport } };
         }
-        const fit = Math.min(1, (width - 2 * BEZEL) / PHONE.width, (height - 2 * BEZEL) / PHONE.height);
+        const fit = Math.min(1, (width - 2 * BEZEL) / screen.width, (height - 2 * BEZEL) / screen.height);
         const scale = zoom === "actual" ? 1 : Math.max(0.2, fit);
-        return { scale, viewport: { ...PHONE }, frame: { width: PHONE.width * scale, height: PHONE.height * scale } };
+        return { scale, viewport: { ...screen }, frame: { width: screen.width * scale, height: screen.height * scale } };
     }
     const layoutWidth = Math.max(width, DESKTOP_WIDTH);
     const scale = zoom === "actual" ? 1 : width / layoutWidth;
@@ -125,7 +127,131 @@ export function createCanvas(store, handlers) {
     let veilTimer = 0;
     let expectedPath = store.get().path;
     let awaitingReady = true;
+    let readyFrame = null;
+    let navigationVersion = 0;
     let textSession = null;
+    let drag = null;
+    let dragTimer = 0;
+    const dragHandle = h("button", {
+        class: "canvas-drag-handle", hidden: true,
+        attrs: { type: "button", "aria-label": "Drag selected part to move", title: "Drag to move. Escape cancels." },
+    }, icon("grip"));
+    Object.assign(dragHandle.style, {
+        position: "absolute", zIndex: "2", width: "44px", height: "44px", minWidth: "44px", minHeight: "44px",
+        display: "grid", placeItems: "center", border: "1px solid var(--control-edge)", borderRadius: "8px",
+        background: "var(--surface)", color: "var(--ink)", cursor: "grab", touchAction: "none", userSelect: "none",
+    });
+    surface.append(dragHandle);
+    function renderDragHandle() {
+        const s = store.get();
+        const sel = selection(s);
+        const rect = sel?.rect;
+        const visible = drag || (rect && rect.width > 0 && rect.height > 0 && rect.x + rect.width > 0 && rect.y + rect.height > 0
+            && rect.x < layout.viewport.width && rect.y < layout.viewport.height);
+        dragHandle.hidden = awaitingReady || s.canvasLoading || s.mode !== "edit" || !!textSession || !sel?.can.includes("m") || !visible;
+        dragHandle.style.display = dragHandle.hidden ? "none" : "grid";
+        if (drag || !rect)
+            return;
+        const left = rect.x * layout.scale;
+        const beside = left >= 44 ? left - 44 : (rect.x + rect.width) * layout.scale;
+        dragHandle.style.left = `${Math.max(0, Math.min(layout.frame.width - 44, beside))}px`;
+        dragHandle.style.top = `${Math.max(0, Math.min(layout.frame.height - 44, rect.y * layout.scale))}px`;
+    }
+    function clearDrag() {
+        const old = drag;
+        drag = null;
+        window.clearTimeout(dragTimer);
+        surface.removeAttribute("data-dragging");
+        dragHandle.style.cursor = "grab";
+        if (old && old.phase !== "committing" && dragHandle.hasPointerCapture(old.pointerId))
+            dragHandle.releasePointerCapture(old.pointerId);
+        renderDragHandle();
+    }
+    function cancelDrag() {
+        const old = drag;
+        clearDrag();
+        if (old)
+            old.source.postMessage(envelope({ type: "drag_cancel", drag: old.token }), old.origin);
+    }
+    function currentDrag(owner) {
+        const s = store.get();
+        return owner.frame === active && owner.source === active.contentWindow && owner.origin === originOf(active)
+            && owner.path === expectedPath && owner.path === s.path && !awaitingReady && !s.canvasLoading
+            && s.mode === "edit" && !textSession && selection(s)?.element === owner.element;
+    }
+    function dragPoint(event) {
+        const r = active.getBoundingClientRect();
+        const bound = (value) => Math.max(-1e6, Math.min(1e6, value));
+        return { x: bound((event.clientX - r.left) / layout.scale), y: bound((event.clientY - r.top) / layout.scale) };
+    }
+    dragHandle.addEventListener("pointerdown", (event) => {
+        const s = store.get();
+        const sel = selection(s);
+        if (!event.isTrusted || !event.isPrimary || event.button !== 0 || drag || dragHandle.hidden
+            || awaitingReady || s.canvasLoading || s.mode !== "edit" || textSession || !sel?.can.includes("m") || !active.contentWindow)
+            return;
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+            dragHandle.setPointerCapture(event.pointerId);
+        }
+        catch {
+            return;
+        }
+        dragHandle.focus({ preventScroll: true });
+        drag = { phase: "pressed", frame: active, source: active.contentWindow, origin: originOf(active), path: expectedPath,
+            element: sel.element, token: crypto.randomUUID(), pointerId: event.pointerId, start: { x: event.clientX, y: event.clientY } };
+        send({ type: "drag_start", drag: drag.token, element: drag.element, point: dragPoint(event) });
+        dragTimer = window.setTimeout(cancelDrag, 60_000);
+    });
+    window.addEventListener("pointermove", (event) => {
+        if (!event.isTrusted || !drag || drag.phase === "committing" || event.pointerId !== drag.pointerId)
+            return;
+        if (!currentDrag(drag) || !(event.buttons & 1)) {
+            cancelDrag();
+            return;
+        }
+        event.preventDefault();
+        if (drag.phase === "pressed" && Math.hypot(event.clientX - drag.start.x, event.clientY - drag.start.y) < 4)
+            return;
+        drag.phase = "dragging";
+        surface.setAttribute("data-dragging", "");
+        dragHandle.style.cursor = "grabbing";
+        send({ type: "drag_point", drag: drag.token, point: dragPoint(event) });
+    }, { capture: true, passive: false });
+    window.addEventListener("pointerup", (event) => {
+        if (!event.isTrusted || !drag || drag.phase === "committing" || event.pointerId !== drag.pointerId)
+            return;
+        event.preventDefault();
+        const point = dragPoint(event);
+        const areaRect = area.getBoundingClientRect();
+        if (drag.phase !== "dragging" || !currentDrag(drag) || event.button !== 0
+            || point.x < 0 || point.y < 0 || point.x > layout.viewport.width || point.y > layout.viewport.height
+            || event.clientX < areaRect.left || event.clientX > areaRect.right || event.clientY < areaRect.top || event.clientY > areaRect.bottom) {
+            cancelDrag();
+            return;
+        }
+        const pointerId = drag.pointerId;
+        // The request is disclosed to the untrusted page only after the owner's release.
+        drag = { ...drag, phase: "committing", request: crypto.randomUUID(), expiresAt: Date.now() + 800 };
+        window.clearTimeout(dragTimer);
+        dragTimer = window.setTimeout(cancelDrag, 800);
+        if (dragHandle.hasPointerCapture(pointerId))
+            dragHandle.releasePointerCapture(pointerId);
+        send({ type: "drag_end", drag: drag.token, request: drag.request, point });
+    }, true);
+    dragHandle.addEventListener("lostpointercapture", (event) => {
+        if (drag && drag.phase !== "committing" && drag.pointerId === event.pointerId)
+            cancelDrag();
+    });
+    window.addEventListener("pointercancel", (event) => {
+        if (drag && drag.phase !== "committing" && drag.pointerId === event.pointerId)
+            cancelDrag();
+    }, true);
+    dragHandle.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); });
+    window.addEventListener("blur", cancelDrag);
+    document.addEventListener("visibilitychange", () => { if (document.hidden)
+        cancelDrag(); });
     /**
      * The preview origin each frame was loaded from. The preview address changes every time the
      * editor reloads its state (publishing again, undo), so a frame already on screen keeps
@@ -147,6 +273,7 @@ export function createCanvas(store, handlers) {
         iframe.style.transform = layout.scale === 1 ? "" : `scale(${layout.scale})`;
     }
     function applyLayout() {
+        cancelDrag();
         const s = store.get();
         layout = reserveFrame(area, surface, active, s.device, s.zoom);
         for (const iframe of [active, pending])
@@ -162,6 +289,7 @@ export function createCanvas(store, handlers) {
             : "Fit to window";
         zoomButton.hidden = s.zoom === "fit" && percent === 100;
         zoomButton.classList.toggle("is-small", s.zoom === "fit" && layout.scale < 0.6);
+        renderDragHandle();
     }
     initialSizing?.disconnect();
     initialSizing = null;
@@ -201,29 +329,41 @@ export function createCanvas(store, handlers) {
         });
     }
     watchLoads(active);
-    /** Resolves once an open text session has been committed, so nothing typed is lost. */
     let textFinished = null;
+    let textCompletion = null;
     function finishText() {
+        if (textCompletion)
+            return textCompletion;
         if (!textSession)
-            return Promise.resolve();
-        return new Promise((resolve) => {
-            const done = () => {
+            return Promise.resolve(true);
+        textCompletion = new Promise((resolve) => {
+            const done = (acknowledged) => {
                 window.clearTimeout(timer);
                 textFinished = null;
-                resolve();
+                textCompletion = null;
+                if (!acknowledged)
+                    toast("Your text is still being edited. Choose Done again before continuing.", { kind: "error" });
+                resolve(acknowledged);
             };
-            const timer = window.setTimeout(done, 800);
-            textFinished = done;
+            const timer = window.setTimeout(() => done(false), 2000);
+            textFinished = () => done(true);
             send({ type: "finish_text", commit: true });
         });
+        return textCompletion;
     }
     async function navigate(path, suffix = "") {
-        await finishText();
-        if (Date.now() - store.get().bootstrappedAt > PREVIEW_MAX_AGE_MS)
-            await handlers.refreshPreview();
+        const version = ++navigationVersion;
+        cancelDrag();
+        if (!await finishText() || version !== navigationVersion)
+            return;
         expectedPath = path;
         awaitingReady = true;
+        readyFrame = null;
         textSession = null;
+        if (Date.now() - store.get().bootstrappedAt > PREVIEW_MAX_AGE_MS)
+            await handlers.refreshPreview();
+        if (version !== navigationVersion)
+            return;
         window.clearTimeout(slowTimer);
         loadingText.textContent = "Opening your page…";
         slowTimer = window.setTimeout(() => {
@@ -247,6 +387,7 @@ export function createCanvas(store, handlers) {
         const origin = store.get().previewOrigin;
         frameOrigins.set(pending, origin);
         pending.src = url(origin, path) + suffix;
+        readyFrame = pending;
     }
     /** Shows the frame that just became ready and drops the old one. */
     function swap() {
@@ -273,6 +414,8 @@ export function createCanvas(store, handlers) {
             : title(s));
     }
     function send(message) {
+        if (["start_text", "mode", "select_element", "select_relative", "deselect", "cancel_drag"].includes(message.type))
+            cancelDrag();
         if (message.type === "start_text") {
             const state = store.get();
             if (awaitingReady || state.mode !== "edit" || state.focus.kind !== "selected" || state.focus.selection.element !== message.element || !state.focus.selection.can.includes("t"))
@@ -297,10 +440,21 @@ export function createCanvas(store, handlers) {
     }
     window.addEventListener("message", (event) => {
         const source = awaitingReady ? (pending ?? active) : active;
+        if (awaitingReady && source !== readyFrame)
+            return;
         if (event.source !== source.contentWindow || event.origin !== originOf(source))
             return;
         const message = parseAgentMessage(event.data);
-        if (!message || !acceptsCanvasMessage({ path: expectedPath, mode: store.get().mode, loading: awaitingReady, textElement: textSession?.element ?? null, finishing: textSession?.finishing ?? false }, message))
+        const state = store.get();
+        const sel = selection(state);
+        if (!message || !acceptsCanvasMessage({
+            path: expectedPath,
+            mode: state.mode,
+            loading: awaitingReady,
+            textElement: textSession?.element ?? null,
+            finishing: textSession?.finishing ?? false,
+            committing: drag?.phase === "committing" && currentDrag(drag) ? drag : null,
+        }, message))
             return;
         switch (message.type) {
             case "ready": {
@@ -322,13 +476,11 @@ export function createCanvas(store, handlers) {
                 restore = { scrollY: null, select: null, pulse: false };
                 break;
             }
-            case "request_text": {
-                const sel = selection(store.get());
+            case "request_text":
                 if (sel?.element === message.element && sel.can.includes("t")) {
                     announce("Press Enter or choose Edit text to edit");
                 }
                 break;
-            }
             case "select":
                 handlers.onPageClick();
                 if (textSession?.element !== message.element)
@@ -381,8 +533,16 @@ export function createCanvas(store, handlers) {
                 textFinished?.();
                 reclaimFocus();
                 break;
+            case "structure":
+                handlers.onStructure?.(message.nodes, message.truncated);
+                break;
+            case "dragging":
+                break;
+            case "move_element":
+                clearDrag();
+                handlers.onMove?.(message.element, message.target, message.position);
+                break;
             case "navigate": {
-                const state = store.get();
                 const target = canvasNavigation(message.href, originOf(active), expectedPath, state.pages);
                 if (target) {
                     restore = { scrollY: null, select: null, pulse: false };
@@ -393,15 +553,29 @@ export function createCanvas(store, handlers) {
             }
         }
     });
+    // Focus usually sits on the canvas surface during a drag, so the page never sees this Escape.
+    window.addEventListener("keydown", (event) => {
+        if (!drag || event.key !== "Escape")
+            return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        cancelDrag();
+        send({ type: "cancel_drag" });
+    }, true);
     zoomButton.addEventListener("click", () => {
         store.dispatch({ type: "zoom", zoom: store.get().zoom === "fit" ? "actual" : "fit" });
     });
     let phoneHintShown = false;
     let hintTimer = 0;
     store.subscribe((s, prev) => {
+        if (drag && !currentDrag(drag))
+            cancelDrag();
+        renderDragHandle();
         if (!prev || s.mode !== prev.mode) {
             if (prev)
                 send({ type: "mode", mode: s.mode });
+            if (s.mode !== "edit")
+                cancelDrag();
             area.dataset["mode"] = s.mode;
             syncFocusability(s);
         }
@@ -416,8 +590,8 @@ export function createCanvas(store, handlers) {
             window.clearTimeout(hintTimer);
             hintText.textContent = s.mode === "preview"
                 ? "Previewing. Links and buttons work like on your website."
-                : s.device === "mobile" && !phoneHintShown ? "Phone view. Changes made here also apply on computers." : "";
-            if (s.mode === "edit" && s.device === "mobile" && !phoneHintShown) {
+                : s.device !== "desktop" && !phoneHintShown ? `${s.device === "mobile" ? "Phone" : "Tablet"} view. Style and layout changes apply on every screen size.` : "";
+            if (s.mode === "edit" && s.device !== "desktop" && !phoneHintShown) {
                 phoneHintShown = true;
                 hintTimer = window.setTimeout(() => { hintText.textContent = ""; }, 3500);
             }
@@ -462,15 +636,25 @@ export function createCanvas(store, handlers) {
             return true;
         },
         open(path, reveal) {
-            restore = { scrollY: null, select: reveal ?? null, pulse: Boolean(reveal) };
-            store.dispatch({ type: "open_page", path });
-            void navigate(path);
+            cancelDrag();
+            void finishText().then((finished) => {
+                if (!finished)
+                    return;
+                restore = { scrollY: null, select: reveal ?? null, pulse: Boolean(reveal) };
+                store.dispatch({ type: "open_page", path });
+                void navigate(path);
+            });
         },
         reload(select = null, pulse = false) {
-            const s = store.get();
-            restore = { scrollY: s.scrollY, select, pulse };
-            store.dispatch({ type: "canvas_loading" });
-            void navigate(s.path);
+            cancelDrag();
+            void finishText().then((finished) => {
+                if (!finished)
+                    return;
+                const s = store.get();
+                restore = { scrollY: s.scrollY, select, pulse };
+                store.dispatch({ type: "canvas_loading" });
+                void navigate(s.path);
+            });
         },
         send,
         finishText,

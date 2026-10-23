@@ -14,6 +14,8 @@ mod imports;
 mod marketing;
 #[path = "requests/preview.rs"]
 mod preview;
+#[path = "requests/project_ops.rs"]
+mod project_ops;
 #[path = "requests/projects.rs"]
 mod projects;
 #[path = "requests/publishing.rs"]

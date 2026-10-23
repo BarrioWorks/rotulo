@@ -16,6 +16,7 @@ class FakeElement {
     this.style = { setProperty() {} };
     this.classList = { add() {}, remove() {}, toggle() {}, contains: () => false };
   }
+  append() {}
   setAttribute(name, value) { this.attrs[name] = String(value); }
   getAttribute(name) { return this.attrs[name] ?? null; }
   hasAttribute(name) { return name in this.attrs; }
@@ -53,7 +54,7 @@ function editorPage() {
   const windowListeners = {};
   const announcer = new FakeElement();
   Object.assign(globalThis, {
-    document: { querySelector: (selector) => elements[selector] ?? null, getElementById: (id) => id === 'editor-announcer' ? announcer : null, activeElement: null, addEventListener() {} },
+    document: { createElement: () => new FakeElement(), createElementNS: () => new FakeElement(), querySelector: (selector) => elements[selector] ?? null, getElementById: (id) => id === 'editor-announcer' ? announcer : null, activeElement: null, addEventListener() {} },
     window: {
       location: { href: 'http://127.0.0.1:5194/projects/p/edit' }, history: { state: null, replaceState() {} },
       addEventListener: (type, listener) => { (windowListeners[type] ??= []).push(listener); },
@@ -72,7 +73,7 @@ function editorPage() {
   return { toFrame, fromFrame, surface, iframe, tip, announcer };
 }
 
-async function openEditor() {
+async function openEditor({ refreshPreview = async () => {} } = {}) {
   const page = editorPage();
   const store = createStore(initialState({
     project: { pid: 'p', name: 'Site', revision: 0, site_url: 'http://site.localhost', live_release: null },
@@ -82,7 +83,7 @@ async function openEditor() {
   const saved = [];
   const canvas = createCanvas(store, {
     onText: (element, html, page) => saved.push({ element, html, page }),
-    refreshPreview: async () => {}, onPageClick() {},
+    refreshPreview, onPageClick() {},
   });
   canvas.open('index.html');
   await new Promise((resolve) => setImmediate(resolve));
@@ -201,4 +202,56 @@ test('start_text input stays bounded and unused caret fields are discarded', () 
   for (const patch of [{ input: 'abcde' }, { input: '\u0007' }, { input: ' ' }]) {
     assert.equal(parseEditorMessage(envelope({ ...start, ...patch })), undefined);
   }
+});
+
+test('text completion shares one acknowledgment and queues changed text before continuing', async () => {
+  const editor = await openEditor();
+  editor.fromFrame(select);
+  assert.equal(editor.canvas.startText(), true);
+  editor.fromFrame({ type: 'editing', element: 'a', active: true, formats: { bold: false, italic: false, link: false } });
+  window.setTimeout = () => 1;
+  const first = editor.canvas.finishText();
+  const second = editor.canvas.finishText();
+  assert.equal(first, second);
+  assert.equal(editor.toFrame.filter((message) => message?.type === 'finish_text').length, 1);
+  editor.fromFrame({ type: 'text', element: 'a', html: 'New heading' });
+  assert.equal(await first, true);
+  assert.deepEqual(editor.saved, [{ element: 'a', html: 'New heading', page: 'index.html' }]);
+});
+
+test('a missing text acknowledgment blocks page switching and reports an unfinished session', async () => {
+  const editor = await openEditor();
+  editor.fromFrame(select);
+  assert.equal(editor.canvas.startText(), true);
+  let expire;
+  window.setTimeout = (run, milliseconds) => { if (milliseconds === 2000) expire = run; return 1; };
+  const finish = editor.canvas.finishText();
+  editor.canvas.open('about.html');
+  assert.equal(editor.store.get().path, 'index.html');
+  assert.equal(typeof expire, 'function');
+  expire();
+  assert.equal(await finish, false);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(editor.store.get().path, 'index.html');
+  assert.equal(editor.saved.length, 0);
+});
+
+
+test('expired preview refresh rejects old-frame selection and forged readiness', async () => {
+  let release;
+  const refresh = new Promise((resolve) => { release = resolve; });
+  const editor = await openEditor({ refreshPreview: () => refresh });
+  editor.store.get().bootstrappedAt = Date.now() - 12 * 60 * 60 * 1000;
+  editor.iframe.removeAttribute('src');
+  editor.canvas.open('about.html');
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(editor.store.get().canvasLoading, true);
+  editor.fromFrame(select);
+  editor.fromFrame({ type: 'ready', path: 'about.html', title: 'Forged', description: '', scrollY: 0 });
+  assert.equal(editor.store.get().focus.kind, 'none');
+  assert.equal(editor.store.get().canvasLoading, true);
+  release();
+  await new Promise((resolve) => setImmediate(resolve));
+  editor.fromFrame({ type: 'ready', path: 'about.html', title: 'About', description: '', scrollY: 0 });
+  assert.equal(editor.store.get().canvasLoading, false);
 });

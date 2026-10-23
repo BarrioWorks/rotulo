@@ -730,11 +730,13 @@ fn a_page_built_by_javascript_imports_with_a_warning() {
     ])
     .import(&Limits::default(), None)
     .unwrap();
+    assert_eq!(spa.report.editability, Editability::Limited);
     assert_eq!(spa.report.warnings.len(), 1);
     assert!(spa.report.warnings[0].contains("JavaScript"));
     let written = Fixture::new(&[page(), Item::new("a.js", "1")])
         .import(&Limits::default(), None)
         .unwrap();
+    assert_eq!(written.report.editability, Editability::StaticHtml);
     assert!(written.report.warnings.is_empty());
 }
 
@@ -768,4 +770,93 @@ fn unicode_lowercase_collisions_are_rejected_in_archives() {
             "accepted {names:?}"
         );
     }
+}
+
+#[test]
+fn hydrated_framework_exports_are_refused_before_edits_can_be_overwritten() {
+    for markup in [
+        r#"<script src="/_next/static/chunk.js"></script><h1>Server content</h1>"#,
+        r#"<h1>Server content</h1><script id="__NEXT_DATA__" type="application/json">{}</script>"#,
+        r#"<h1>Server content</h1><script>self.__next_f.push([1,"payload"])</script>"#,
+    ] {
+        let fixture = Fixture::new(&[
+            Item::new("index.html", markup),
+            Item::new("_next/static/chunk.js", "void 0;"),
+        ]);
+        assert!(matches!(
+            fixture.import(&Limits::default(), None),
+            Err(ImportError::HydratedApplication)
+        ));
+        assert_eq!(fs::read_dir(&fixture.staging).unwrap().count(), 0);
+    }
+    assert!(!detect::requires_hydration(
+        r#"<!-- <script src="/_next/static/chunk.js"></script> --><h1>Plain HTML</h1>"#
+    ));
+    assert!(!detect::requires_hydration(
+        r#"<script src="/assets/next-menu.js"></script><h1>Plain HTML</h1>"#
+    ));
+}
+
+#[test]
+fn scripts_in_the_head_of_an_empty_app_produce_the_editability_warning() {
+    let fixture = Fixture::new(&[
+        Item::new(
+            "index.html",
+            r#"<head><script type="module" src="/assets/app.js"></script></head><body><div id="root"></div></body>"#,
+        ),
+        Item::new(
+            "assets/app.js",
+            "document.getElementById('root').textContent='App';",
+        ),
+    ]);
+    let site = fixture.import(&Limits::default(), None).unwrap();
+    assert!(site
+        .report
+        .warnings
+        .iter()
+        .any(|warning| warning.contains("builds its pages in the browser")));
+}
+
+#[test]
+fn server_javascript_is_refused_and_source_maps_are_reported() {
+    for server_path in ["server.js", "api/contact.js", "functions/contact.mjs"] {
+        for script in [
+            "<script type=module>import './server.js'</script>",
+            "<script src=app.js></script>",
+        ] {
+            let fixture = Fixture::new(&[
+                Item::new("index.html", format!("<h1>Site</h1>{script}")),
+                Item::new(server_path, "export const value = 1"),
+                Item::new("app.js", format!("import './{server_path}';")),
+            ]);
+            assert!(matches!(
+                fixture.import(&Limits::default(), None),
+                Err(ImportError::SourceOnly)
+            ));
+            assert_eq!(fs::read_dir(&fixture.staging).unwrap().count(), 0);
+        }
+    }
+    let site = Fixture::new(&[page(), Item::new("app.js.map", "{}")])
+        .import(&Limits::default(), None)
+        .unwrap();
+    assert!(site
+        .report
+        .warnings
+        .iter()
+        .any(|warning| warning.contains("source maps")));
+}
+
+#[test]
+fn secondary_script_generated_pages_are_reported_as_limited() {
+    let site = Fixture::new(&[
+        page(),
+        Item::new(
+            "app.html",
+            "<div id=root></div><script src=app.js></script>",
+        ),
+        Item::new("app.js", "document.body.append('app')"),
+    ])
+    .import(&Limits::default(), None)
+    .unwrap();
+    assert_eq!(site.report.editability, Editability::Limited);
 }

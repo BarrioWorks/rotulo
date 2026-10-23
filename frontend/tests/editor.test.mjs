@@ -4,9 +4,9 @@ import { test } from "node:test";
 import { frameLayout } from "../../assets/static/js/editor/canvas.js";
 import { checkEmail, checkPhone, checkWeb, classifyHref, describeHref, relativeHref } from "../../assets/static/js/editor/links.js";
 import { pageLabel, slugify } from "../../assets/static/js/editor/pages.js";
-import { colorName, step, SIZES, SPACES } from "../../assets/static/js/editor/panels.js";
+import { arrangementOf, colorName, parseDimension, step, SIZES, SPACES } from "../../assets/static/js/editor/panels.js";
 import { changeSummary } from "../../assets/static/js/editor/publish.js";
-import { createStore, initialState, pagePath, siteState, statusLine } from "../../assets/static/js/editor/state.js";
+import { createStore, initialState, pagePath, panelApplies, siteState, statusLine } from "../../assets/static/js/editor/state.js";
 import { actionsFor, describeSelection, shouldRenderToolbar } from "../../assets/static/js/editor/toolbar.js";
 
 const bootstrap = {
@@ -167,7 +167,7 @@ test("what visitors see is derived from the live release, the versions and the d
 
 test("a conflict outranks every other state in the pill", () => {
   const s = { ...initialState(bootstrap, 0), saves: { pending: 1, problem: { kind: "conflict" }, savedAt: null } };
-  assert.deepEqual(statusLine(s, true), { tone: "error", text: "Changed in another tab", save: "Changed in another tab", publish: null, mark: "problem" });
+  assert.deepEqual(statusLine(s, true), { tone: "error", text: "Reload to check changes", save: "Reload to check changes", publish: null, mark: "problem" });
 });
 
 test("publishing clears the change list and marks the site current", () => {
@@ -226,11 +226,11 @@ test("the link panel for selected words closes when text editing ends", () => {
 
 test("the toolbar shows at most five labelled actions, then More", () => {
   const heading = actionsFor(sel({ can: "tsb" }));
-  assert.deepEqual(heading.primary, ["edit-text", "style", "background"]);
+  assert.deepEqual(heading.primary, ["edit-text", "style", "background", "layout"]);
   const hero = actionsFor(sel({ kind: "header", tag: "header", can: "sbxudc", info: { ...info, bgImage: true } }));
-  assert.deepEqual(hero, { primary: ["bg-photo"], overflow: ["background"] }, "the demo hero offers its background photo first");
+  assert.deepEqual(hero, { primary: ["bg-photo"], overflow: ["layout", "background"] }, "the demo hero offers its background photo first");
   const image = actionsFor(sel({ kind: "image", tag: "img", can: "isb", ancestors: [{ element: "l", kind: "link", name: "", photo: false }] }));
-  assert.deepEqual(image.primary, ["replace-image", "description", "parent-link"]);
+  assert.deepEqual(image.primary, ["replace-image", "description", "parent-link", "layout"], "an image can be resized");
   const hidden = actionsFor(sel({ kind: "section", tag: "section", can: "sx", info: { ...info, hidden: true } }));
   assert.equal(hidden.primary[0], "show");
   for (const kind of ["heading", "text", "link", "button", "image", "banner", "section", "card", "box"]) {
@@ -270,6 +270,46 @@ test("the phone is always 390 by 844 and shrinks as a whole when it does not fit
   assert.deepEqual(short.viewport, { width: 390, height: 844 });
   assert.ok(short.scale < 1);
   assert.equal(Math.round(short.frame.height), Math.round(844 * short.scale));
+});
+
+test("the tablet is 834 by 1112 and shrinks as a whole when it does not fit", () => {
+  const short = frameLayout("tablet", "fit", { width: 1200, height: 800 });
+  assert.deepEqual(short.viewport, { width: 834, height: 1112 }, "the site sees a real tablet width");
+  assert.ok(short.scale < 1);
+  assert.equal(Math.round(short.frame.width), Math.round(834 * short.scale));
+  const actual = frameLayout("tablet", "actual", { width: 1200, height: 800 });
+  assert.equal(actual.scale, 1);
+  const narrow = frameLayout("tablet", "fit", { width: 500, height: 900 });
+  assert.deepEqual(narrow.viewport, { width: 834, height: 1112 }, "a narrow window scales the tablet instead of turning it into a phone");
+});
+
+test("typed sizes become values the server accepts, and nonsense is refused", () => {
+  assert.equal(parseDimension("width", "320"), "320px", "a bare number is pixels");
+  assert.equal(parseDimension("width", " 50 % "), "50%");
+  assert.equal(parseDimension("width", "AUTO"), "auto");
+  assert.equal(parseDimension("max-width", "0"), "0");
+  assert.equal(parseDimension("width", ""), null, "an empty field goes back to the original");
+  assert.equal(parseDimension("width", "calc(100% - 1px)"), undefined);
+  assert.equal(parseDimension("width", "5000"), undefined, "beyond the server's bounds");
+  assert.equal(parseDimension("height", "100vh"), "100vh");
+  assert.equal(parseDimension("width", "100vh"), undefined, "screen units only for heights");
+  assert.equal(parseDimension("padding-left", "auto"), undefined);
+  assert.equal(parseDimension("margin-left", "auto"), "auto");
+});
+
+test("the arrangement follows the computed display", () => {
+  assert.equal(arrangementOf({ display: "block" }), "block");
+  assert.equal(arrangementOf({ display: "flex", "flex-direction": "row" }), "row");
+  assert.equal(arrangementOf({ display: "inline-flex", "flex-direction": "column-reverse" }), "column");
+  assert.equal(arrangementOf({ display: "grid" }), "grid");
+  assert.equal(arrangementOf({}), "block");
+});
+
+test("size and layout applies to anything that can be styled", () => {
+  assert.equal(panelApplies("layout", sel({ can: "tsb" }), false), true);
+  assert.equal(panelApplies("layout", sel({ kind: "image", tag: "img", can: "is" }), false), true);
+  assert.equal(panelApplies("layout", sel({ can: "t" }), false), false);
+  assert.equal(panelApplies("layout", null, false), false);
 });
 
 test("steppers move through the scale from the nearest step", () => {

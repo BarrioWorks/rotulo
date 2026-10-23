@@ -7,6 +7,8 @@ export interface CanvasSession {
   loading: boolean;
   textElement: string | null;
   finishing?: boolean;
+  /** Created only by a trusted app pointer release, never from an iframe report. */
+  committing?: { element: string; request: string; path: string; expiresAt: number } | null;
 }
 
 export function acceptsCanvasMessage(session: CanvasSession, message: AgentMessage): boolean {
@@ -21,6 +23,13 @@ export function acceptsCanvasMessage(session: CanvasSession, message: AgentMessa
       return session.mode === "edit" && session.textElement === null;
     case "navigate":
       return session.mode === "preview";
+    case "dragging":
+      return false;
+    case "move_element":
+      return session.mode === "edit" && session.textElement === null
+        && session.committing?.element === message.element
+        && session.committing.request === message.request
+        && session.committing.path === session.path && Date.now() < session.committing.expiresAt;
     default:
       return true;
   }

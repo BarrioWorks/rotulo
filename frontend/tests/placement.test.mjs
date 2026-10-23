@@ -132,11 +132,11 @@ test("a lower caption flips beyond the selection and keeps every edge in the can
   assert.ok(p.y >= 8 && p.y + p.height <= 792);
 });
 
-test("an oversized panel scrolls within the roomier side without a minimum-height overflow", () => {
+test("an oversized panel uses the available canvas height without overflowing", () => {
   const p = placePanel({ caption: { x: 8, y: 90, width: 300, height: 40 }, selection: { x: 8, y: 50, width: 100, height: 30 }, canvas: { x: 0, y: 0, width: 390, height: 220 }, size: { width: 500, height: 600 } });
   assert.ok(p.y >= 8 && p.y + p.height <= 212);
   assert.equal(p.width, 374);
-  assert.equal(p.height, 74);
+  assert.equal(p.height, 204);
 });
 
 test("typing tools prefer below with an eight pixel gap, or yield when neither side fits", () => {
@@ -186,4 +186,12 @@ test("a scrolled selection cannot expand a panel beyond the canvas", () => {
   const panel = placePanel({ caption: { x: 10, y: 900, width: 200, height: 40 }, selection: { x: 10, y: 800, width: 370, height: 90 }, canvas, size: { width: 320, height: 700 } });
   assert.ok(panel.y >= 60);
   assert.ok(panel.y + panel.height <= 544);
+});
+
+test("a viewport-filling section still leaves room to use its layout controls", () => {
+  const canvas = { x: 0, y: 52, width: 800, height: 700 };
+  const panel = placePanel({ caption: { x: 8, y: 668, width: 500, height: 40 }, selection: { x: 0, y: 52, width: 800, height: 650 }, canvas, size: { width: 320, height: 1000 } });
+  assert.ok(panel.height >= 240, `${panel.height}px must show controls beyond Close`);
+  assert.ok(panel.x >= 8 && panel.x + panel.width <= 792);
+  assert.ok(panel.y >= 60 && panel.y + panel.height <= 744);
 });

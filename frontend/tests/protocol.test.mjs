@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import {
   envelope,
   isSafeHref,
   isStyleValue,
+  STYLE_KEYS,
   parseAgentMessage,
   parseEditorMessage,
 } from "../../assets/static/js/protocol.js";
@@ -218,4 +220,91 @@ test("the canvas scale and the interface font are bounded", () => {
   assert.equal(parseEditorMessage(envelope({ type: "font", data: new ArrayBuffer(256 * 1024 + 1) })), undefined, "capped at 256 KB");
   assert.equal(parseEditorMessage(envelope({ type: "font", data: "AAEC" })), undefined, "bytes only");
   assert.equal(parseAgentMessage(envelope({ type: "font", data: new ArrayBuffer(8) })), undefined, "the page cannot send fonts to the app");
+});
+
+const tree = [
+  { element: "s1", parent: null, tag: "section", name: "Menu", can: "sxmn" },
+  { element: "h", parent: "s1", tag: "h2", name: "Menu", can: "tsm" },
+  { element: "f", parent: null, tag: "footer", name: "", can: "sxmn" },
+];
+const structure = envelope({ type: "structure", nodes: tree, truncated: false });
+
+test("the structure is a bounded tree with every parent listed before its children", () => {
+  assert.deepEqual(parseAgentMessage(structure), { type: "structure", nodes: tree, truncated: false });
+  assert.equal(parseAgentMessage({ ...structure, nodes: [tree[1], tree[0]] }), undefined, "child before its parent");
+  assert.equal(parseAgentMessage({ ...structure, nodes: [tree[0], tree[0]] }), undefined, "an id twice");
+  assert.equal(parseAgentMessage({ ...structure, nodes: [{ ...tree[0], parent: "s1" }] }), undefined, "its own parent");
+  assert.equal(parseAgentMessage({ ...structure, nodes: [{ ...tree[0], tag: "<b>" }] }), undefined);
+  assert.equal(parseAgentMessage({ ...structure, nodes: [{ ...tree[0], name: "x".repeat(61) }] }), undefined);
+  assert.equal(parseAgentMessage({ ...structure, nodes: [{ ...tree[0], can: "q" }] }), undefined);
+  assert.equal(parseAgentMessage({ ...structure, truncated: undefined }), undefined, "truncation is stated, not implied");
+});
+
+test("the structure holds at most 5000 parts", () => {
+  const flat = (n) => Array.from({ length: n }, (_, i) => ({ element: i.toString(36), parent: null, tag: "p", name: "", can: "t" }));
+  assert.equal(parseAgentMessage({ ...structure, nodes: flat(5000), truncated: true })?.nodes.length, 5000);
+  assert.equal(parseAgentMessage({ ...structure, nodes: flat(5001), truncated: true }), undefined);
+});
+
+test("movable and container capabilities pass selection validation", () => {
+  assert.equal(parseAgentMessage({ ...select, can: "tilsbxudcmn" })?.can, "tilsbxudcmn");
+  assert.equal(parseAgentMessage({ ...select, can: "tilsbxudcmnm" }), undefined, "eleven letters at most");
+});
+
+const request = "22222222-2222-4222-8222-222222222222";
+
+test("a canvas drop names a different target and a closed placement", () => {
+  for (const position of ["before", "after", "inside"]) {
+    assert.deepEqual(parseAgentMessage(envelope({ type: "move_element", request, element: "a", target: "b", position })), { type: "move_element", request, element: "a", target: "b", position });
+  }
+  assert.equal(parseAgentMessage(envelope({ type: "move_element", request, element: "a", target: "b", position: "above" })), undefined);
+  assert.equal(parseAgentMessage(envelope({ type: "move_element", request, element: "a", target: "a", position: "after" })), undefined, "onto itself");
+  assert.equal(parseAgentMessage(envelope({ type: "move_element", request, element: "a", target: "#b", position: "after" })), undefined);
+  assert.equal(parseAgentMessage(envelope({ type: "move_element", request, element: "a", target: "b", position: "after", x: 10 }))?.x, undefined, "no coordinates");
+});
+
+test("drag state, structure requests and drag cancels go one way each", () => {
+  assert.deepEqual(parseAgentMessage(envelope({ type: "dragging", active: true })), { type: "dragging", active: true });
+  assert.equal(parseAgentMessage(envelope({ type: "dragging", active: "yes" })), undefined);
+  assert.deepEqual(parseEditorMessage(envelope({ type: "request_structure" })), { type: "request_structure" });
+  assert.deepEqual(parseEditorMessage(envelope({ type: "cancel_drag" })), { type: "cancel_drag" });
+  assert.equal(parseAgentMessage(envelope({ type: "request_structure" })), undefined);
+  assert.equal(parseAgentMessage(envelope({ type: "cancel_drag" })), undefined);
+  assert.equal(parseEditorMessage(structure), undefined, "the app cannot hand the page a tree");
+  assert.equal(parseEditorMessage(envelope({ type: "move_element", request, element: "a", target: "b", position: "after" })), undefined);
+});
+
+test("drag commands have bounded coordinates and request ids", () => {
+  for (const type of ["drag_start", "drag_point", "drag_end", "drag_cancel"]) {
+    const message = { type, drag: request, request, element: "a", point: { x: 10, y: 20 } };
+    assert.ok(parseEditorMessage(envelope(message)));
+    assert.equal(parseAgentMessage(envelope(message)), undefined);
+    assert.equal(parseEditorMessage(envelope({ ...message, drag: "guessed" })), undefined);
+    if (type !== "drag_cancel") for (const x of [NaN, Infinity, 1e6 + 1]) {
+      assert.equal(parseEditorMessage(envelope({ ...message, point: { x, y: 20 } })), undefined);
+    }
+  }
+  assert.equal(parseAgentMessage(envelope({ type: "move_element", element: "a", target: "b", position: "after" })), undefined);
+});
+
+test("style values match the server's grammar case for case", () => {
+  const cases = JSON.parse(readFileSync(new URL("../../fixtures/style-values.json", import.meta.url), "utf8"));
+  const keys = new Set();
+  for (const [list, expected] of [["accept", true], ["reject", false]]) {
+    for (const [key, value] of cases[list]) {
+      assert.ok(STYLE_KEYS.includes(key), key);
+      keys.add(key);
+      assert.equal(isStyleValue(key, value), expected, `${key}: ${value}`);
+    }
+  }
+  assert.deepEqual(STYLE_KEYS.filter((k) => !keys.has(k)), [], "every style property has a shared case");
+});
+
+test("a selection carries its own inline values next to the computed ones", () => {
+  const base = { type: "select", element: "w", can: "tls", tag: "a", kind: "link", name: "See today's menu", ancestors, rect, obstacles: [rect] };
+  const withOwn = parseAgentMessage(envelope({ ...base, info: { ...info, styles: { width: "320px" }, own: { width: "50%" } } }));
+  assert.deepEqual(withOwn?.info?.own, { width: "50%" });
+  const without = parseAgentMessage(envelope({ ...base, info }));
+  assert.equal(without?.info?.own, null, "older agents without it still parse");
+  assert.equal(parseAgentMessage(envelope({ ...base, info: { ...info, own: { position: "fixed" } } })), undefined);
 });

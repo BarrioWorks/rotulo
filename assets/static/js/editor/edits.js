@@ -1,6 +1,7 @@
 import { announce, toast } from "../ui.js";
 import { api } from "./api.js";
-import { editRecovery } from "./saves.js";
+import {} from "./saves.js";
+import { unsupportedStyles } from "./state.js";
 const IMAGE_TYPES = /^image\/(png|jpeg|gif|webp|avif)$/;
 /** Shapes closer than this are treated as the same, and the file is uploaded untouched. */
 const SAME_SHAPE = 0.02;
@@ -85,7 +86,6 @@ export function createEdits({ store, canvas, change, undo }) {
         return change((base) => api.edit(store.get().project.pid, base, page, edit), {
             page,
             element,
-            recover: editRecovery,
             toastRejection: after.toastRejection ?? true,
             onRejected: (error) => {
                 after.onRejected?.(error.message);
@@ -99,6 +99,12 @@ export function createEdits({ store, canvas, change, undo }) {
         });
     }
     function setStyle(sel, styles) {
+        if (unsupportedStyles(store.get().editSupport, styles).length > 0) {
+            const message = "This server can't make that change yet. Reload the editor to see what it supports.";
+            announce(message);
+            toast(message, { kind: "warning" });
+            return Promise.resolve(false);
+        }
         canvas.send({ type: "preview_style", element: sel.element, styles });
         return save({ op: "set_style", element: sel.element, styles });
     }
@@ -218,20 +224,6 @@ export function createEdits({ store, canvas, change, undo }) {
             sectionBusy.delete(sel.element);
         }
     }
-    function moveSection(sel, direction) {
-        return once(sel, async () => {
-            if (await save({ op: "move_section", element: sel.element, direction }, { reload: true, select: true, pulse: true })) {
-                undoToast(direction === "up" ? "Section moved up" : "Section moved down");
-            }
-        });
-    }
-    function duplicateSection(sel) {
-        return once(sel, async () => {
-            if (await save({ op: "duplicate_section", element: sel.element }, { reload: true, select: true, pulse: true })) {
-                undoToast("Section duplicated. The copy is right below it.");
-            }
-        });
-    }
     function setHidden(sel, hidden) {
         return once(sel, async () => {
             canvas.send({ type: "preview_hidden", element: sel.element, hidden });
@@ -244,12 +236,5 @@ export function createEdits({ store, canvas, change, undo }) {
             }
         });
     }
-    function removeSection(sel) {
-        return once(sel, async () => {
-            if (await save({ op: "remove_section", element: sel.element }, { reload: true })) {
-                undoToast("Section removed")?.focus();
-            }
-        });
-    }
-    return { undo, save, setStyle, chooseImage, checkImage, replaceImage, refit, replacementOf, replaceBackground, moveSection, duplicateSection, setHidden, removeSection, undoToast };
+    return { undo, save, setStyle, chooseImage, checkImage, replaceImage, refit, replacementOf, replaceBackground, setHidden, undoToast };
 }

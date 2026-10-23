@@ -3,17 +3,20 @@ import { h, icon, must } from "../ui.js";
 import { openMenu } from "./menu.js";
 import { placeToolbar } from "./placement.js";
 import { describeHref } from "./links.js";
-import { panelApplies, selection } from "./state.js";
+import { canEditStructure, panelApplies, selection } from "./state.js";
 export function shouldRenderToolbar({ force, keyChanged, selectionChanged, fieldFocused }) {
     return force || selectionChanged || (keyChanged && !fieldFocused);
 }
 const ACTIONS = {
     "edit-text": { label: "Edit text", icon: "edit-text", applies: (sel) => sel.can.includes("t") },
+    /** Shown only where `actionsFor` is told the selection sits in a menu the server can add to. */
+    "menu-link": { label: "Add menu link", icon: "add-page", applies: () => true },
     "replace-image": { label: "Replace image", icon: "replace-image", applies: (sel) => sel.can.includes("i") },
     description: { label: "Description", icon: null, applies: (sel) => sel.can.includes("i"), panel: "image" },
     link: { label: "Link", icon: "link", applies: (sel) => sel.can.includes("l"), panel: "link" },
     "parent-link": { label: "Link", icon: "link", applies: (sel) => !sel.can.includes("l") && sel.ancestors.slice(0, 3).some((a) => a.kind === "link" || a.kind === "button") },
     style: { label: "Style", icon: "text-style", applies: (sel) => sel.can.includes("s") && sel.can.includes("t"), panel: "style" },
+    layout: { label: "Layout", icon: null, applies: (sel) => sel.can.includes("s"), panel: "layout" },
     background: { label: "Background", icon: "background", applies: (sel) => sel.can.includes("s"), panel: "background" },
     "bg-photo": { label: "Change background photo", icon: "replace-image", applies: (sel) => sel.can.includes("b") && sel.info.bgImage },
     "banner-photo": { label: "Change banner photo", icon: "replace-image", applies: (sel) => !(sel.can.includes("b") && sel.info.bgImage) && bannerOf(sel) !== null },
@@ -23,29 +26,35 @@ const ACTIONS = {
 export function bannerOf(sel) {
     return sel.ancestors.find((a) => a.photo) ?? null;
 }
-const TEXT = ["edit-text", "style", "link", "parent-link", "banner-photo", "bg-photo", "background"];
-const SECTION = ["show", "bg-photo", "background", "edit-text"];
+const TEXT = ["edit-text", "style", "link", "parent-link", "banner-photo", "bg-photo", "background", "layout"];
+const SECTION = ["show", "bg-photo", "layout", "background", "edit-text"];
 /** The order actions appear in per kind. The first five that apply are shown, the rest go under More. */
 export const ACTION_ORDER = {
     heading: TEXT,
     text: TEXT,
-    "list-item": TEXT,
-    link: ["edit-text", "link", "style", "banner-photo", "bg-photo", "background"],
-    button: ["edit-text", "link", "style", "banner-photo", "bg-photo", "background"],
-    image: ["replace-image", "description", "parent-link"],
+    "list-item": ["edit-text", "menu-link", ...TEXT.slice(1)],
+    link: ["edit-text", "link", "menu-link", "style", "banner-photo", "bg-photo", "background", "layout"],
+    button: ["edit-text", "link", "style", "banner-photo", "bg-photo", "background", "layout"],
+    image: ["replace-image", "description", "parent-link", "layout"],
     banner: SECTION,
     section: SECTION,
     header: SECTION,
     footer: SECTION,
-    menu: SECTION,
-    card: ["bg-photo", "edit-text", "link", "parent-link", "banner-photo", "background"],
-    box: ["bg-photo", "edit-text", "link", "parent-link", "banner-photo", "background"],
+    menu: ["show", "menu-link", ...SECTION.slice(1)],
+    card: ["bg-photo", "edit-text", "link", "parent-link", "banner-photo", "layout", "background"],
+    box: ["bg-photo", "edit-text", "link", "parent-link", "banner-photo", "layout", "background"],
 };
 const MAX_PRIMARY = 5;
 /** Actions that would crowd a section row; they move under More there. */
-const SECONDARY_ON_SECTIONS = ["background", "edit-text"];
-export function actionsFor(sel) {
-    const all = ACTION_ORDER[sel.kind].filter((id) => ACTIONS[id].applies(sel));
+const SECONDARY_ON_SECTIONS = ["layout", "background", "edit-text"];
+/**
+ * With `support`, panel actions also need the server to accept what their panel changes. `menu` says the
+ * selection is in a menu a link can be added to; it only counts when the server edits structure.
+ */
+export function actionsFor(sel, support, menu = false) {
+    const all = ACTION_ORDER[sel.kind].filter((id) => ACTIONS[id].applies(sel)
+        && (id !== "menu-link" || (menu && support !== undefined && canEditStructure(support)))
+        && (!ACTIONS[id].panel || panelApplies(ACTIONS[id].panel, sel, false, support)));
     const sectionRow = /[xudc]/.test(sel.can);
     const primary = [];
     const overflow = [];
@@ -97,7 +106,7 @@ export function describeSelection(sel, s) {
         return `${kind} selected: goes to ${describeHref(sel.info.href, s)}`;
     return `${kind} selected`;
 }
-export function createToolbar({ store, canvas, edits }) {
+export function createToolbar({ store, canvas, edits, structure }) {
     const root = must(document, "[data-toolbar]");
     const labelHost = h("div", { class: "caption-label" });
     const actionHost = h("div", { class: "ftb-row", attrs: { "data-caption-actions": "" } });
@@ -187,6 +196,9 @@ export function createToolbar({ store, canvas, edits }) {
             case "show":
                 void edits.setHidden(sel, false);
                 break;
+            case "menu-link":
+                structure.addMenuLink(sel.element);
+                break;
             default:
                 break;
         }
@@ -241,16 +253,26 @@ export function createToolbar({ store, canvas, edits }) {
             action.setAttribute("aria-label", label);
         return action;
     }
-    function sectionItems(sel) {
+    function sectionItems(sel, s) {
         const can = sel.can;
-        const items = [];
+        const structural = canEditStructure(s.editSupport);
+        const items = structural ? [
+            { label: "Add an element…", icon: "add-page", run: structure.openInsert },
+            { label: "Page structure", icon: "folder", run: structure.open },
+        ] : [];
+        if (!structural)
+            return sectionVisibility(sel, items);
         if (can.includes("c"))
-            items.push({ label: "Duplicate", icon: "duplicate", run: () => void edits.duplicateSection(sel) });
-        if (can.includes("x")) {
+            items.push({ label: "Duplicate", icon: "duplicate", run: () => structure.duplicate(sel.element) });
+        if (can.includes("m"))
+            items.push({ label: "Delete element", icon: "remove", danger: true, run: () => structure.remove(sel.element) });
+        return sectionVisibility(sel, items);
+    }
+    function sectionVisibility(sel, items) {
+        if (sel.can.includes("x")) {
             items.push(sel.info.hidden
                 ? { label: "Show on your website", icon: "preview", run: () => void edits.setHidden(sel, false) }
                 : { label: "Hide on your website", icon: "hide", run: () => void edits.setHidden(sel, true) });
-            items.push("separator", { label: "Remove section", icon: "remove", danger: true, run: () => void edits.removeSection(sel) });
         }
         return items;
     }
@@ -273,7 +295,7 @@ export function createToolbar({ store, canvas, edits }) {
                 button("done", "Done", "check", () => void canvas.finishText(), { tip: "Keep the text. Escape also keeps it." }),
             ];
         }
-        const actions = actionsFor(sel);
+        const actions = actionsFor(sel, s.editSupport, structure.menuSlot(sel.element) !== null);
         if (matchMedia("(max-width: 899px), (pointer: coarse)").matches) {
             const candidates = actions.primary.map((id) => actionButton(id, sel, s));
             const more = button("measure-more", "More", "more", () => { }, { menu: true });
@@ -297,9 +319,9 @@ export function createToolbar({ store, canvas, edits }) {
             ...actions.primary.map((id) => actionButton(id, sel, s)),
             button("more", "More", "more", (b) => openMenu(b, [
                 ...actions.overflow.map((id) => ({ label: ACTIONS[id].label, run: () => run(id, sel) })),
-                ...sectionItems(sel),
-                ...(sel.can.includes("u") ? [{ label: "Move section up", run: () => void edits.moveSection(sel, "up") }] : []),
-                ...(sel.can.includes("d") ? [{ label: "Move section down", run: () => void edits.moveSection(sel, "down") }] : []),
+                ...sectionItems(sel, s),
+                ...(canEditStructure(s.editSupport) && sel.can.includes("u") ? [{ label: "Move section up", run: () => structure.moveSibling(-1) }] : []),
+                ...(canEditStructure(s.editSupport) && sel.can.includes("d") ? [{ label: "Move section down", run: () => structure.moveSibling(1) }] : []),
                 ...sel.ancestors.map((a) => ({ label: `Select ${KIND_LABELS[a.kind].toLowerCase()}`, run: () => canvas.send({ type: "select_element", element: a.element }) })),
             ], { label: "More actions" }), { menu: true }),
         ];
@@ -312,7 +334,7 @@ export function createToolbar({ store, canvas, edits }) {
             return `blocked:${f.around ?? ""}`;
         const sel = f.selection;
         const panel = s.surface.kind === "panel" ? s.surface.panel : "";
-        return JSON.stringify([sel.element, sel.can, sel.kind, sel.name, sel.ancestors, sel.info.href, sel.info.alt, sel.info.hidden, sel.info.bgImage, s.editing, panel, busy?.element === sel.element ? busy : null, s.anchors.length, s.pages.length, s.path]);
+        return JSON.stringify([sel.element, structure.menuSlot(sel.element) !== null, canEditStructure(s.editSupport), sel.can, sel.kind, sel.name, sel.ancestors, sel.info.href, sel.info.alt, sel.info.hidden, sel.info.bgImage, s.editing, panel, busy?.element === sel.element ? busy : null, s.anchors.length, s.pages.length, s.path]);
     }
     function buttons() {
         return [...actionHost.querySelectorAll("button.tb-btn:not([disabled]):not([hidden])")];
@@ -445,28 +467,29 @@ export function createToolbar({ store, canvas, edits }) {
             typingBox = undefined;
             const wanted = pendingPanel;
             pendingPanel = null;
-            if (sel && wanted?.element === sel.element && panelApplies(wanted.panel, sel, false)) {
+            if (sel && wanted?.element === sel.element && panelApplies(wanted.panel, sel, false, s.editSupport)) {
                 store.dispatch({ type: "open_panel", panel: wanted.panel });
                 return;
             }
         }
         render(prev === null);
     });
+    structure.onUpdate(() => render());
     window.addEventListener("resize", () => render(true));
     // The phone view and zoom change the canvas width without a window resize.
     new ResizeObserver(() => render(true)).observe(canvas.surface);
     return {
         moveSection(direction) {
             const sel = selection(store.get());
-            if (sel?.can.includes(direction === "up" ? "u" : "d"))
-                void edits.moveSection(sel, direction);
+            if (sel?.can.includes("m") && canEditStructure(store.get().editSupport))
+                structure.moveSibling(direction === "up" ? -1 : 1);
         },
         activatePrimary() {
             const s = store.get();
             const sel = selection(s);
             if (!sel || s.editing.active)
                 return;
-            const first = actionsFor(sel).primary[0];
+            const first = actionsFor(sel, s.editSupport, structure.menuSlot(sel.element) !== null).primary[0];
             if (first)
                 run(first, sel);
             else

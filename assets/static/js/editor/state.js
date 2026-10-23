@@ -1,3 +1,39 @@
+import { STYLE_KEYS } from "../protocol.js";
+/** What servers accepted before they described their support: eleven style properties and no structure edits. */
+export const LEGACY_EDIT_SUPPORT = {
+    styleProperties: new Set([
+        "color", "background-color", "font-size", "font-weight", "text-align",
+        "padding-top", "padding-bottom", "padding-left", "padding-right", "margin-top", "margin-bottom",
+    ]),
+    structuralEditing: false,
+};
+/** Every property the layout panel sets. The panel only shows when the server accepts all of them. */
+export const LAYOUT_STYLE_KEYS = [
+    "width", "max-width", "height", "min-height",
+    "margin-top", "margin-right", "margin-bottom", "margin-left", "padding-top", "padding-right", "padding-bottom", "padding-left",
+    "display", "flex-direction", "flex-wrap", "justify-content", "align-items", "gap", "grid-template-columns",
+    "border-width", "border-style", "border-color", "border-radius", "opacity", "overflow",
+];
+/** Reads `features.editor`. A server that leaves it out is an older one. Unknown property names are ignored. */
+export function editSupportOf(data) {
+    const editor = data.features?.editor;
+    if (!editor)
+        return LEGACY_EDIT_SUPPORT;
+    const known = new Set(STYLE_KEYS);
+    return {
+        styleProperties: new Set(editor.style_properties.filter((key) => known.has(key))),
+        structuralEditing: editor.structural_editing,
+    };
+}
+export function supportsStyles(support, keys) {
+    return keys.every((key) => support.styleProperties.has(key));
+}
+export function unsupportedStyles(support, styles) {
+    return Object.keys(styles).filter((key) => !support.styleProperties.has(key));
+}
+export function canEditStructure(support) {
+    return support.structuralEditing;
+}
 export function initialState(data, now) {
     return {
         project: data.project,
@@ -8,6 +44,7 @@ export function initialState(data, now) {
         bootstrappedAt: now,
         imageBytes: data.limits.image_bytes,
         customDomains: data.features?.custom_domains ?? true,
+        editSupport: editSupportOf(data),
         history: data.history,
         draftChanged: data.draft_changed_since_publish,
         changes: [],
@@ -44,8 +81,11 @@ export function pagePath(pathname) {
         path += "index.html";
     return path;
 }
-/** Whether a surface panel makes sense for a selection. The page panel needs none. */
-export function panelApplies(panel, selection, editing) {
+/**
+ * Whether a surface panel makes sense for a selection. The page panel needs none.
+ * With `support`, a panel also needs the server to accept what it changes.
+ */
+export function panelApplies(panel, selection, editing, support) {
     if (panel === "page")
         return true;
     if (!selection)
@@ -53,6 +93,7 @@ export function panelApplies(panel, selection, editing) {
     const can = selection.can;
     switch (panel) {
         case "style": return can.includes("s") && can.includes("t");
+        case "layout": return can.includes("s") && (!support || supportsStyles(support, LAYOUT_STYLE_KEYS));
         case "background": return can.includes("s") || can.includes("b");
         case "link": return can.includes("l");
         case "text-link": return editing;
@@ -62,14 +103,19 @@ export function panelApplies(panel, selection, editing) {
 function selectionOf(focus) {
     return focus.kind === "selected" ? focus.selection : null;
 }
-/** Keeps an open panel on a new selection of the same kind when it applies, otherwise returns to the pages. */
-function retarget(surface, focus, editing) {
+/**
+ * Keeps an open panel when it still applies: on the same element even if its kind changed, or on a new
+ * selection of the same kind. Otherwise closes it.
+ */
+function retarget(surface, focus, editing, support) {
     if (surface.kind !== "panel" || surface.panel === "page")
         return surface;
     const selection = selectionOf(focus);
-    if (!selection || selection.kind !== surface.subject || !panelApplies(surface.panel, selection, editing))
+    if (!selection || !panelApplies(surface.panel, selection, editing, support))
         return { kind: "none" };
-    return selection.element === surface.element ? surface : { ...surface, element: selection.element, replaced: false };
+    if (selection.element === surface.element)
+        return selection.kind === surface.subject ? surface : { ...surface, subject: selection.kind };
+    return selection.kind === surface.subject ? { ...surface, element: selection.element, replaced: false } : { kind: "none" };
 }
 function logChange(changes, log, previous, next, page, element = null) {
     switch (log) {
@@ -85,9 +131,12 @@ function logChange(changes, log, previous, next, page, element = null) {
 }
 export function reduce(state, action) {
     switch (action.type) {
-        case "bootstrapped":
+        case "bootstrapped": {
+            const editSupport = editSupportOf(action.data);
             return {
                 ...state,
+                editSupport,
+                surface: retarget(state.surface, state.focus, state.editing.active, editSupport),
                 project: action.data.project,
                 pages: action.data.pages,
                 previewOrigin: action.data.preview_origin,
@@ -97,28 +146,29 @@ export function reduce(state, action) {
                 changes: action.data.draft_changed_since_publish ? state.changes : [],
                 path: action.data.pages.some((p) => p.path === state.path) ? state.path : "index.html",
             };
+        }
         case "mode":
-            return { ...state, mode: action.mode, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false) };
+            return { ...state, mode: action.mode, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false, state.editSupport) };
         case "device":
             return { ...state, device: action.device };
         case "zoom":
             return { ...state, zoom: action.zoom };
         case "open_page":
-            return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, outline: { heading: null, images: [] }, surface: retarget(state.surface, { kind: "none" }, false) };
+            return { ...state, path: action.path, focus: { kind: "none" }, canvasLoading: true, scrollY: 0, outline: { heading: null, images: [] }, surface: retarget(state.surface, { kind: "none" }, false, state.editSupport) };
         case "canvas_loading":
-            return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false } };
+            return { ...state, canvasLoading: true, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false, state.editSupport) };
         case "page_ready":
             if (action.path !== state.path)
                 return state;
             return { ...state, canvasLoading: false, canvasOrigin: action.origin, pageMeta: { title: action.title, description: action.description } };
         case "selected": {
             const focus = { kind: "selected", selection: action.selection };
-            return { ...state, focus, obstacles: action.obstacles ?? [], surface: retarget(state.surface, focus, state.editing.active) };
+            return { ...state, focus, obstacles: action.obstacles ?? [], surface: retarget(state.surface, focus, state.editing.active, state.editSupport) };
         }
         case "blocked":
-            return { ...state, focus: { kind: "blocked", rect: action.rect, around: action.around }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false) };
+            return { ...state, focus: { kind: "blocked", rect: action.rect, around: action.around }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false, state.editSupport) };
         case "deselected":
-            return { ...state, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false) };
+            return { ...state, focus: { kind: "none" }, editing: { ...state.editing, active: false }, surface: retarget(state.surface, { kind: "none" }, false, state.editSupport) };
         case "viewport": {
             const { focus } = state;
             const next = action.rect === null || focus.kind === "none"
@@ -144,7 +194,7 @@ export function reduce(state, action) {
         }
         case "open_panel": {
             const selection = selectionOf(state.focus);
-            if (!panelApplies(action.panel, selection, state.editing.active))
+            if (!panelApplies(action.panel, selection, state.editing.active, state.editSupport))
                 return state;
             const page = action.panel === "page";
             return { ...state, surface: { kind: "panel", panel: action.panel, element: page ? null : (selection?.element ?? null), subject: page ? null : (selection?.kind ?? null), replaced: action.replaced ?? false } };
@@ -239,7 +289,7 @@ export function statusLine(s, savingVisible) {
     const problem = s.saves.problem;
     const alone = (tone, save) => ({ tone, text: save, save, publish: null, mark: "problem" });
     if (problem?.kind === "conflict")
-        return alone("error", "Changed in another tab");
+        return alone("error", "Reload to check changes");
     if (problem?.kind === "error")
         return alone("error", "Couldn't save");
     if (problem?.kind === "offline")

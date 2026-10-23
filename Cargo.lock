@@ -3270,39 +3270,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rotulo"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axum",
- "axum-extra",
- "axum-test",
- "base64 0.22.1",
- "chrono",
- "cookie",
- "ego-tree",
- "flate2",
- "hmac 0.12.1",
- "html5ever",
- "loco-rs",
- "migration",
- "percent-encoding",
- "rand 0.8.8",
- "reqwest",
- "scraper",
- "sea-orm",
- "serde",
- "serde_json",
- "serial_test",
- "sha2 0.10.9",
- "thiserror 2.0.21",
- "tokio",
- "tower",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "parking"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4002,6 +3969,40 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rotulo"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "axum",
+ "axum-extra",
+ "axum-test",
+ "base64 0.22.1",
+ "chrono",
+ "cookie",
+ "cssparser",
+ "ego-tree",
+ "flate2",
+ "hmac 0.12.1",
+ "html5ever",
+ "loco-rs",
+ "migration",
+ "percent-encoding",
+ "rand 0.8.8",
+ "reqwest",
+ "scraper",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "sha2 0.10.9",
+ "thiserror 2.0.21",
+ "tokio",
+ "tower",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

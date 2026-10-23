@@ -40,8 +40,15 @@ pub struct MissingReference {
     pub page: String,
     pub url: String,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Editability {
+    StaticHtml,
+    Limited,
+}
 #[derive(Debug, Serialize)]
 pub struct ImportReport {
+    pub editability: Editability,
     pub pages: Vec<String>,
     pub skipped: Vec<SkippedFile>,
     pub missing: Vec<MissingReference>,
@@ -77,6 +84,8 @@ pub enum ImportError {
     ChooseFolder(Vec<String>),
     #[error("This ZIP contains source code rather than a finished website. Export the built static website files and try again.")]
     SourceOnly,
+    #[error("This website restores its pages from application code after loading. Visual edits would be overwritten. Export plain static HTML without framework hydration and try again.")]
+    HydratedApplication,
     #[error("We couldn't find a website in this ZIP. It needs an index.html file at the top level or in a dist or build folder.")]
     NoWebsite,
     #[error(
@@ -110,6 +119,7 @@ impl Drop for Created {
 pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, ImportError> {
     let mut archive = zip::Archive::open(request.archive, request.limits)?;
     let mut report = ImportReport {
+        editability: Editability::StaticHtml,
         pages: Vec::new(),
         skipped: Vec::new(),
         missing: Vec::new(),
@@ -137,6 +147,13 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
             Ok(kind) if !entry.directory => kind,
             Ok(_) => continue,
             Err(reason) => {
+                if reason == policy::Skip::ServerCode
+                    && [".js", ".mjs", ".cjs"]
+                        .iter()
+                        .any(|ext| path.to_ascii_lowercase().ends_with(ext))
+                {
+                    return Err(ImportError::SourceOnly);
+                }
                 if entry.directory && reason == policy::Skip::Unsupported {
                     continue;
                 }
@@ -179,12 +196,16 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
                 document
                     .validate_depth()
                     .map_err(|_| ImportError::NestedTooDeeply(path.clone()))?;
+                if detect::requires_hydration(text) {
+                    return Err(ImportError::HydratedApplication);
+                }
                 document.assign_ids();
                 if path == "index.html" {
                     title = document.title();
-                    if document.is_built_by_script() {
-                        report.warnings.push("This website builds its pages in the browser with JavaScript. It will publish and work, but Rótulo can only edit text and images that are written in its HTML files.".to_owned());
-                    }
+                }
+                if document.is_built_by_script() && report.editability != Editability::Limited {
+                    report.editability = Editability::Limited;
+                    report.warnings.push("This website builds its pages in the browser with JavaScript. You can preview and publish these files, but only content written in HTML can be edited. Some page addresses may need hosting rules that Rótulo does not provide.".to_owned());
                 }
                 let html = document.serialize();
                 // Serialization is bounded too: assigning IDs can enlarge the page.
@@ -244,6 +265,12 @@ pub fn import_archive(request: ImportRequest<'_>) -> Result<ImportedSite, Import
         .is_none_or(|sum| sum > request.limits.content_bytes)
     {
         return Err(zip::total_too_big(request.limits));
+    }
+    if files
+        .iter()
+        .any(|file| file.kind == policy::FileKind::SourceMap)
+    {
+        report.warnings.push("This ZIP includes source maps, which can expose original source code and comments to visitors. Export without source maps if you do not intend to make that source public.".to_owned());
     }
     let paths: BTreeSet<_> = files.iter().map(|f| f.path.as_str()).collect();
     let mut fatal = Vec::new();

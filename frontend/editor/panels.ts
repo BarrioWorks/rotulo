@@ -1,11 +1,11 @@
-import { isSafeHref, isStyleValue, type StyleChanges, type StyleKey } from "../protocol.js";
+import { GRID_EQUAL, GRID_FIT, isSafeHref, isStyleValue, type StyleChanges, type StyleKey, type StyleSnapshot } from "../protocol.js";
 import { announce, h, icon, toast } from "../ui.js";
 import { api } from "./api.js";
 import type { Canvas } from "./canvas.js";
 import type { Edits, Fit } from "./edits.js";
 import { pageLabel } from "./pages.js";
-import { editRecovery, type Change } from "./saves.js";
-import { selection, type Panel, type Selection, type Store } from "./state.js";
+import { type Change } from "./saves.js";
+import { LAYOUT_STYLE_KEYS, selection, type Panel, type Selection, type Store } from "./state.js";
 import { checkEmail, checkPhone, checkWeb, classifyHref, relativeHref, type LinkCheck } from "./links.js";
 
 export interface PanelContext {
@@ -21,7 +21,8 @@ export interface PanelContext {
 
 export const PANEL_TITLES: Record<Panel, string> = {
   style: "Text style",
-  background: "Background and spacing",
+  layout: "Size and layout",
+  background: "Background",
   link: "Link",
   "text-link": "Link the selected words",
   image: "Image",
@@ -147,12 +148,225 @@ function stylePanel(ctx: PanelContext, sel: Selection): HTMLElement {
     h("div", { class: "rail-actions" }, reset));
 }
 
-/* Background and spacing */
+/* Size and layout */
+
+const SIDES = ["top", "right", "bottom", "left"] as const;
+const GAPS = ["0", "4px", "8px", "12px", "16px", "24px", "32px", "48px", "64px"];
+const RADII = ["0", "2px", "4px", "8px", "12px", "16px", "24px", "32px", "999px"];
+const BORDERS = ["0", "1px", "2px", "3px", "4px", "6px", "8px"];
+
+type Arrangement = "block" | "row" | "column" | "grid";
+const ARRANGEMENTS: [Arrangement, string, StyleChanges][] = [
+  ["block", "Stack", { display: "block", "flex-direction": null, "flex-wrap": null, "justify-content": null, "align-items": null, "grid-template-columns": null, gap: null }],
+  ["row", "Row", { display: "flex", "flex-direction": "row", "grid-template-columns": null }],
+  ["column", "Column", { display: "flex", "flex-direction": "column", "grid-template-columns": null }],
+  ["grid", "Grid", { display: "grid", "flex-direction": null, "flex-wrap": null, "justify-content": null, "grid-template-columns": GRID_EQUAL(2) }],
+];
+
+export function arrangementOf(st: StyleSnapshot): Arrangement {
+  const display = st.display ?? "";
+  if (display.endsWith("grid")) return "grid";
+  if (display.endsWith("flex")) return (st["flex-direction"] ?? "row").startsWith("column") ? "column" : "row";
+  return "block";
+}
+
+const GRID_CHOICES: [string, string][] = [
+  ...[1, 2, 3, 4, 5, 6].map((n): [string, string] => [GRID_EQUAL(n), `${n} equal column${n === 1 ? "" : "s"}`]),
+  ...[160, 240, 320].map((px): [string, string] => [GRID_FIT(px), `As many as fit, at least ${px} px wide`]),
+];
+const JUSTIFY: [string, string][] = [["flex-start", "Start"], ["center", "Centre"], ["flex-end", "End"], ["space-between", "Spread out"], ["space-evenly", "Even spacing"]];
+const ALIGN_ITEMS: [string, string][] = [["stretch", "Stretch to fill"], ["flex-start", "Start"], ["center", "Centre"], ["flex-end", "End"], ["baseline", "Text baseline"]];
+
+/** Reads what the owner typed: a bare number is pixels, `auto` and the other keywords pass through. */
+export function parseDimension(key: StyleKey, typed: string): string | null | undefined {
+  const text = typed.trim().toLowerCase().replace(/\s+/g, "");
+  if (text === "") return null;
+  const value = /^\d+(?:\.\d+)?$/.test(text) ? (text === "0" ? "0" : `${text}px`) : text;
+  return isStyleValue(key, value) ? value : undefined;
+}
+
+function choice(id: string, label: string, options: [string, string][], current: string | undefined, onPick: (value: string | null) => void): HTMLElement {
+  const select = h("select", { class: "select input-sm", attrs: { id, "data-key": id } },
+    h("option", { text: "Original", attrs: { value: "" } }),
+    ...options.map(([value, text]) => h("option", { text, attrs: { value } })));
+  select.value = options.some(([v]) => v === current) ? (current as string) : "";
+  select.addEventListener("change", () => onPick(select.value || null));
+  return h("label", { class: "field", attrs: { for: id } }, h("span", { class: "label", text: label }), select);
+}
+
+const PRESET_NAMES: Record<string, string> = {
+  auto: "Automatic", "fit-content": "Fit the content", "100%": "Full width of its space", none: "No limit",
+  "50vh": "Half the screen height", "100vh": "The full screen height",
+};
+
+/** A typed size with quick presets. Shows the value set on this part, or what the page computes now. */
+function dimension(ctx: PanelContext, sel: Selection, key: StyleKey, label: string, presets: [string, string][], hint: string): HTMLElement {
+  const own = sel.info.own?.[key];
+  const now = sel.info.styles[key];
+  const id = `rail-${key}`;
+  const input = h("input", { class: "input input-sm tnum", attrs: { id, type: "text", inputmode: "decimal", autocomplete: "off", spellcheck: "false", "data-key": key, placeholder: now ? `Now ${now === "none" ? "no limit" : px(now)}` : "Original" } });
+  input.value = own ?? "";
+  const error = h("span", { class: "hint field-error", attrs: { id: `${id}-error`, "aria-live": "polite" } });
+  // Enter and the change on leaving the field both commit; only the first may save.
+  let committed = own ?? null;
+  const commit = () => {
+    const value = parseDimension(key, input.value);
+    if (value === undefined) {
+      input.setAttribute("aria-invalid", "true");
+      input.setAttribute("aria-describedby", error.id);
+      error.textContent = hint;
+      return;
+    }
+    input.removeAttribute("aria-invalid");
+    error.textContent = "";
+    input.value = value ?? "";
+    if (value === committed) return;
+    committed = value;
+    void ctx.edits.setStyle(sel, { [key]: value });
+  };
+  input.addEventListener("change", commit);
+  input.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); commit(); } });
+  const quick = h("div", { class: "seg seg-fill", attrs: { role: "group", "aria-label": `${label} presets` } },
+    ...presets.map(([value, text]) => {
+      const b = h("button", { text, attrs: { type: "button", "data-key": `${key}:${value}`, "aria-pressed": String(own === value), "aria-label": `${label}: ${PRESET_NAMES[value] ?? text}`, "data-tip": PRESET_NAMES[value] ?? value } });
+      b.addEventListener("click", () => void ctx.edits.setStyle(sel, { [key]: value }));
+      return b;
+    }));
+  const reset = h("button", { class: "link-btn rail-reset", text: "Original", attrs: { type: "button", "data-key": `${key}:reset`, "aria-label": `${label}: back to the original` } });
+  reset.hidden = own === undefined;
+  reset.addEventListener("click", () => void ctx.edits.setStyle(sel, { [key]: null }));
+  return h("div", { class: "field" },
+    h("div", { class: "label-row" }, h("label", { class: "label", text: label, attrs: { for: id } }), reset),
+    h("div", { class: "dimension" }, input, quick), error);
+}
+
+/** Remembers which advanced sections are open, since the panel is rebuilt after every change. */
+const openSections = new Set<string>();
+
+function more(key: string, title: string, ...children: (HTMLElement | null)[]): HTMLElement {
+  const details = h("details", { class: "disclosure rail-more", attrs: { "data-section": key } },
+    h("summary", { attrs: { "data-key": `more:${key}` } }, icon("chevron-right", "icon-sm"), h("span", { text: title })),
+    h("div", { class: "rail-more-body" }, ...children));
+  (details as HTMLDetailsElement).open = openSections.has(key);
+  details.addEventListener("toggle", () => {
+    if ((details as HTMLDetailsElement).open) openSections.add(key);
+    else openSections.delete(key);
+  });
+  return details;
+}
+
+function sideInputs(ctx: PanelContext, sel: Selection, prefix: "margin" | "padding", label: string): HTMLElement {
+  return h("fieldset", { class: "sides" }, h("legend", { class: "label", text: label }),
+    ...SIDES.map((side) => {
+      const key = `${prefix}-${side}` as StyleKey;
+      const id = `rail-${key}`;
+      const input = h("input", { class: "input input-sm tnum", attrs: { id, type: "text", inputmode: "decimal", autocomplete: "off", "data-key": key, placeholder: px(sel.info.styles[key]) } });
+      input.value = sel.info.own?.[key] ?? "";
+      input.addEventListener("change", () => {
+        const value = parseDimension(key, input.value);
+        if (value === undefined) { input.setAttribute("aria-invalid", "true"); return; }
+        input.removeAttribute("aria-invalid");
+        void ctx.edits.setStyle(sel, { [key]: value });
+      });
+      return h("label", { class: "side", attrs: { for: id } }, h("span", { class: "side-name", text: side[0]?.toUpperCase() + side.slice(1) }), input);
+    }));
+}
+
+function layoutPanel(ctx: PanelContext, sel: Selection): HTMLElement {
+  const st = sel.info.styles;
+  const set = (styles: StyleChanges) => void ctx.edits.setStyle(sel, styles);
+  const norm = (v: string | undefined) => (v === "0px" ? "0" : v);
+  const lengthHint = "Use a number with px, %, rem or em, or one of the buttons.";
+  const centred = sel.info.own?.["margin-left"] === "auto" && sel.info.own["margin-right"] === "auto";
+  const centre = h("button", { class: "btn btn-secondary btn-sm", text: centred ? "Stop centring" : "Centre in its space", attrs: { type: "button", "data-key": "centre", "aria-pressed": String(centred) } });
+  centre.addEventListener("click", () => set(centred ? { "margin-left": null, "margin-right": null } : { "margin-left": "auto", "margin-right": "auto" }));
+  const padding = st["padding-top"] === st["padding-bottom"] ? st["padding-top"] : undefined;
+  const body = h("div", { class: "rail-panel-body" },
+    h("p", { class: "hint", text: "Changes here apply on every screen size." }),
+    group("Size",
+      dimension(ctx, sel, "width", "Width", [["auto", "Auto"], ["fit-content", "Fit"], ["100%", "Full"]], lengthHint),
+      dimension(ctx, sel, "max-width", "Maximum width", [["none", "None"], ["640px", "640"], ["960px", "960"], ["1200px", "1200"]], lengthHint),
+      dimension(ctx, sel, "height", "Height", [["auto", "Auto"], ["50vh", "Half"], ["100vh", "Screen"]], "Use a number with px, %, vh, rem or em, or one of the buttons."),
+      h("div", { class: "rail-actions" }, centre),
+      more("size", "Minimum height", dimension(ctx, sel, "min-height", "Minimum height", [["240px", "240"], ["480px", "480"], ["100vh", "Screen"]], "Use a number with px, %, vh, rem or em."))),
+    group("Spacing",
+      stepper("space-above", "Space above", px(norm(st["margin-top"])), (d) => set({ "margin-top": step(SPACES, st["margin-top"], d) }), () => set({ "margin-top": null })),
+      stepper("space-below", "Space below", px(norm(st["margin-bottom"])), (d) => set({ "margin-bottom": step(SPACES, st["margin-bottom"], d) }), () => set({ "margin-bottom": null })),
+      stepper("space-inside", "Space inside", px(norm(padding)), (d) => {
+        const v = step(SPACES, padding, d);
+        set({ "padding-top": v, "padding-bottom": v, "padding-left": v, "padding-right": v });
+      }, () => set({ "padding-top": null, "padding-bottom": null, "padding-left": null, "padding-right": null })),
+      more("sides", "Each side", sideInputs(ctx, sel, "margin", "Space outside"), sideInputs(ctx, sel, "padding", "Space inside"))));
+  if (sel.can.includes("n")) body.append(arrangementGroup(ctx, sel));
+  body.append(group("Border and corners",
+    stepper("corners", "Rounded corners", px(norm(st["border-radius"])), (d) => set({ "border-radius": step(RADII, st["border-radius"], d) }), () => set({ "border-radius": null })),
+    more("border", "Border, see-through and clipping",
+      stepper("border", "Border width", px(norm(st["border-width"])), (d) => {
+        const width = step(BORDERS, st["border-width"], d);
+        set({ "border-width": width, "border-style": width === "0" ? null : st["border-style"] && st["border-style"] !== "none" ? st["border-style"] : "solid" });
+      }, () => set({ "border-width": null, "border-style": null, "border-color": null })),
+      choice("rail-border-style", "Border line", [["solid", "Solid"], ["dashed", "Dashed"], ["dotted", "Dotted"], ["double", "Double"], ["none", "None"]], st["border-style"], (v) => set({ "border-style": v })),
+      field("Border colour", swatches(ctx, "border", st["border-color"], (v) => set({ "border-color": v }))),
+      opacity(ctx, sel),
+      choice("rail-overflow", "Content that doesn't fit", [["visible", "Show it"], ["hidden", "Clip it"], ["auto", "Scroll when needed"]], st.overflow, (v) => set({ overflow: v })))));
+  const reset = h("button", { class: "btn btn-ghost btn-sm", text: "Reset size and layout", attrs: { type: "button", "data-key": "reset-layout" } });
+  reset.addEventListener("click", () => set(Object.fromEntries(LAYOUT_STYLE_KEYS.map((k) => [k, null]))));
+  body.append(h("div", { class: "rail-actions" }, reset));
+  return body;
+}
+
+function arrangementGroup(ctx: PanelContext, sel: Selection): HTMLElement {
+  const st = sel.info.styles;
+  const set = (styles: StyleChanges) => void ctx.edits.setStyle(sel, styles);
+  const current = arrangementOf(st);
+  const seg = h("div", { class: "seg seg-fill", attrs: { role: "group", "aria-label": "Arrange the parts inside" } },
+    ...ARRANGEMENTS.map(([id, text, styles]) => {
+      const b = h("button", { text, attrs: { type: "button", "data-key": `arrange:${id}`, "aria-pressed": String(current === id) } });
+      b.addEventListener("click", () => set(styles));
+      return b;
+    }));
+  const gap = stepper("gap", "Space between", px(st.gap === "normal" ? "0" : st.gap), (d) => set({ gap: step(GAPS, st.gap === "normal" ? "0" : st.gap, d) }), () => set({ gap: null }));
+  const children: HTMLElement[] = [seg];
+  if (current === "grid") {
+    const own = sel.info.own?.["grid-template-columns"];
+    const tracks = (st["grid-template-columns"] ?? "").split(/\s+/).filter((t) => t && t !== "none").length;
+    children.push(choice("rail-grid", "Columns", GRID_CHOICES, own, (v) => set({ "grid-template-columns": v })));
+    if (!own && tracks > 0) children.push(h("p", { class: "hint", text: `Now ${tracks} column${tracks === 1 ? "" : "s"}, set by the website.` }));
+    children.push(gap);
+  } else if (current !== "block") {
+    const wrap = h("input", { attrs: { type: "checkbox", "data-key": "wrap" } });
+    wrap.checked = st["flex-wrap"] === "wrap";
+    wrap.addEventListener("change", () => set({ "flex-wrap": wrap.checked ? "wrap" : "nowrap" }));
+    children.push(
+      choice("rail-justify", current === "row" ? "Across" : "Down", JUSTIFY, st["justify-content"], (v) => set({ "justify-content": v })),
+      choice("rail-align", current === "row" ? "Up and down" : "Side to side", ALIGN_ITEMS, st["align-items"], (v) => set({ "align-items": v })),
+      gap,
+      h("label", { class: "switch" }, wrap, h("span", { class: "switch-track", attrs: { "aria-hidden": "true" } }), h("span", { text: "Wrap onto new lines when there's no room" })));
+  }
+  return group("Arrangement", ...children);
+}
+
+function opacity(ctx: PanelContext, sel: Selection): HTMLElement {
+  const now = Math.round(parseFloat(sel.info.styles.opacity ?? "1") * 100);
+  const range = h("input", { class: "range", attrs: { id: "rail-opacity", type: "range", min: "0", max: "100", step: "5", "data-key": "opacity", "aria-valuetext": `${now}% visible` } });
+  range.value = String(Number.isFinite(now) ? now : 100);
+  const out = h("output", { class: "tnum", text: `${range.value}%`, attrs: { for: "rail-opacity" } });
+  const value = () => { const n = Number(range.value); return n >= 100 ? "1" : n === 0 ? "0" : String(n / 100); };
+  range.addEventListener("input", () => {
+    out.textContent = `${range.value}%`;
+    range.setAttribute("aria-valuetext", `${range.value}% visible`);
+    ctx.canvas.send({ type: "preview_style", element: sel.element, styles: { opacity: value() } });
+  });
+  range.addEventListener("change", () => void ctx.edits.setStyle(sel, { opacity: value() }));
+  return h("div", { class: "field" },
+    h("div", { class: "label-row" }, h("label", { class: "label", text: "Visible", attrs: { for: "rail-opacity" } }), out), range);
+}
+
+/* Background */
 
 function backgroundPanel(ctx: PanelContext, sel: Selection): HTMLElement {
   const st = sel.info.styles;
   const set = (styles: StyleChanges) => void ctx.edits.setStyle(sel, styles);
-  const norm = (v: string | undefined) => (v === "0px" ? "0" : v);
   const body = h("div", { class: "rail-panel-body" });
   if (sel.can.includes("s")) {
     body.append(group("Background colour", swatches(ctx, "bg", st["background-color"], (v) => set({ "background-color": v }))));
@@ -169,16 +383,6 @@ function backgroundPanel(ctx: PanelContext, sel: Selection): HTMLElement {
     body.append(group("Background photo",
       h("p", { class: "hint", text: sel.info.bgImage ? "This part shows a photo behind its content." : "Show a photo behind this part." }),
       h("div", { class: "rail-actions" }, replace)));
-  }
-  if (sel.can.includes("s")) {
-    const padding = st["padding-top"] === st["padding-bottom"] ? st["padding-top"] : undefined;
-    body.append(group("Spacing",
-      stepper("space-above", "Space above", px(norm(st["margin-top"])), (d) => set({ "margin-top": step(SPACES, st["margin-top"], d) }), () => set({ "margin-top": null })),
-      stepper("space-below", "Space below", px(norm(st["margin-bottom"])), (d) => set({ "margin-bottom": step(SPACES, st["margin-bottom"], d) }), () => set({ "margin-bottom": null })),
-      stepper("space-inside", "Space inside", px(norm(padding)), (d) => {
-        const v = step(SPACES, padding, d);
-        set({ "padding-top": v, "padding-bottom": v, "padding-left": v, "padding-right": v });
-      }, () => set({ "padding-top": null, "padding-bottom": null, "padding-left": null, "padding-right": null }))));
   }
   return body;
 }
@@ -327,7 +531,6 @@ function linkPanel(ctx: PanelContext, sel: Selection): HTMLElement {
       canvas.send({ type: "preview_link", element: sel.element, href, newTab: kindIsWeb(href) && newTab });
       void change((base) => api.edit(store.get().project.pid, base, page, { op: "set_link", element: sel.element, href, new_tab: kindIsWeb(href) && newTab }), {
         page,
-        recover: editRecovery,
         toastRejection: false,
         onRejected: (error) => {
           showError(error.message);
@@ -502,7 +705,7 @@ function pagePanel(ctx: PanelContext): HTMLElement {
     const titleValue = title.value.trim();
     const descriptionValue = description.value.trim();
     const page = ctx.store.get().path;
-    const result = await ctx.change((base) => api.edit(ctx.store.get().project.pid, base, page, { op: "set_page_meta", title: titleValue, description: descriptionValue }), { page, recover: editRecovery });
+    const result = await ctx.change((base) => api.edit(ctx.store.get().project.pid, base, page, { op: "set_page_meta", title: titleValue, description: descriptionValue }), { page });
     if (result) {
       ctx.store.dispatch({ type: "page_meta", title: titleValue, description: descriptionValue });
       announce("Page settings saved");
@@ -519,6 +722,7 @@ export function renderPanel(panel: Panel, ctx: PanelContext): HTMLElement {
   if (!sel) return h("div", { class: "rail-panel-body" }, field("Nothing selected", h("p", { class: "hint", text: "Click a part of the page." })));
   switch (panel) {
     case "style": return stylePanel(ctx, sel);
+    case "layout": return layoutPanel(ctx, sel);
     case "background": return backgroundPanel(ctx, sel);
     case "link": return linkPanel(ctx, sel);
     case "image": return imagePanel(ctx, sel);

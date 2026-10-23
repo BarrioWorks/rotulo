@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { inspectZip as inspectArchive, classifyIndex, zipDirectory, SOURCE_ONLY, editorDestination, outcome } from "../../assets/static/js/import.js";
+import { inspectZip as inspectArchive, classifyIndex, zipDirectory, SOURCE_ONLY, editorDestination, outcome, summary } from "../../assets/static/js/import.js";
 
 // Small stored ZIPs exercise the actual central and local headers, without a ZIP library.
 function zip(files, comment = "") {
@@ -77,7 +77,7 @@ test("empty roots with module scripts warn but allow continuation", async () => 
   const check = await inspectZip(zip([["build/index.html", shell]]));
   assert.equal(check.kind, "warning");
   assert.equal((await inspectZip(zip([["index.html", '<div id=app></div><script type=module src=app.js></script>']]))).kind, "warning");
-  assert.match(check.message, /only edit text and images.*HTML files/);
+  assert.match(check.message, /only content written in HTML can be edited/);
   assert.deepEqual(await inspectZip(zip([["index.html", "<!-- " + shell + " --><h1>Real page</h1>"]])), { kind: "ready" });
 });
 
@@ -158,4 +158,12 @@ test("64 KB hostile HTML reaches summary classification without scanning markup"
     assert.deepEqual(result, { kind: "ready" });
     assert.ok(performance.now() - start < 2000, "preflight must finish within 2 seconds");
   }
+});
+
+
+test("limited imports never claim generated content is ready to edit or auto-open", () => {
+  const report = { editability: "limited", pages: ["index.html"], warnings: [], skipped: [], missing: [] };
+  assert.match(summary(report), /limited visual editing/);
+  assert.doesNotMatch(summary(report), /ready to edit/);
+  assert.equal(editorDestination({ editor_url: "/projects/p1", report }), null);
 });

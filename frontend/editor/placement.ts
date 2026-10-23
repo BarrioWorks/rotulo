@@ -102,7 +102,7 @@ export function placeToolbar({ target, canvas, size, obstructions, obstacles = [
   return { kind: "placed", x, y: Math.max(top, Math.min(bottom, above)), candidate: "above-start" };
 }
 
-/** Candidate regions exclude both the caption and selection, including when the panel flips. */
+/** Prefer clear space; overlay a large selection when avoiding it would hide the controls. */
 export function placePanel({ caption, selection, canvas, size, gap = 8 }: { caption: Box; selection: Box; canvas: Box; size: { width: number; height: number }; gap?: number }): Box {
   const inset = 8;
   const left = canvas.x + inset;
@@ -125,6 +125,11 @@ export function placePanel({ caption, selection, canvas, size, gap = 8 }: { capt
   ].filter((region) => region.width >= width);
   const room = [...vertical, ...sides].find((region) => region.height >= size.height)
     ?? [...vertical, ...sides].reduce((best, region) => region.height > best.height ? region : best, above);
+  const availableHeight = Math.max(0, bottom - top);
+  const usableHeight = Math.min(240, size.height, availableHeight);
+  if (room.height < usableHeight) {
+    return { x: right - width, y: top, width, height: Math.min(size.height, availableHeight) };
+  }
   const height = Math.min(size.height, room.height);
   const y = room === above ? aboveEnd - height : room === below ? belowStart
     : Math.max(top, Math.min(caption.y, bottom - height));

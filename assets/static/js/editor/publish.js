@@ -124,6 +124,10 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         if (publishing)
             return;
         publishing = true;
+        if (!await canvas.finishText()) {
+            publishing = false;
+            return;
+        }
         publishError = null;
         publicationFeedback("Publishing…");
         renderAll();
@@ -176,7 +180,7 @@ export function createPublishing({ store, canvas, saver, afterRestore }) {
         else if (problem?.kind === "conflict") {
             const reload = h("button", { class: "link-btn", text: "Reload", attrs: { type: "button" } });
             reload.addEventListener("click", () => window.location.reload());
-            out.push(h("div", { class: "alert alert-error", attrs: { role: "alert" } }, icon("alert", "icon-sm"), h("span", { class: "grow", text: "This website was changed in another tab. Reload to see the latest version. " }), reload));
+            out.push(h("div", { class: "alert alert-error", attrs: { role: "alert" } }, icon("alert", "icon-sm"), h("span", { class: "grow", text: "This tab could not confirm its last save. Reload to check your changes. " }), reload));
         }
         const title = (text) => h("h2", { class: "pub-title", text, attrs: where === "popover" ? { id: "ed-publish-title", tabindex: "-1" } : {} });
         const liveLine = live ? h("p", { class: "pub-meta", text: `Visitors see version ${live.number}, published ${dateTime(live.created_at).replace(/^Today/, "today").replace(/^Yesterday/, "yesterday")}.` }) : null;

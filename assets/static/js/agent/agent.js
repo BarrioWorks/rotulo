@@ -4,7 +4,9 @@
  * The server prepends `const ROTULO_APP_ORIGIN = "...";` to this file.
  */
 import { OVERLAY } from "../overlay-theme.js";
-import { ANCHOR_ID, MAX_OBSTACLES, MAX_OUTLINE_IMAGES, STYLE_KEYS, envelope, isSafeHref, parseEditorMessage, } from "../protocol.js";
+import { ANCHOR_ID, CAPABILITIES, MAX_OBSTACLES, MAX_OUTLINE_IMAGES, STYLE_KEYS, envelope, isSafeHref, parseEditorMessage, } from "../protocol.js";
+import { admits, contentOf, fitOf, flowOf, isNoop, lineFor, localFlow, nearEdge, slotAt, structureOf } from "./structure.js";
+import { mergeDeclarations } from "./style-merge.js";
 import { startSelection } from "./text-start.js";
 const appOrigin = typeof ROTULO_APP_ORIGIN === "string" ? ROTULO_APP_ORIGIN : "";
 const parentWindow = window.parent;
@@ -48,6 +50,11 @@ sheet.replaceSync(`
   .veil { position: fixed; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(22, 22, 26, 0.18) 0 6px, rgba(255, 255, 255, 0.18) 6px 12px); border: ${px("1px")} dashed ${O.muted}; }
   .veil[hidden] { display: none; }
   .badge { position: absolute; left: ${px("8px")}; display: inline-flex; align-items: center; height: ${px("24px")}; padding: 0 ${px("8px")}; border-radius: ${px("3px")}; background: ${O.badgeBg}; color: ${O.badgeInk}; font: 600 ${px("12px")}/${px("24px")} ${UI_FONT}; white-space: nowrap; }
+  .drop-box { border: ${px("1.5px")} solid ${O.accent}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}; }
+  .drop-box.inside { background: ${O.accentSoft}; }
+  .drop-box.invalid { border-style: dashed; border-color: ${O.muted}; }
+  .drop-line { position: fixed; pointer-events: none; border-radius: ${px("2px")}; background: ${O.accent}; box-shadow: 0 0 0 ${px("1px")} ${O.halo}; }
+  .drop-line[hidden] { display: none; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) {
     .hover, .select.pulse { animation: none; transition: none; }
@@ -55,6 +62,8 @@ sheet.replaceSync(`
   @media (forced-colors: active) {
     .select, .hover, .blocked-box { border-color: Highlight; box-shadow: none; forced-color-adjust: none; }
     .crop { border-color: Highlight; filter: none; }
+    .drop-line { background: Highlight; forced-color-adjust: none; }
+    .drop-box { border-color: Highlight; forced-color-adjust: none; }
   }
 `);
 shadow.adoptedStyleSheets = [sheet];
@@ -132,7 +141,10 @@ const blockedBox = div("ring blocked-box");
 const selectBox = div("ring select");
 for (const corner of ["tl", "tr", "bl", "br"])
     div(`crop ${corner}`, selectBox);
-for (const box of [hoverBox, blockedBox, selectBox])
+const dropBox = div("ring drop-box");
+const dropLine = div("drop-line");
+/** Drags the selected part, and the only way to start one by touch, so taps and scrolling stay as they are. */
+for (const box of [hoverBox, blockedBox, selectBox, dropBox, dropLine])
     box.hidden = true;
 let origin = { x: 0, y: 0 };
 /**
@@ -237,10 +249,12 @@ function redraw() {
     origin = { x: hostRect.left, y: hostRect.top };
     const active = mode === "edit";
     const bars = active ? obstructions() : [];
-    place(hoverBox, active && hovered !== selected && !editing ? hovered : null, 3 * k);
+    const dragging = drag?.phase === "dragging" ? drag : null;
+    place(hoverBox, active && hovered !== selected && !editing && !dragging ? hovered : null, 3 * k);
     hoverBox.classList.toggle("blocked", hovered !== null && !canOf(hovered));
     place(selectBox, active ? selected : null, 3 * k);
     selectBox.classList.toggle("editing", editing !== null);
+    drawDrop(dragging?.drop ?? null);
     place(blockedBox, active ? blocked : null, 2 * k);
     drawHiddenSections(bars);
     drawEditable();
@@ -354,7 +368,7 @@ function idOf(el) {
 }
 function canOf(el) {
     const can = el.getAttribute("data-ph-can") ?? "";
-    return /^[tilsbxudc]{0,9}$/.test(can) ? can : "";
+    return CAPABILITIES.test(can) ? can : "";
 }
 function editable(el) {
     return el instanceof HTMLElement && idOf(el) !== null && canOf(el) !== "";
@@ -476,6 +490,11 @@ function meaningful(text) {
     return /[\p{L}\p{N}]/u.test(text) ? text : "";
 }
 function nameOf(el, kind) {
+    const custom = words(el.getAttribute("data-ph-name"));
+    if (custom)
+        return custom;
+    if (el === document.body)
+        return "Page";
     if (kind === "image")
         return meaningful(words(el.getAttribute("alt")));
     if (kind === "section" || kind === "header" || kind === "footer" || kind === "menu" || kind === "box" || kind === "banner" || kind === "card") {
@@ -493,12 +512,13 @@ function rgbToHex(value) {
         return "transparent";
     return `#${[m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, "0")).join("")}`;
 }
-function styleSnapshot(el) {
-    const computed = getComputedStyle(el);
+function styleSnapshot(style, skipEmpty = false) {
     const out = {};
     for (const key of STYLE_KEYS) {
-        const raw = computed.getPropertyValue(key).trim();
-        out[key] = (key === "color" || key === "background-color" ? rgbToHex(raw) : raw).slice(0, 64);
+        const raw = style.getPropertyValue(key).trim();
+        if (skipEmpty && !raw)
+            continue;
+        out[key] = (key === "color" || key === "background-color" || key === "border-color" ? rgbToHex(raw) : raw).slice(0, 64);
     }
     return out;
 }
@@ -514,7 +534,8 @@ function info(el) {
         alt: img ? (img.getAttribute("alt") ?? "").slice(0, 1000) : null,
         hidden: el.getAttribute("data-ph-hidden") === "true",
         text: (el.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 200),
-        styles: styleSnapshot(el),
+        styles: styleSnapshot(getComputedStyle(el)),
+        own: styleSnapshot(el.style, true),
         bgImage: hasPhoto(el),
         image: img ? { naturalWidth: cap(img.naturalWidth), naturalHeight: cap(img.naturalHeight), width: cap(r.width), height: cap(r.height) } : null,
         anchorLinks: anchorLinksTo(el),
@@ -761,12 +782,11 @@ function format(command, href) {
 }
 /* Live previews of changes (the server applies the real change) */
 function previewStyle(el, styles) {
-    for (const [key, value] of Object.entries(styles)) {
-        if (value === null || value === undefined)
-            el.style.removeProperty(key);
-        else
-            el.style.setProperty(key, value);
-    }
+    const style = mergeDeclarations(el.getAttribute("style") ?? "", styles);
+    if (style)
+        el.setAttribute("style", style);
+    else
+        el.removeAttribute("style");
 }
 function sameOrigin(src) {
     try {
@@ -784,8 +804,28 @@ function refresh(el) {
     sendFacts();
     schedule();
 }
+/** Every message that changes what is selected or how the page behaves ends a drag first. */
+const ENDS_DRAG = new Set(["init", "mode", "select_relative", "select_element", "deselect", "start_text", "cancel_drag"]);
 function handle(message) {
+    if (ENDS_DRAG.has(message.type))
+        endDrag();
     switch (message.type) {
+        case "drag_start":
+            startDrag(message);
+            break;
+        case "drag_point":
+            pointDrag(message.drag, message.point);
+            break;
+        case "drag_end":
+            if (drag?.token === message.drag && drag.phase === "dragging") {
+                pointDrag(message.drag, message.point);
+                endDrag(message.request);
+            }
+            break;
+        case "drag_cancel":
+            if (drag?.token === message.drag)
+                endDrag();
+            break;
         case "init":
             lastViewport = "";
             setMode(message.mode);
@@ -801,6 +841,10 @@ function handle(message) {
                         reveal(el, false);
                 }
             }
+            sendStructure();
+            break;
+        case "request_structure":
+            sendStructure();
             break;
         case "show_editable":
             showingEditable = mode === "edit";
@@ -1004,7 +1048,7 @@ window.addEventListener("message", (event) => {
         handle(message);
 });
 document.addEventListener("pointerover", (event) => {
-    if (mode !== "edit" || isOurs(event) || editing)
+    if (mode !== "edit" || isOurs(event) || editing || drag)
         return;
     const target = asElement(event.target);
     if (!target)
@@ -1021,8 +1065,162 @@ document.addEventListener("mouseout", (event) => {
 });
 window.addEventListener("blur", () => {
     hovered = null;
+    endDrag();
     schedule();
 });
+/* Dragging the selected part. The page never changes during a drag: a drop only reports where
+   the part should go, and the moved part arrives with the page the app reloads after saving. */
+/** Edge bands in screen pixels for nesting and scrolling. */
+const NEST_EDGE = 24;
+const SCROLL_EDGE = 48;
+const SCROLL_STEP = 22;
+let drag = null;
+function movable(el) {
+    return el !== null && mode === "edit" && !editing && canOf(el).includes("m");
+}
+function startDrag(message) {
+    endDrag();
+    const el = byId(message.element);
+    if (movable(el))
+        drag = { phase: "pressed", token: message.drag, el, id: message.element };
+}
+function pointDrag(token, point) {
+    if (!drag || drag.token !== token)
+        return;
+    if (drag.phase === "pressed")
+        aim(beginDrag(drag, point));
+    else {
+        drag.point = point;
+        aim(drag);
+    }
+}
+function beginDrag(pressed, point) {
+    const dragging = {
+        phase: "dragging",
+        token: pressed.token,
+        el: pressed.el,
+        id: pressed.id,
+        point,
+        fit: fitOf(pressed.el),
+        drop: { kind: "none", container: null },
+        scrollFrame: 0,
+        parts: new Map(),
+    };
+    drag = dragging;
+    hovered = null;
+    return dragging;
+}
+/** Only drag_end supplies a request. All other paths discard the preview. */
+function endDrag(request = null) {
+    const current = drag;
+    if (!current)
+        return;
+    drag = null;
+    if (current.phase !== "dragging")
+        return;
+    cancelAnimationFrame(current.scrollFrame);
+    if (request && current.drop.kind === "move") {
+        post({ type: "move_element", request, element: current.id, target: current.drop.target, position: current.drop.position });
+    }
+    schedule();
+}
+function* tagsUp(el) {
+    for (let up = el; up && up !== document.documentElement; up = up.parentElement)
+        yield up.localName;
+}
+/** The nearest container that takes the dragged part: the site body, or a part the server lets hold others. */
+function containerOf(d, start) {
+    for (let el = start; el && el !== document.documentElement; el = el.parentElement) {
+        if ((el === document.body || (editable(el) && canOf(el).includes("n"))) && admits(contentOf(tagsUp(el)), d.fit))
+            return el;
+    }
+    return null;
+}
+/** A container's children in the page's tree: the visible editable parts whose nearest editable ancestor it is. */
+function partsIn(d, container) {
+    let parts = d.parts.get(container);
+    if (!parts) {
+        const parentOf = (el) => {
+            for (let up = el.parentElement; up; up = up.parentElement) {
+                if (up === document.body || editable(up))
+                    return up;
+            }
+            return null;
+        };
+        parts = [...container.querySelectorAll("[data-ph-id][data-ph-can]")]
+            .filter((el) => editable(el) && parentOf(el) === container && visible(el));
+        d.parts.set(container, parts);
+    }
+    return parts;
+}
+function dropAt(d) {
+    const vw = document.documentElement.clientWidth || innerWidth;
+    const p = { x: Math.min(Math.max(d.point.x, 1), vw - 1), y: Math.min(Math.max(d.point.y, 1), innerHeight - 1) };
+    const hit = document.elementsFromPoint(p.x, p.y).find((el) => el !== host && !d.el.contains(el));
+    let container = hit ? containerOf(d, hit) : null;
+    if (!container)
+        return { kind: "none", container: null };
+    // Near a container's edge the drop goes beside it, so a part can land between two sections.
+    for (let outer = containerOf(d, container.parentElement); outer; outer = containerOf(d, container.parentElement)) {
+        const parts = partsIn(d, outer);
+        const index = parts.findIndex((el) => el === container);
+        const rects = parts.map(rectOf);
+        const rect = rects[index];
+        if (!rect || !nearEdge(p, rect, localFlow(index, rects, flowOf(getComputedStyle(outer))).axis, NEST_EDGE * k))
+            break;
+        container = outer;
+    }
+    const parts = partsIn(d, container);
+    if (parts.length === 0) {
+        const target = container === document.body ? null : idOf(container);
+        return target ? { kind: "move", target, position: "inside", container, line: null } : { kind: "none", container };
+    }
+    const rects = parts.map(rectOf);
+    const slot = slotAt(p, rects, flowOf(getComputedStyle(container)));
+    const part = slot ? parts[slot.index] : undefined;
+    const rect = slot ? rects[slot.index] : undefined;
+    const target = part ? idOf(part) : null;
+    if (!slot || !rect || !target || isNoop(parts.indexOf(d.el), slot))
+        return { kind: "none", container };
+    return { kind: "move", target, position: slot.position, container, line: lineFor(slot, rect, 3 * k) };
+}
+function aim(d) {
+    d.drop = dropAt(d);
+    if (!d.scrollFrame)
+        d.scrollFrame = requestAnimationFrame(() => autoscroll(d));
+    schedule();
+}
+/** Scrolls while the pointer is near the top or bottom edge, faster the closer it gets, and keeps aiming as the page moves. */
+function autoscroll(d) {
+    d.scrollFrame = 0;
+    if (drag !== d)
+        return;
+    const band = SCROLL_EDGE * k;
+    const y = d.point.y;
+    const depth = y < band ? y - band : y > innerHeight - band ? y - (innerHeight - band) : 0;
+    if (depth === 0)
+        return;
+    const before = window.scrollY;
+    window.scrollBy({ top: Math.max(-1, Math.min(1, depth / band)) * SCROLL_STEP * k, behavior: "instant" });
+    if (window.scrollY === before)
+        return;
+    d.drop = dropAt(d);
+    schedule();
+    d.scrollFrame = requestAnimationFrame(() => autoscroll(d));
+}
+function drawDrop(drop) {
+    place(dropBox, drop?.container && drop.container !== document.body ? drop.container : null, 1 * k);
+    dropBox.classList.toggle("inside", drop?.kind === "move" && drop.position === "inside");
+    dropBox.classList.toggle("invalid", drop?.kind === "none");
+    const line = drop?.kind === "move" ? drop.line : null;
+    dropLine.hidden = !line;
+    if (!line)
+        return;
+    dropLine.style.left = `${line.x - origin.x}px`;
+    dropLine.style.top = `${line.y - origin.y}px`;
+    dropLine.style.width = `${line.width}px`;
+    dropLine.style.height = `${line.height}px`;
+}
 for (const type of ["mousedown", "pointerdown", "mouseup", "pointerup", "touchstart", "touchend", "dblclick"]) {
     window.addEventListener(type, (event) => {
         if (mode !== "edit" || isOurs(event))
@@ -1115,6 +1313,13 @@ window.addEventListener("keydown", (event) => {
             if (!document.execCommand("insertLineBreak"))
                 document.execCommand("insertHTML", false, "<br>");
         }
+        return;
+    }
+    if (drag) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        if (event.key === "Escape")
+            endDrag();
         return;
     }
     if (mode !== "edit")
@@ -1233,6 +1438,16 @@ function outline() {
             break;
     }
     return { type: "outline", heading: heading ? idOf(heading) : null, images };
+}
+/** The editable parts as a tree for the app's navigator. */
+function sendStructure() {
+    const { nodes, truncated } = structureOf([document.body, ...document.body.querySelectorAll("[data-ph-id][data-ph-can]")], (el) => {
+        const element = idOf(el);
+        if (!element || !editable(el))
+            return null;
+        return { element, tag: el.localName, name: nameOf(el, kindOf(el)), can: canOf(el) };
+    });
+    post({ type: "structure", nodes, truncated });
 }
 let factsTimer = 0;
 function sendFacts() {
