@@ -4,8 +4,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 cargo fmt --check
 cargo clippy --all-targets -q -- -D warnings
-cargo test -q 2>&1 | grep -E "^test result|FAILED|panicked" || true
-cargo test -q > /dev/null 2>&1
+tests=0
+out=$(cargo test -q 2>&1) || tests=$?
+grep -E "^test result|FAILED|panicked" <<<"$out" || true
+[[ $tests == 0 ]] || exit "$tests"
 npm run -s check
 python3 -I scripts/design/check_icons.py
 python3 -I scripts/design/check_static_refs.py

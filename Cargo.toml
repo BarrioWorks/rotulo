@@ -58,5 +58,12 @@ debug = "line-tables-only"
 [profile.dev.package."*"]
 debug = false
 
+# Tests sign up and log in many users: unoptimized Argon2 made up most of their run time.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
 [profile.release]
 strip = "symbols"
